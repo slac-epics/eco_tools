@@ -1,0 +1,386 @@
+#!/usr/bin/env python
+#==============================================================
+#
+#  Abs:  A tool to checkout an EPICS package and build the 
+#  package's RELEASE_SITE file. RELEASE_SITE is read by
+#  configure/RELEASE to fill in versions of dependent releases
+#  with the aim that no changes to configure/RELEASE are needed 
+#
+#  Name: eco
+#
+#  Facility:  SLAC/LCLS
+#
+#  Auth: 29-Nov-2010, Dayle Kotturi       (dayle)
+#  Auth: 04-Nov-2011, Murali Shankar      (mshankar)
+#  Rev:  dd-mmm-yyyy, Reviewer's Name     (USERNAME)
+#
+#  Requested features to be added:
+#   - Add setting of directory permissions per new acl list changes; 
+#     i.e. set a flag to lock them
+#   - Only put IOC_SITE_TOP in RELEASE_SITE if actually needed, not just
+#     generically
+#   - Make use of "cvs rlog" command to show user all the possible tags
+#   - Make it runnable with command line args or a file instead of terminal 
+#     input; this includes making it checkout multiple packages at a time
+#   - Break it into two scripts: one just to create the RELEASE_SITE file 
+#     so that it could be used when checkout has already been done
+#   - Make it work for subversion
+#   - Make it go and change the $IOC/*/startup.cmd files to new release 
+#       for all/subset of iocs in checked out app?s iocBoot
+#
+#--------------------------------------------------------------
+#  Mod:
+#  09-Dec-2010, Dayle Kotturi
+#    Bring in defaults for each setting from the environmens
+#  14-Dec-2010, Dayle Kotturi
+#    Add EPICS_BASE_VER to entries in RELEASE_SITE; 
+#    Use env var by same name as default 
+#    If the HEAD is checked out, name the directory MAIN_TRUNK
+#  15-Dec-2010, Dayle Kotturi
+#    Add this header of comments
+#    Add WWW_DIR to entries in RELEASE_SITE;
+#    Use /afs/slac/www/grp/lcls as the default for WWW_DIR 
+#    Change default for WWW_DIR to env var LCLS_WWW
+#    Add capability to accept a file of 'package tag' pairs, 
+#    one per line to do checkout with default env vars
+#  04-Nov-2011 Murali Shankar
+#    Removed all references to LCLS_WWW or WWW per Ernest
+#  06-Dec-2011 Murali Shankar
+#    Restored this version from CVS. Ernest wants me to update instead.
+#  23-Feb-2012 Murali Shankar
+#    Removed leading and trailing whitespace from inputs per Suzie and Ernest's request
+#  04-June-2012 Murali Shankar
+#    Updated the help per Ernest
+#  04-June-2012 Murali Shankar
+#    Added support for the -m modulename argument per Ernest
+#  25-Sept-2012 Murali Shankar
+#    Added a -P argument to cvs checkout per Ernest
+#  13-Aug-2013 Murali Shankar
+#    Support for PACKAGE_SITE_TOP; default value for this comes from PACKAGE_TOP per Ernest/Sonya
+#  10-Oct-2013 Murali Shankar
+#    Added support for BUILD_TARGETS using CROSS_COMPILER_TARGET_ARCHS in ${EPICS_BASE_RELEASE}/config/CONFIG_SITE and ${EPICS_BASE_RELEASE}/bin
+#  12-Dec-2013 Murali Shankar
+#    Pulled support for BUILD_TARGETS per Ernest as this generates fake conflicts with base's checkRelease
+#  08-Jan-2014 Murali Shankar
+#    Added support for specifying destination folder when using eco in interactive mode.
+#  11-Feb-2014 Murali Shankar
+#    Bug fix for specifying destination folder when using eco - the final cd was not using the correct variable - hence exception.
+#  26-Aug-2014 Murali Shankar
+#    Added support for TOOLS_SITE_TOP and ALARM_CONFIGS_TOP for Kristi
+#==============================================================
+import sys
+import os
+import socket
+import subprocess
+import optparse
+
+
+__all__ = ['export_release_site_file', 'assemble_release_site_inputs_from_file','assemble_cvs_inputs_from_file', 'assemble_release_site_inputs_from_term', 'assemble_cvs_inputs_from_term']
+
+
+def determine_archs():
+    '''Determine the various architectures from ${EPICS_BASE_RELEASE}/configure/CONFIG_SITE:CROSS_COMPILER_TARGET_ARCHS and from folders in ${EPICS_BASE_RELEASE}/bin. We return a sorted list of archs'''
+    lines = []
+    with open(os.path.expandvars('${EPICS_BASE_RELEASE}/configure/CONFIG_SITE'), 'r') as f:
+        lines = f.readlines()
+    archs_from_config_site = [line for line in lines if line.startswith('CROSS_COMPILER_TARGET_ARCHS')][0].strip().split('=')[1].split(' ')
+    archs_from_bin = os.listdir(os.path.expandvars('${EPICS_BASE_RELEASE}/bin'))
+
+    total_archs = sorted(set(archs_from_config_site)|set(archs_from_bin))
+    return total_archs
+
+
+def export_release_site_file(inputs):
+    """
+    Use the contents of a dictionary of top level dirs to create a 
+    RELEASE_SITE dir in a specified dir
+    """
+
+    #out_file = sys.stdout for testing 
+
+    output_file_and_path = './RELEASE_SITE'
+    try:
+        out_file = open(output_file_and_path, 'w')
+    except IOError, e:
+        sys.stderr.write('Could not open "%s": %s\n' % (output_file_and_path, e.strerror))
+        return None
+
+    print >> out_file, '#=============================================================================='
+    print >> out_file, '#RELEASE Location of external products'
+    print >> out_file, '# Run "gnumake clean uninstall install" in the application'
+    print >> out_file, '# top directory each time this file is changed.'
+    print >> out_file, ''
+    print >> out_file, '#=============================================================================='
+    print >> out_file, '# Define the top of the EPICS tree for your site.'
+    print >> out_file, '# We will build some tools/scripts that allow us to'
+    print >> out_file, '# change this easily when relocating software.'
+    print >> out_file, '#=============================================================================='
+    print >> out_file, 'EPICS_SITE_TOP=%s'  % inputs['EPICS_SITE_TOP'] 
+    print >> out_file, 'BASE_SITE_TOP=%s' % inputs['BASE_SITE_TOP']
+    print >> out_file, 'MODULES_SITE_TOP=%s' % inputs['MODULES_SITE_TOP']
+    print >> out_file, 'IOC_SITE_TOP=%s' % inputs['IOC_SITE_TOP']
+    print >> out_file, 'EPICS_BASE_VER=%s' % inputs['EPICS_BASE_VER']
+    print >> out_file, 'PACKAGE_SITE_TOP=%s' % inputs['PACKAGE_SITE_TOP']
+    print >> out_file, 'TOOLS_SITE_TOP=%s' % inputs['TOOLS_SITE_TOP']
+    print >> out_file, 'ALARM_CONFIGS_TOP=%s' % inputs['ALARM_CONFIGS_TOP']
+    print >> out_file, '#=============================================================================='
+    if out_file != sys.stdout:
+        out_file.close()
+
+    # change back to level where repo is
+    os.chdir('../..')
+    
+def assemble_release_site_inputs_from_term():
+    input_dict = {}
+
+    prompt1 = 'Enter full path for EPICS_SITE_TOP or [RETURN] to use "'+os.getenv('EPICS_TOP')+'">'
+    input_dict['EPICS_SITE_TOP'] = raw_input(prompt1).strip()
+    if input_dict['EPICS_SITE_TOP'] == "":
+        input_dict['EPICS_SITE_TOP'] = os.getenv('EPICS_TOP') # want something like, for eg, /usr/local/facet/epics    
+    print 'Using ' + input_dict['EPICS_SITE_TOP']
+
+    prompt2 = 'Enter full path for BASE_SITE_TOP or [RETURN] to use "'+os.getenv('EPICS_BASE_TOP')+'">'
+    input_dict['BASE_SITE_TOP'] = raw_input(prompt2).strip()
+    if input_dict['BASE_SITE_TOP'] == "":
+        input_dict['BASE_SITE_TOP'] = os.getenv('EPICS_BASE_TOP') # want something like, for eg,  /usr/local/facet/epics/base
+    print 'Using ' + input_dict['BASE_SITE_TOP']
+
+    prompt3 = 'Enter full path for MODULES_SITE_TOP or [RETURN] to use "'+os.getenv('EPICS_MODULES_TOP')+'">'
+    input_dict['MODULES_SITE_TOP'] = raw_input(prompt3).strip()
+    if input_dict['MODULES_SITE_TOP'] == "":
+        input_dict['MODULES_SITE_TOP'] = os.getenv('EPICS_MODULES_TOP') # want something like, for eg, /usr/local/facet/epics/modules/R3-14-8-2
+    print 'Using ' + input_dict['MODULES_SITE_TOP']
+
+    prompt4 = 'Enter full path for IOC_SITE_TOP or [RETURN] to use "'+os.getenv('EPICS_IOC_TOP')+'">'
+    input_dict['IOC_SITE_TOP'] = raw_input(prompt4).strip()
+    if input_dict['IOC_SITE_TOP'] == "":
+        input_dict['IOC_SITE_TOP'] = os.getenv('EPICS_IOC_TOP') # want something like, for eg, /usr/local/facet/epics/iocTop
+    print 'Using ' + input_dict['IOC_SITE_TOP']
+
+    prompt5 = 'Enter full path for EPICS_BASE_VER or [RETURN] to use "'+os.getenv('EPICS_BASE_VER')+'">'
+    input_dict['EPICS_BASE_VER'] = raw_input(prompt5).strip()
+    if input_dict['EPICS_BASE_VER'] == "":
+        input_dict['EPICS_BASE_VER'] = os.getenv('EPICS_BASE_VER') # want something like, for eg, base-R3-14-12
+    print 'Using ' + input_dict['EPICS_BASE_VER']
+
+    prompt6 = 'Enter full path for PACKAGE_SITE_TOP or [RETURN] to use "'+os.getenv('PACKAGE_TOP')+'">'
+    input_dict['PACKAGE_SITE_TOP'] = raw_input(prompt6).strip()
+    if input_dict['PACKAGE_SITE_TOP'] == "":
+        input_dict['PACKAGE_SITE_TOP'] = os.getenv('PACKAGE_TOP')
+    print 'Using ' + input_dict['PACKAGE_SITE_TOP']
+
+    prompt6 = 'Enter full path for TOOLS_SITE_TOP or [RETURN] to use "'+os.getenv('TOOLS')+'">'
+    input_dict['TOOLS_SITE_TOP'] = raw_input(prompt6).strip()
+    if input_dict['TOOLS_SITE_TOP'] == "":
+        input_dict['TOOLS_SITE_TOP'] = os.getenv('TOOLS')
+    print 'Using ' + input_dict['TOOLS_SITE_TOP']
+
+    prompt6 = 'Enter full path for ALARM_CONFIGS_TOP or [RETURN] to use "'+os.path.join(os.getenv('TOOLS'), 'AlarmConfigsTop')+'">'
+    input_dict['ALARM_CONFIGS_TOP'] = raw_input(prompt6).strip()
+    if input_dict['ALARM_CONFIGS_TOP'] == "":
+        input_dict['ALARM_CONFIGS_TOP'] = os.path.join(os.getenv('TOOLS'), 'AlarmConfigsTop')
+    print 'Using ' + input_dict['ALARM_CONFIGS_TOP']
+
+    return input_dict
+
+
+def assemble_release_site_inputs_from_file():
+    input_dict = {}
+
+    input_dict['EPICS_SITE_TOP'] = os.getenv('EPICS_TOP') # want something like, for eg, /usr/local/facet/epics    
+    print 'Using ' + input_dict['EPICS_SITE_TOP']
+
+    input_dict['BASE_SITE_TOP'] = os.getenv('EPICS_BASE_TOP') # want something like, for eg,  /usr/local/facet/epics/base
+    print 'Using ' + input_dict['BASE_SITE_TOP']
+
+    input_dict['MODULES_SITE_TOP'] = os.getenv('EPICS_MODULES_TOP') # want something like, for eg, /usr/local/facet/epics/modules/R3-14-8-2
+    print 'Using ' + input_dict['MODULES_SITE_TOP']
+
+    input_dict['IOC_SITE_TOP'] = os.getenv('EPICS_IOC_TOP') # want something like, for eg, /usr/local/facet/epics/iocTop
+    print 'Using ' + input_dict['IOC_SITE_TOP']
+
+    input_dict['EPICS_BASE_VER'] = os.getenv('EPICS_BASE_VER') # want something like, for eg, base-R3-14-12
+    print 'Using ' + input_dict['EPICS_BASE_VER']
+
+    input_dict['PACKAGE_SITE_TOP'] = os.getenv('PACKAGE_TOP')
+    print 'Using ' + input_dict['PACKAGE_SITE_TOP']
+
+    input_dict['TOOLS_SITE_TOP'] = os.getenv('TOOLS')
+    print 'Using ' + input_dict['TOOLS_SITE_TOP']
+
+    input_dict['ALARM_CONFIGS_TOP'] = os.path.join(os.getenv('TOOLS'), 'AlarmConfigsTop')
+    print 'Using ' + input_dict['ALARM_CONFIGS_TOP']
+
+    return input_dict
+
+# Determine the package and tag to checkout
+def assemble_cvs_inputs_from_term(options):
+    cvs_dict = {}
+
+    cvs_dict['REPOSITORY'] = None
+
+    if options.module:
+        cvs_dict['REPOSITORY'] = options.module
+
+
+    while not cvs_dict['REPOSITORY']:
+       cvs_dict['REPOSITORY'] = raw_input('Enter name of module/package to checkout: ').strip()
+
+    if hasattr(options, 'tag') and options.tag:
+        cvs_dict['RELEASE'] = options.tag
+    else:
+        prompt1 = 'Enter name of tag or [RETURN] to use HEAD>'
+        cvs_dict['RELEASE'] = raw_input(prompt1).strip()
+        if cvs_dict['RELEASE'] == "":
+            cvs_dict['RELEASE'] = 'MAIN_TRUNK'
+
+    destinationFolder = cvs_dict['RELEASE']
+    if options.destination:
+        destinationFolder = options.destination
+    print 'Using ' + cvs_dict['RELEASE'] + '. The name of the directory will be ' + destinationFolder + '.'
+
+    # TO DO: does directory cvs_dict['REPOSITORY'] exist?
+
+    if os.path.exists(cvs_dict['REPOSITORY']):
+        print 'directory exists, just change directory there to do the checkout'
+    else:
+        #os.mkdir(path[, mode]) add mode if you want...
+        os.mkdir(cvs_dict['REPOSITORY'])
+
+    os.chdir(cvs_dict['REPOSITORY'])
+    #os.system('pwd')
+    if (cvs_dict['RELEASE'] == 'MAIN_TRUNK'):
+        cmd='cvs checkout -P -d ' + destinationFolder + ' ' +cvs_dict['REPOSITORY']    
+        print cmd
+    else:
+        cmd='cvs checkout -P -r '+cvs_dict['RELEASE']+' -d '+ destinationFolder +' '+cvs_dict['REPOSITORY']    
+        print cmd
+
+    os.system(cmd)
+    os.chdir(destinationFolder)
+    #print 'changed directory to '+cvs_dict['RELEASE']
+    #os.system('pwd')
+
+
+# Determine the package and tag to checkout
+def assemble_cvs_inputs_from_file(repo, rel):
+    cvs_dict = {}
+
+    cvs_dict['REPOSITORY'] = repo
+    cvs_dict['RELEASE'] = rel
+
+    if cvs_dict['RELEASE'] == "" or cvs_dict['RELEASE'] == 'HEAD':
+        cvs_dict['RELEASE'] = 'MAIN_TRUNK'
+    print 'Using ' + cvs_dict['RELEASE'] + '. The name of the directory will be \'MAIN TRUNK\'.'
+
+    # TO DO: does directory cvs_dict['REPOSITORY'] exist?
+
+    if os.path.exists(cvs_dict['REPOSITORY']):
+        print 'directory exists, just change directory there to do the checkout'
+    else:
+        #os.mkdir(path[, mode]) add mode if you want...
+        os.mkdir(cvs_dict['REPOSITORY'])
+
+    os.chdir(cvs_dict['REPOSITORY'])
+    #os.system('pwd')
+    if (cvs_dict['RELEASE'] == 'MAIN_TRUNK'):
+        cmd='cvs checkout -P -d MAIN_TRUNK '+cvs_dict['REPOSITORY']    
+        print 'cvs checkout -P -d MAIN_TRUNK '+cvs_dict['REPOSITORY']    
+    else:
+        cmd='cvs checkout -P -r '+cvs_dict['RELEASE']+' -d '+cvs_dict['RELEASE']+' '+cvs_dict['REPOSITORY']    
+        print 'cvs checkout -P -r '+cvs_dict['RELEASE']+' -d '+cvs_dict['RELEASE']+' '+cvs_dict['REPOSITORY']    
+
+    os.system(cmd)
+    os.chdir(cvs_dict['RELEASE'])
+    #print 'changed directory to '+cvs_dict['RELEASE']
+    #os.system('pwd')
+
+def module_callback(option, opt_str, value, parser):
+    print 'Processing MODULE option; Setting ', option.dest, ' to ', value
+    setattr(parser.values, option.dest, value)
+    if len(parser.rargs) > 0:
+        print 'Setting tag to ' + parser.rargs[0]
+        setattr(parser.values, 'tag', parser.rargs[0])
+        parser.rargs.pop(0)
+    else:
+        print 'Defaulting tag to MAIN_TRUNK'
+        setattr(parser.values, 'tag', 'MAIN_TRUNK')
+
+def process_options(argv):
+    if argv is None:
+        argv = sys.argv[1:]
+
+    usage = 'Usage: %prog <File_listing_packages_and_tags (one pair per line)>\n'\
+            + '\n'\
+            + 'eco is a script that wraps cvs checkout and does some additional things that make compilation of modules within the EPICS/LCLS environment easier.\n'\
+            + 'The main intent of eco is to get hardcoded paths out of configure/RELEASE.\n'\
+            + 'It generates a file called RELEASE_SITE that contains these hardcoded paths; the configure/RELEASE now instead includes RELEASE_SITE\n'\
+            + '\n'\
+            + 'eco has interactive and batch modes.\n'\
+            + 'To start eco in interactive mode, simply type eco\n'\
+            + 'For the batch mode, you can pass in a file containing a list of the modules you want to checkout; for example, eco modulelist.txt.\n'\
+            + 'Each line in this file contains the module name and the branch/tag label. \n'\
+            + 'For example, a line for the sequencer would have "seq  seq-R2-0-11-lcls4"\n'\
+            + '\n'
+    version = '%prog 0.1'
+    parser = optparse.OptionParser(usage=usage, version=version)
+
+    parser.add_option('-v', '--verbose', action='store_true', dest='verbose', help='print verbose output')
+    parser.add_option('-m', '--module',  action='callback', dest='module', help='CVS module to checkout, optionally add the tag to use instead of MAIN_TRUNK', type='string', callback=module_callback)
+    parser.add_option('-d', '--destination',  action='store', dest='destination', help='Checkout the package to this folder. Uses cvs -d. For example, eco -d CATER_12345 on MAIN_TRUNK checks out MAIN_TRUNK into a folder called CATER_12345. This option is ignored in batch mode.', type='string')
+    # parser.add_option('-t', '--tag',  action='store', dest='tag', help='CVS tag to checkout - defaults to MAIN_TRUNK', type='string', default='MAIN_TRUNK')
+
+    parser.set_defaults(verbose=False,
+        db_file=None)
+
+    (options, args) = parser.parse_args(argv)
+
+    if len(args) == 1:
+        options.input_file_path = os.path.normcase(args[0])
+    else:
+        options.input_file_path = None
+
+    return options 
+
+def main(argv=None):
+    options = process_options(argv)
+    if (options.input_file_path):
+        try:
+            in_file = open(options.input_file_path, 'r')
+        except IOError, e:
+            sys.stderr.write('Could not open "%s": %s\n' % (options.input_file_path, e.strerror))
+            return None
+
+        # Read in pairs (package release) one per line
+        for line in in_file:
+            # Remove comments
+            line = line.partition('#')[0]
+
+            # Turn 'a = b' into a key/value pair and remove leading and trailing whitespace
+            (key, sep, value) = line.partition(' ')
+            key = key.strip()
+            value = value.strip()
+
+            print 'key is: ' + key
+            print 'value is: ' + value
+
+            assemble_cvs_inputs_from_file(key,value)
+            inputs = assemble_release_site_inputs_from_file()
+            export_release_site_file(inputs)
+           
+            print 'done with ' + line
+            # repeat above for all lines in file
+
+        in_file.close()
+
+    else:
+        assemble_cvs_inputs_from_term(options)
+        inputs = assemble_release_site_inputs_from_term()
+        export_release_site_file(inputs)
+
+    return 0
+    
+
+if __name__ == '__main__':
+    status = main()
+    sys.exit(status)
