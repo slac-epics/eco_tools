@@ -27,7 +27,7 @@ moduleNames = [
 ['busy', 'BUSY'],                 
 ['Bx9000_MBT', 'BX9000'],         
 ['caenADCV965', 'CAENADCV965'],   
-['caenV792', 'CAENV792'],                 
+['caenV792', ''],                 
 ['calc', 'CALC'],                     
 ['caPutLog', 'CAPUTLOG'],                 
 ['cexpsh', ''],                   
