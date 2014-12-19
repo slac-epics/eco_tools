@@ -4,11 +4,11 @@
 import argparse
 import moduleEcoNames2MakefileNames
 
-def generateEcoFile(fileName):
+def generateEcoFile(modules_txt_path):
     completeModules = [x[0] for x in moduleEcoNames2MakefileNames.moduleNames if x[1]]
     maxLengthOfModuleName = max([len(x) for x in completeModules])
     paddedModuleNames = [x.ljust(maxLengthOfModuleName) + " MAIN_TRUNK" for x in completeModules]
-    with open(fileName, 'w') as f:
+    with open(modules_txt_path, 'w') as f:
         f.write("\n".join(paddedModuleNames))
         
 
