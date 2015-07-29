@@ -67,6 +67,8 @@
 #    Bug fix for specifying destination folder when using eco - the final cd was not using the correct variable - hence exception.
 #  26-Aug-2014 Murali Shankar
 #    Added support for TOOLS_SITE_TOP and ALARM_CONFIGS_TOP for Kristi
+#  28-Jul-2015 Murali Shankar
+#    Added a validation method to make sure folks have their enviroment variables set correctly.
 #==============================================================
 import sys
 import os
@@ -213,6 +215,17 @@ def assemble_release_site_inputs_from_file():
 
     return input_dict
 
+def validate_environment_settings():
+    '''We use several environment variables as defaults. This method checks to make sure that these environment variables are set. 
+    Its probably better to force the user to set these environment variables than to fight make at a later stage.'''
+    needed_env_vars = ['EPICS_TOP', 'EPICS_BASE_TOP', 'EPICS_MODULES_TOP', 'EPICS_IOC_TOP', 'EPICS_BASE_VER', 'PACKAGE_TOP', 'TOOLS']
+    for needed_env_var in needed_env_vars:
+        if needed_env_var not in os.environ:
+            print "The environment variable ", needed_env_var, "has not been defined. Did you remember to source the correct enviromnent script?"
+            return False
+    return True
+
+
 # Determine the package and tag to checkout
 def assemble_cvs_inputs_from_term(options):
     cvs_dict = {}
@@ -344,6 +357,8 @@ def process_options(argv):
 
 def main(argv=None):
     options = process_options(argv)
+    if not validate_environment_settings():
+        return -1
     if (options.input_file_path):
         try:
             in_file = open(options.input_file_path, 'r')
