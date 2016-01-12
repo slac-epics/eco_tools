@@ -251,29 +251,8 @@ def assemble_cvs_inputs_from_term(options):
     if options.destination:
         destinationFolder = options.destination
     print 'Using ' + cvs_dict['RELEASE'] + '. The name of the directory will be ' + destinationFolder + '.'
-
-    # TO DO: does directory cvs_dict['REPOSITORY'] exist?
-
-    if os.path.exists(cvs_dict['REPOSITORY']):
-        print 'directory exists, just change directory there to do the checkout'
-    else:
-        #os.mkdir(path[, mode]) add mode if you want...
-        os.mkdir(cvs_dict['REPOSITORY'])
-
-    os.chdir(cvs_dict['REPOSITORY'])
-    #os.system('pwd')
-    if (cvs_dict['RELEASE'] == 'MAIN_TRUNK'):
-        cmd='cvs checkout -P -d ' + destinationFolder + ' ' +cvs_dict['REPOSITORY']    
-        print cmd
-    else:
-        cmd='cvs checkout -P -r '+cvs_dict['RELEASE']+' -d '+ destinationFolder +' '+cvs_dict['REPOSITORY']    
-        print cmd
-
-    os.system(cmd)
-    os.chdir(destinationFolder)
-    #print 'changed directory to '+cvs_dict['RELEASE']
-    #os.system('pwd')
-
+    
+    checkOutModule(cvs_dict)
 
 # Determine the package and tag to checkout
 def assemble_cvs_inputs_from_file(repo, rel):
@@ -294,19 +273,27 @@ def assemble_cvs_inputs_from_file(repo, rel):
         #os.mkdir(path[, mode]) add mode if you want...
         os.mkdir(cvs_dict['REPOSITORY'])
 
-    os.chdir(cvs_dict['REPOSITORY'])
-    #os.system('pwd')
-    if (cvs_dict['RELEASE'] == 'MAIN_TRUNK'):
-        cmd='cvs checkout -P -d MAIN_TRUNK '+cvs_dict['REPOSITORY']    
-        print 'cvs checkout -P -d MAIN_TRUNK '+cvs_dict['REPOSITORY']    
+    checkOutModule(cvs_dict)
+    
+def checkOutModule(cvs_dict):
+    '''Checkout the module from CVS. cvs_dict has REPOSITORY and RELEASE keys that dictate the module and the version to be checked out.'''
+    if os.path.exists(cvs_dict['REPOSITORY']):
+        print 'directory exists, just change directory there to do the checkout'
     else:
-        cmd='cvs checkout -P -r '+cvs_dict['RELEASE']+' -d '+cvs_dict['RELEASE']+' '+cvs_dict['REPOSITORY']    
-        print 'cvs checkout -P -r '+cvs_dict['RELEASE']+' -d '+cvs_dict['RELEASE']+' '+cvs_dict['REPOSITORY']    
+        os.mkdir(cvs_dict['REPOSITORY'])
 
+    destinationFolder = cvs_dict['RELEASE']
+
+    os.chdir(cvs_dict['REPOSITORY'])
+    if (cvs_dict['RELEASE'] == 'MAIN_TRUNK'):
+        cmd='cvs checkout -P -d ' + destinationFolder + ' ' +cvs_dict['REPOSITORY']    
+        print cmd
+    else:
+        cmd='cvs checkout -P -r '+cvs_dict['RELEASE']+' -d '+ destinationFolder +' '+cvs_dict['REPOSITORY']    
+        print cmd
     os.system(cmd)
-    os.chdir(cvs_dict['RELEASE'])
-    #print 'changed directory to '+cvs_dict['RELEASE']
-    #os.system('pwd')
+    os.chdir(destinationFolder)
+
 
 def module_callback(option, opt_str, value, parser):
     print 'Processing MODULE option; Setting ', option.dest, ' to ', value
