@@ -252,7 +252,7 @@ def assemble_cvs_inputs_from_term(options):
         destinationFolder = options.destination
     print 'Using ' + cvs_dict['RELEASE'] + '. The name of the directory will be ' + destinationFolder + '.'
     
-    checkOutModule(cvs_dict)
+    checkOutModule(cvs_dict['REPOSITORY'], cvs_dict['RELEASE'], destinationFolder)
 
 # Determine the package and tag to checkout
 def assemble_cvs_inputs_from_file(repo, rel):
@@ -273,26 +273,44 @@ def assemble_cvs_inputs_from_file(repo, rel):
         #os.mkdir(path[, mode]) add mode if you want...
         os.mkdir(cvs_dict['REPOSITORY'])
 
-    checkOutModule(cvs_dict)
+    checkOutModule(cvs_dict['REPOSITORY'], cvs_dict['RELEASE'], cvs_dict['RELEASE'])
     
-def checkOutModule(cvs_dict):
-    '''Checkout the module from CVS. cvs_dict has REPOSITORY and RELEASE keys that dictate the module and the version to be checked out.'''
-    if os.path.exists(cvs_dict['REPOSITORY']):
+def checkOutModule(packageName, tag, destinationFolder):
+    '''Checkout the module from GIT/CVS. 
+    We first check to see if GIT has the module; if so, we clone the repo from git and do a headless checkout for the selected tag.
+    Otherwise, we issue a command to CVS.
+    '''
+    if os.path.exists(packageName):
         print 'directory exists, just change directory there to do the checkout'
     else:
-        os.mkdir(cvs_dict['REPOSITORY'])
+        os.mkdir(packageName)
 
-    destinationFolder = cvs_dict['RELEASE']
-
-    os.chdir(cvs_dict['REPOSITORY'])
-    if (cvs_dict['RELEASE'] == 'MAIN_TRUNK'):
-        cmd='cvs checkout -P -d ' + destinationFolder + ' ' +cvs_dict['REPOSITORY']    
+    os.chdir(packageName)
+    
+    pathToGitRepo = determinePathToGitRepo(packageName)
+    if pathToGitRepo:
+        cmd='git clone ' + pathToGitRepo + ' ' + destinationFolder
         print cmd
+        os.system(cmd)
+        os.chdir(destinationFolder)
+        if (tag != 'MAIN_TRUNK'):
+            # Do a headless checkout to the specified tag
+            cmd='git checkout ' + tag
+            print cmd
+            os.system(cmd)
     else:
-        cmd='cvs checkout -P -r '+cvs_dict['RELEASE']+' -d '+ destinationFolder +' '+cvs_dict['REPOSITORY']    
-        print cmd
-    os.system(cmd)
-    os.chdir(destinationFolder)
+        if (tag == 'MAIN_TRUNK'):
+            cmd='cvs checkout -P -d ' + destinationFolder + ' ' + packageName    
+            print cmd
+        else:
+            cmd='cvs checkout -P -r '+ tag +' -d '+ destinationFolder +' ' + packageName    
+            print cmd
+        os.system(cmd)
+        os.chdir(destinationFolder)
+
+def determinePathToGitRepo(packageName):
+    '''If the specified package is stored in GIT, then return the URL to the GIT repo. Otherwise, return None'''
+    return None
 
 
 def module_callback(option, opt_str, value, parser):
