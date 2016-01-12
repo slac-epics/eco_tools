@@ -75,9 +75,59 @@ import os
 import socket
 import subprocess
 import optparse
+import readline
 
 
 __all__ = ['export_release_site_file', 'assemble_release_site_inputs_from_file','assemble_cvs_inputs_from_file', 'assemble_release_site_inputs_from_term', 'assemble_cvs_inputs_from_term']
+
+
+def parseGitModulesTxt():
+    '''Parse the GIT modules txt file and return a dict of packageName -> location'''
+    package2Location = {}
+    gitModulesTxtFile = os.path.join(os.environ['HOME'], 'temp', 'test', 'eco_modulelist', 'MAIN_TRUNK', 'modulelist.txt')
+    with open(gitModulesTxtFile, 'r') as f:
+        lines = f.readlines()
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        if line.startswith('#'):
+            continue
+        parts = line.split()
+        if(len(parts) < 2):
+            print "Error parsing ", gitModulesTxtFile, "Cannot break", line, "into columns with enough fields using spaces/tabs"
+            continue
+        packageName = parts[0]
+        packageLocation = parts[1]
+        package2Location[packageName] = packageLocation
+    return package2Location
+        
+def parseCVSModulesTxt():
+    '''Parse the CVS modules file and return a dict of packageName -> location'''
+    package2Location = {}
+    cvsModulesTxtFile = os.path.join(os.environ['CVSROOT'], 'CVSROOT', 'modules')
+    with open(cvsModulesTxtFile, 'r') as f:
+        lines = f.readlines()
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        if line.startswith('#'):
+            continue
+        parts = line.split()
+        if(len(parts) < 2):
+            print "Error parsing ", cvsModulesTxtFile, "Cannot break", line, "into columns with enough fields using spaces/tabs"
+            continue
+        packageName = parts[0]
+        packageLocation = parts[1]
+        package2Location[packageName] = packageLocation
+    return package2Location
+        
+
+
+
+git_package2Location = parseGitModulesTxt()
+cvs_modules2Location = parseCVSModulesTxt()
 
 
 def determine_archs():
@@ -235,6 +285,16 @@ def assemble_cvs_inputs_from_term(options):
     if options.module:
         cvs_dict['REPOSITORY'] = options.module
 
+    packageNames = set().union(git_package2Location.keys(), cvs_modules2Location.keys())
+    def completer(text, state):
+        options = [x for x in packageNames if x.startswith(text)]
+        try:
+            return options[state]
+        except IndexError:
+            return None
+
+    readline.set_completer(completer)
+    readline.parse_and_bind("tab: complete")
 
     while not cvs_dict['REPOSITORY']:
        cvs_dict['REPOSITORY'] = raw_input('Enter name of module/package to checkout: ').strip()
@@ -289,15 +349,20 @@ def checkOutModule(packageName, tag, destinationFolder):
     
     pathToGitRepo = determinePathToGitRepo(packageName)
     if pathToGitRepo:
+        print packageName, "is a git package. Cloning the repository at", pathToGitRepo
+        if os.path.exists(destinationFolder):
+            print "The folder", os.path.abspath(destinationFolder), "already exists. If you intended to update the checkout, please do a git pull to pull in the latest changes."
+            print "Aborting....."
+            sys.exit(1)
         cmd='git clone ' + pathToGitRepo + ' ' + destinationFolder
         print cmd
-        os.system(cmd)
+        subprocess.check_call(cmd)
         os.chdir(destinationFolder)
         if (tag != 'MAIN_TRUNK'):
             # Do a headless checkout to the specified tag
             cmd='git checkout ' + tag
             print cmd
-            os.system(cmd)
+            subprocess.check_call(cmd)
     else:
         if (tag == 'MAIN_TRUNK'):
             cmd='cvs checkout -P -d ' + destinationFolder + ' ' + packageName    
@@ -310,6 +375,8 @@ def checkOutModule(packageName, tag, destinationFolder):
 
 def determinePathToGitRepo(packageName):
     '''If the specified package is stored in GIT, then return the URL to the GIT repo. Otherwise, return None'''
+    if packageName in git_package2Location:
+        return git_package2Location[packageName]
     return None
 
 
