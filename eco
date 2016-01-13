@@ -299,6 +299,9 @@ def assemble_cvs_inputs_from_term(options):
     while not cvs_dict['REPOSITORY']:
        cvs_dict['REPOSITORY'] = raw_input('Enter name of module/package to checkout: ').strip()
 
+    # Remove completer after we are done...
+    readline.set_completer()
+
     if hasattr(options, 'tag') and options.tag:
         cvs_dict['RELEASE'] = options.tag
     else:
