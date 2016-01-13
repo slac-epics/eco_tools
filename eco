@@ -286,14 +286,14 @@ def assemble_cvs_inputs_from_term(options):
         cvs_dict['REPOSITORY'] = options.module
 
     packageNames = set().union(git_package2Location.keys(), cvs_modules2Location.keys())
-    def completer(text, state):
+    def packageNameCompleter(text, state):
         options = [x for x in packageNames if x.startswith(text)]
         try:
             return options[state]
         except IndexError:
             return None
 
-    readline.set_completer(completer)
+    readline.set_completer(packageNameCompleter)
     readline.parse_and_bind("tab: complete")
 
     while not cvs_dict['REPOSITORY']:
@@ -305,10 +305,25 @@ def assemble_cvs_inputs_from_term(options):
     if hasattr(options, 'tag') and options.tag:
         cvs_dict['RELEASE'] = options.tag
     else:
+        pathToGitRepo = determinePathToGitRepo(cvs_dict['REPOSITORY'])
+        if pathToGitRepo and os.path.exists(os.path.join(pathToGitRepo, "refs", "tags")):
+            # Determine the list of tags..
+            tags = os.listdir(os.path.join(pathToGitRepo, "refs", "tags"))
+            def tagCompleter(text, state):
+                options = [x for x in tags if x.startswith(text)]
+                try:
+                    return options[state]
+                except IndexError:
+                    return None
+            readline.set_completer(tagCompleter)
+            readline.parse_and_bind("tab: complete")
+            
         prompt1 = 'Enter name of tag or [RETURN] to use HEAD>'
         cvs_dict['RELEASE'] = raw_input(prompt1).strip()
         if cvs_dict['RELEASE'] == "":
             cvs_dict['RELEASE'] = 'MAIN_TRUNK'
+
+        readline.set_completer()
 
     destinationFolder = cvs_dict['RELEASE']
     if options.destination:
