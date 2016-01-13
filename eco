@@ -84,7 +84,7 @@ __all__ = ['export_release_site_file', 'assemble_release_site_inputs_from_file',
 def parseGitModulesTxt():
     '''Parse the GIT modules txt file and return a dict of packageName -> location'''
     package2Location = {}
-    gitModulesTxtFile = os.path.join(os.environ['HOME'], 'temp', 'test', 'eco_modulelist', 'MAIN_TRUNK', 'modulelist.txt')
+    gitModulesTxtFile = os.path.join(os.environ['TOOLS'], 'eco_modulelist', 'modulelist.txt')
     with open(gitModulesTxtFile, 'r') as f:
         lines = f.readlines()
     for line in lines:
@@ -354,13 +354,13 @@ def checkOutModule(packageName, tag, destinationFolder):
             print "The folder", os.path.abspath(destinationFolder), "already exists. If you intended to update the checkout, please do a git pull to pull in the latest changes."
             print "Aborting....."
             sys.exit(1)
-        cmd='git clone ' + pathToGitRepo + ' ' + destinationFolder
+        cmd=['git', 'clone', pathToGitRepo, destinationFolder]
         print cmd
         subprocess.check_call(cmd)
         os.chdir(destinationFolder)
         if (tag != 'MAIN_TRUNK'):
             # Do a headless checkout to the specified tag
-            cmd='git checkout ' + tag
+            cmd=['git', 'checkout', tag]
             print cmd
             subprocess.check_call(cmd)
     else:
