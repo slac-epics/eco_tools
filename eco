@@ -372,7 +372,7 @@ def checkOutModule(packageName, tag, destinationFolder):
             print "The folder", os.path.abspath(destinationFolder), "already exists. If you intended to update the checkout, please do a git pull to pull in the latest changes."
             print "Aborting....."
             sys.exit(1)
-        cmd=['git', 'clone', pathToGitRepo, destinationFolder]
+        cmd=['git', 'clone', '--recursive', pathToGitRepo, destinationFolder]
         print cmd
         subprocess.check_call(cmd)
         os.chdir(destinationFolder)
