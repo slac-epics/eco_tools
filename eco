@@ -314,7 +314,7 @@ def assemble_cvs_inputs_from_term(options):
             else:
                 print "Git repo at", pathToGitRepo, "does not seem to have any tags"
         else:
-            p1 = subprocess.Popen(['cvs', '-Q', 'rlog', '-h', 'MatlabSupport'], stdout=subprocess.PIPE)
+            p1 = subprocess.Popen(['cvs', '-Q', 'rlog', '-h', cvs_dict['REPOSITORY']], stdout=subprocess.PIPE)
             p2 = subprocess.Popen(['awk', '-F"[.:]"', '/^\t/&&$(NF-1)!=0{print $1}'], stdin=p1.stdout, stdout=subprocess.PIPE)
             p1.stdout.close()  # Allow p1 to receive a SIGPIPE if p2 exits.
             output = p2.communicate()[0]
