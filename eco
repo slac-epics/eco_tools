@@ -301,6 +301,7 @@ def assemble_cvs_inputs_from_term(options):
 
     # Remove completer after we are done...
     readline.set_completer()
+    readline.set_completer_delims(" \t\n")
     readline.parse_and_bind('tab: self-insert')
 
     if hasattr(options, 'tag') and options.tag:
