@@ -76,6 +76,9 @@ import socket
 import subprocess
 import optparse
 import readline
+import shutil
+import tempfile
+
 
 
 __all__ = ['export_release_site_file', 'assemble_release_site_inputs_from_file','assemble_cvs_inputs_from_file', 'assemble_release_site_inputs_from_term', 'assemble_cvs_inputs_from_term']
@@ -421,6 +424,52 @@ def determinePathToGitRepo(packageName):
     return None
 
 
+def initGitBareRepo():
+    '''Initialize a bare repo in the user specified folder'''
+    gitRoot = "/afs/slac/g/cd/swe/git/repos/"
+    selectedFolder = subprocess.check_output(["zenity", "--file-selection", "--title", "Please choose the parent folder where you want to create the bare repo", "--directory", "--filename="+gitRoot]).strip()
+    packageName = subprocess.check_output(["zenity", "--entry", "--title", "Package Name", "--text", "Please enter the name of the package"]).strip()
+    if packageName in git_package2Location or packageName in cvs_modules2Location:
+        if packageName in git_package2Location:
+            packageLocation = git_package2Location[packageName]
+        elif packageName in cvs_modules2Location:
+            packageLocation = os.path.join(os.environ['CVSROOT'], cvs_modules2Location[packageName])
+        subprocess.check_call(["zenity", "--error", "--title", "Error", "--text", "The package " + packageName + " already exists in " + packageLocation])
+        return
+    gitMasterRepo = os.path.join(selectedFolder, packageName+".git")
+    if os.path.exists(gitMasterRepo):
+        print "Git master repo for package", packageName, "already exists at " + gitMasterRepo
+        return
+    print "Initializing a bare repo in", selectedFolder, "for package", packageName
+    subprocess.check_call(["git", "init", "--bare", gitMasterRepo])
+    if not os.path.exists(gitMasterRepo):
+        raise Exception("Git master repo does not seem to exist at " + gitMasterRepo)
+    tpath = tempfile.mkdtemp()
+    curDir = os.getcwd()
+    print "Cloning the master repo at", gitMasterRepo, "into", tpath
+    clonedFolder = os.path.join(tpath, packageName)
+    subprocess.check_call(['git', 'clone', gitMasterRepo, clonedFolder])
+    os.chdir(clonedFolder)
+    gitIgnoreLines = ["bin/", "CVS/", "O.*/"]
+    with open(".gitignore", "w") as f:
+        f.write("\n".join(gitIgnoreLines))
+    subprocess.check_call(['git', 'add', '.gitignore'])
+    subprocess.check_call(['git', 'commit', '-m', 'Initial commit from eco. Added std .gitignore'])
+    subprocess.check_call(['git', 'push', 'origin', 'master'])
+    os.chdir(curDir)
+    shutil.rmtree(tpath)
+    print "Adding package to eco_modulelist"
+    gitModulesTxtFolder = os.path.join(os.environ['TOOLS'], 'eco_modulelist')
+    os.chdir(gitModulesTxtFolder)
+    with open('modulelist.txt', 'a') as f:
+        f.write(packageName + "\t\t\t" + gitMasterRepo+"\n")
+    subprocess.check_call(['git', 'add', 'modulelist.txt'])
+    subprocess.check_call(['git', 'commit', '-m', 'eco added package ' + packageName + ' located at ' + gitMasterRepo])
+    subprocess.check_call(['git', 'pull', '--rebase'])
+    subprocess.check_call(['git', 'push', 'origin', 'master'])
+
+    
+
 def module_callback(option, opt_str, value, parser):
     print 'Processing MODULE option; Setting ', option.dest, ' to ', value
     setattr(parser.values, option.dest, value)
@@ -436,9 +485,9 @@ def process_options(argv):
     if argv is None:
         argv = sys.argv[1:]
 
-    usage = 'Usage: %prog <File_listing_packages_and_tags (one pair per line)>\n'\
+    usage = 'Usage: %prog <Command or File_listing_packages_and_tags (one pair per line)>\n'\
             + '\n'\
-            + 'eco is a script that wraps cvs checkout and does some additional things that make compilation of modules within the EPICS/LCLS environment easier.\n'\
+            + 'eco is a script that wraps git clone/cvs checkout and does some additional things that make compilation of modules within the EPICS/LCLS environment easier.\n'\
             + 'The main intent of eco is to get hardcoded paths out of configure/RELEASE.\n'\
             + 'It generates a file called RELEASE_SITE that contains these hardcoded paths; the configure/RELEASE now instead includes RELEASE_SITE\n'\
             + '\n'\
@@ -468,11 +517,18 @@ def process_options(argv):
 
     return options 
 
+commands = {
+    "initrepo" : initGitBareRepo
+}
+
 def main(argv=None):
     options = process_options(argv)
     if not validate_environment_settings():
         return -1
     if (options.input_file_path):
+        if options.input_file_path in commands:
+            commands[options.input_file_path]()
+            return
         try:
             in_file = open(options.input_file_path, 'r')
         except IOError, e:
