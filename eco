@@ -443,22 +443,8 @@ def initGitBareRepo():
     gitMasterRepo = os.path.join(selectedFolder, packageName+".git")
     print "Checking to see if git master repo exists at", gitMasterRepo
     if os.path.exists(gitMasterRepo):
-        print "Git master repo for package", packageName, "already exists at " + gitMasterRepo
+        subprocess.check_call(["zenity", "--error", "--title", "Error", "--text", "Git master repo for package " + packageName + " already exists at " + gitMasterRepo])
         return
-    print "Initializing a bare repo in", selectedFolder, "for package", packageName
-    subprocess.check_call(["git", "init", "--bare", gitMasterRepo])
-    if not os.path.exists(gitMasterRepo):
-        raise Exception("Git master repo does not seem to exist at " + gitMasterRepo)
-    tpath = tempfile.mkdtemp()
-    curDir = os.getcwd()
-    print "Cloning the master repo at", gitMasterRepo, "into", tpath
-    clonedFolder = os.path.join(tpath, packageName)
-    subprocess.check_call(['git', 'clone', gitMasterRepo, clonedFolder])
-    os.chdir(clonedFolder)
-    gitIgnoreLines = ["bin/", "CVS/", "O.*/"]
-    with open(".gitignore", "w") as f:
-        f.write("\n".join(gitIgnoreLines))
-    subprocess.check_call(['git', 'add', '.gitignore'])
     #Code from cram describe.
     appTypes = {
         'HIOC': 'A hard IOC using a st.cmd',
@@ -473,7 +459,22 @@ def initGitBareRepo():
                                     '--column="Type"', '--column="Description"']
                                     + list(reduce(lambda x, y: x + y, appTypes.items()))
                                     ).strip()
+    print "Initializing a bare repo in", selectedFolder, "for package", packageName
+    subprocess.check_call(["git", "init", "--bare", gitMasterRepo])
+    if not os.path.exists(gitMasterRepo):
+        raise Exception("Git master repo does not seem to exist at " + gitMasterRepo)
+    tpath = tempfile.mkdtemp()
+    curDir = os.getcwd()
+    print "Cloning the master repo at", gitMasterRepo, "into", tpath
+    clonedFolder = os.path.join(tpath, packageName)
+    subprocess.check_call(['git', 'clone', gitMasterRepo, clonedFolder])
+    os.chdir(clonedFolder)
+    gitIgnoreLines = ["bin/", "CVS/", "O.*/"]
+    with open(".gitignore", "w") as f:
+        f.write("\n".join(gitIgnoreLines))
+    subprocess.check_call(['git', 'add', '.gitignore'])
 
+    # Add .cram/packageinfo
     packageInfo = {}
     packageInfo['name'] = packageName
     packageInfo['type'] = apptype
@@ -502,6 +503,8 @@ def initGitBareRepo():
     subprocess.check_call(['git', 'pull', '--rebase'])
     subprocess.check_call(['git', 'push', 'origin', 'master'])
     print "Done creating bare repo for package ", packageName, ". Use eco to clone this repo into your working directory."
+    subprocess.check_call(["zenity", "--info", "--title", "Repo created for " + packageName, "--text", "Done creating bare repo for package " + packageName + ". Use eco to clone this repo into your working directory."])
+
 
     
 
