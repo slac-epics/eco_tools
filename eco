@@ -469,7 +469,7 @@ def initGitBareRepo():
     clonedFolder = os.path.join(tpath, packageName)
     subprocess.check_call(['git', 'clone', gitMasterRepo, clonedFolder])
     os.chdir(clonedFolder)
-    gitIgnoreLines = ["bin/", "CVS/", "O.*/"]
+    gitIgnoreLines = ["bin/", "CVS/", "O.*/", "RELEASE_SITE"]
     with open(".gitignore", "w") as f:
         f.write("\n".join(gitIgnoreLines))
     subprocess.check_call(['git', 'add', '.gitignore'])
