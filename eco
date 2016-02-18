@@ -535,9 +535,9 @@ def process_options(argv):
             + 'Each line in this file contains the module name and the branch/tag label. \n'\
             + 'For example, a line for the sequencer would have "seq  seq-R2-0-11-lcls4"\n'\
             + '\n'\
-            + 'eco also supports a command called initrepo "eco initrepo" that create a bare git repository for your package.\n'\
+            + 'eco also supports a command called initrepo "eco initrepo" that creates a bare git repository for your package.\n'\
             + '"eco initrepo" prompts you for a package name and type and repo location.\n'\
-            + 'It then creates bare git repo in the location specified; it also creates a default .gitignore and cram configuration for your package.'
+            + 'It then creates a bare git repo in the location specified; it also creates a default .gitignore and cram configuration for your package.'
     version = '%prog 0.1'
     parser = optparse.OptionParser(usage=usage, version=version)
 
