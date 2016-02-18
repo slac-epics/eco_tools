@@ -78,6 +78,7 @@ import optparse
 import readline
 import shutil
 import tempfile
+import json
 
 
 
@@ -427,6 +428,9 @@ def determinePathToGitRepo(packageName):
 def initGitBareRepo():
     '''Initialize a bare repo in the user specified folder'''
     gitRoot = "/afs/slac/g/cd/swe/git/repos/"
+    # The GIT_REPO_ROOT is mainly used when testing eco and is not something that we really expect from the environment.
+    if "GIT_REPO_ROOT" in os.environ:
+        gitRoot = os.environ["GIT_REPO_ROOT"]
     selectedFolder = subprocess.check_output(["zenity", "--file-selection", "--title", "Please choose the parent folder where you want to create the bare repo", "--directory", "--filename="+gitRoot]).strip()
     packageName = subprocess.check_output(["zenity", "--entry", "--title", "Package Name", "--text", "Please enter the name of the package"]).strip()
     if packageName in git_package2Location or packageName in cvs_modules2Location:
@@ -434,9 +438,10 @@ def initGitBareRepo():
             packageLocation = git_package2Location[packageName]
         elif packageName in cvs_modules2Location:
             packageLocation = os.path.join(os.environ['CVSROOT'], cvs_modules2Location[packageName])
-        subprocess.check_call(["zenity", "--error", "--title", "Error", "--text", "The package " + packageName + " already exists in " + packageLocation])
+        subprocess.check_call(["zenity", "--error", "--title", "Error", "--text", "The package " + packageName + " already is already registered and exists in " + packageLocation])
         return
     gitMasterRepo = os.path.join(selectedFolder, packageName+".git")
+    print "Checking to see if git master repo exists at", gitMasterRepo
     if os.path.exists(gitMasterRepo):
         print "Git master repo for package", packageName, "already exists at " + gitMasterRepo
         return
@@ -454,8 +459,37 @@ def initGitBareRepo():
     with open(".gitignore", "w") as f:
         f.write("\n".join(gitIgnoreLines))
     subprocess.check_call(['git', 'add', '.gitignore'])
-    subprocess.check_call(['git', 'commit', '-m', 'Initial commit from eco. Added std .gitignore'])
+    #Code from cram describe.
+    appTypes = {
+        'HIOC': 'A hard IOC using a st.cmd',
+        'SIOC': 'A soft IOC using a hashbang',
+        'HLA': 'A High level application',
+        'Tools': 'Scripts typically in the tools/scripts folder',
+        'Matlab': 'Matlab applications'
+    }
+    apptype = subprocess.check_output(['zenity', '--width=600', '--height=400',
+                                    '--list',
+                                    '--title', "Choose the type of software application",
+                                    '--column="Type"', '--column="Description"']
+                                    + list(reduce(lambda x, y: x + y, appTypes.items()))
+                                    ).strip()
+
+    packageInfo = {}
+    packageInfo['name'] = packageName
+    packageInfo['type'] = apptype
+
+    if not os.path.exists('.cram'):
+        os.makedirs('.cram')
+    packageInfofile = os.path.join('.cram', 'packageinfo')
+    with open(packageInfofile, 'w') as pkginfof:
+        json.dump(packageInfo, pkginfof)
+    
+    subprocess.check_call(['git', 'add', '.cram'])
+    subprocess.check_call(['git', 'add', '.cram/packageinfo'])
+        
+    subprocess.check_call(['git', 'commit', '-m', 'Initial commit from eco. Added a basic .gitignore and cram package information.'])
     subprocess.check_call(['git', 'push', 'origin', 'master'])
+
     os.chdir(curDir)
     shutil.rmtree(tpath)
     print "Adding package to eco_modulelist"
@@ -467,6 +501,7 @@ def initGitBareRepo():
     subprocess.check_call(['git', 'commit', '-m', 'eco added package ' + packageName + ' located at ' + gitMasterRepo])
     subprocess.check_call(['git', 'pull', '--rebase'])
     subprocess.check_call(['git', 'push', 'origin', 'master'])
+    print "Done creating bare repo for package ", packageName, ". Use eco to clone this repo into your working directory."
 
     
 
@@ -496,7 +531,10 @@ def process_options(argv):
             + 'For the batch mode, you can pass in a file containing a list of the modules you want to checkout; for example, eco modulelist.txt.\n'\
             + 'Each line in this file contains the module name and the branch/tag label. \n'\
             + 'For example, a line for the sequencer would have "seq  seq-R2-0-11-lcls4"\n'\
-            + '\n'
+            + '\n'\
+            + 'eco also supports a command called initrepo "eco initrepo" that create a bare git repository for your package.\n'\
+            + '"eco initrepo" prompts you for a package name and type and repo location.\n'\
+            + 'It then creates bare git repo in the location specified; it also creates a default .gitignore and cram configuration for your package.'
     version = '%prog 0.1'
     parser = optparse.OptionParser(usage=usage, version=version)
 
