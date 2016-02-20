@@ -79,6 +79,7 @@ import readline
 import shutil
 import tempfile
 import json
+from ecogitutils import *
 
 
 
@@ -427,11 +428,9 @@ def determinePathToGitRepo(packageName):
 
 def initGitBareRepo():
     '''Initialize a bare repo in the user specified folder'''
-    gitRoot = "/afs/slac/g/cd/swe/git/repos/"
-    # The GIT_REPO_ROOT is mainly used when testing eco and is not something that we really expect from the environment.
-    if "GIT_REPO_ROOT" in os.environ:
-        gitRoot = os.environ["GIT_REPO_ROOT"]
-    selectedFolder = subprocess.check_output(["zenity", "--file-selection", "--title", "Please choose the parent folder where you want to create the bare repo", "--directory", "--filename="+gitRoot]).strip()
+    gitRoot = determineGitRoot()
+    
+    # Ask the user for the name of the package
     packageName = subprocess.check_output(["zenity", "--entry", "--title", "Package Name", "--text", "Please enter the name of the package"]).strip()
     if packageName in git_package2Location or packageName in cvs_modules2Location:
         if packageName in git_package2Location:
@@ -440,73 +439,82 @@ def initGitBareRepo():
             packageLocation = os.path.join(os.environ['CVSROOT'], cvs_modules2Location[packageName])
         subprocess.check_call(["zenity", "--error", "--title", "Error", "--text", "The package " + packageName + " already is already registered and exists in " + packageLocation])
         return
-    gitMasterRepo = os.path.join(selectedFolder, packageName+".git")
-    print "Checking to see if git master repo exists at", gitMasterRepo
-    if os.path.exists(gitMasterRepo):
-        subprocess.check_call(["zenity", "--error", "--title", "Error", "--text", "Git master repo for package " + packageName + " already exists at " + gitMasterRepo])
-        return
-    #Code from cram describe.
-    appTypes = {
-        'HIOC': 'A hard IOC using a st.cmd',
-        'SIOC': 'A soft IOC using a hashbang',
-        'HLA': 'A High level application',
-        'Tools': 'Scripts typically in the tools/scripts folder',
-        'Matlab': 'Matlab applications'
-    }
-    apptype = subprocess.check_output(['zenity', '--width=600', '--height=400',
-                                    '--list',
-                                    '--title', "Choose the type of software application",
-                                    '--column="Type"', '--column="Description"']
-                                    + list(reduce(lambda x, y: x + y, appTypes.items()))
-                                    ).strip()
-    print "Initializing a bare repo in", selectedFolder, "for package", packageName
-    subprocess.check_call(["git", "init", "--bare", gitMasterRepo])
-    if not os.path.exists(gitMasterRepo):
-        raise Exception("Git master repo does not seem to exist at " + gitMasterRepo)
+    
+    # Ask the use where the master repo is to be created
+    bareRepoParentFolder = subprocess.check_output(["zenity", "--file-selection", "--title", "Please choose the parent folder where you want to create the bare repo", "--directory", "--filename="+gitRoot]).strip()
+    
+    apptype = determineCramAppType()
+
+    # Create the master repo as a bare repo
+    gitMasterRepo = initBareRepo(bareRepoParentFolder, packageName)
+                                        
     tpath = tempfile.mkdtemp()
     curDir = os.getcwd()
-    print "Cloning the master repo at", gitMasterRepo, "into", tpath
-    clonedFolder = os.path.join(tpath, packageName)
-    subprocess.check_call(['git', 'clone', gitMasterRepo, clonedFolder])
-    os.chdir(clonedFolder)
-    gitIgnoreLines = ["bin/", "CVS/", "O.*/", "RELEASE_SITE"]
-    with open(".gitignore", "w") as f:
-        f.write("\n".join(gitIgnoreLines))
-    subprocess.check_call(['git', 'add', '.gitignore'])
-
-    # Add .cram/packageinfo
-    packageInfo = {}
-    packageInfo['name'] = packageName
-    packageInfo['type'] = apptype
-
-    if not os.path.exists('.cram'):
-        os.makedirs('.cram')
-    packageInfofile = os.path.join('.cram', 'packageinfo')
-    with open(packageInfofile, 'w') as pkginfof:
-        json.dump(packageInfo, pkginfof)
     
-    subprocess.check_call(['git', 'add', '.cram'])
-    subprocess.check_call(['git', 'add', '.cram/packageinfo'])
+    clonedFolder = cloneMasterRepo(gitMasterRepo, tpath, packageName)
+    os.chdir(clonedFolder)
+    
+    createGitIgnore()
+    createCramPackageInfo(packageName, apptype)
         
-    subprocess.check_call(['git', 'commit', '-m', 'Initial commit from eco. Added a basic .gitignore and cram package information.'])
-    subprocess.check_call(['git', 'push', 'origin', 'master'])
+    commitAndPush()
 
     os.chdir(curDir)
     shutil.rmtree(tpath)
-    print "Adding package to eco_modulelist"
-    gitModulesTxtFolder = os.path.join(os.environ['TOOLS'], 'eco_modulelist')
-    os.chdir(gitModulesTxtFolder)
-    with open('modulelist.txt', 'a') as f:
-        f.write(packageName + "\t\t\t" + gitMasterRepo+"\n")
-    subprocess.check_call(['git', 'add', 'modulelist.txt'])
-    subprocess.check_call(['git', 'commit', '-m', 'eco added package ' + packageName + ' located at ' + gitMasterRepo])
-    subprocess.check_call(['git', 'pull', '--rebase'])
-    subprocess.check_call(['git', 'push', 'origin', 'master'])
+    
+    addPackageToEcoModuleList(packageName, gitMasterRepo)
+    
     print "Done creating bare repo for package ", packageName, ". Use eco to clone this repo into your working directory."
     subprocess.check_call(["zenity", "--info", "--title", "Repo created for " + packageName, "--text", "Done creating bare repo for package " + packageName + ". Use eco to clone this repo into your working directory."])
 
 
+def importFromCVS():
+    '''Import module from CVS and place into new git repo. Uses ${TOOLS}/cvs2git/current/cvs2git to do the actual importing'''
+    gitRoot = determineGitRoot()
+    checkCVS2GitPresent()
     
+    # Ask the user for the name of the package
+    packageName = subprocess.check_output(["zenity", "--entry", "--title", "Package Name", "--text", "Please enter the name of the package"]).strip()
+    if packageName in git_package2Location:
+        subprocess.check_call(["zenity", "--error", "--title", "Error", "--text", "The package " + packageName + " already is already registered and exists in " + packageLocation])
+        return
+    if packageName not in cvs_modules2Location:
+        subprocess.check_call(["zenity", "--error", "--title", "Error", "--text", "The package " + packageName + " does not seem to be a CVS module."])
+        return
+    
+    CVSpackageLocation = os.path.join(os.environ['CVSROOT'], cvs_modules2Location[packageName])
+    print "Importing CVS module from ", CVSpackageLocation
+    
+    # Ask the use where the master repo is to be created
+    bareRepoParentFolder = subprocess.check_output(["zenity", "--file-selection", "--title", "Please choose the parent folder where you want to create the bare repo", "--directory", "--filename="+gitRoot]).strip()
+    
+    # Create the master repo as a bare repo
+    gitMasterRepo = initBareRepo(bareRepoParentFolder, packageName)     
+                                   
+    curDir = os.getcwd()
+    tpath = tempfile.mkdtemp()
+
+    importHistoryFromCVS(tpath, gitMasterRepo, CVSpackageLocation)
+    
+    clonedFolder = cloneMasterRepo(gitMasterRepo, tpath, packageName)
+    os.chdir(clonedFolder)
+    
+    createGitIgnore()
+    # We expect .cram/packageinfo to be there already
+    
+    commitAndPush()
+
+    os.chdir(curDir)
+
+    addPackageToEcoModuleList(packageName, gitMasterRepo)
+    removeModuleFromCVS(tpath, packageName, CVSpackageLocation)
+
+    os.chdir(curDir)
+    shutil.rmtree(tpath)
+    
+    print "Done creating bare repo for package ", packageName, ". Use eco to clone this repo into your working directory."
+    subprocess.check_call(["zenity", "--info", "--title", "Repo created for " + packageName, "--text", "Done creating bare repo for package " + packageName + ". Use eco to clone this repo into your working directory."])
+
 
 def module_callback(option, opt_str, value, parser):
     print 'Processing MODULE option; Setting ', option.dest, ' to ', value
@@ -537,7 +545,13 @@ def process_options(argv):
             + '\n'\
             + 'eco also supports a command called initrepo "eco initrepo" that creates a bare git repository for your package.\n'\
             + '"eco initrepo" prompts you for a package name and type and repo location.\n'\
-            + 'It then creates a bare git repo in the location specified; it also creates a default .gitignore and cram configuration for your package.'
+            + 'It then creates a bare git repo in the location specified; it also creates a default .gitignore and cram configuration for your package.\n'\
+            + '\n'\
+            + 'eco also supports a command called cvsimport "eco cvsimport" that imports a module from CVS into a git bare repo.\n'\
+            + '"eco cvsimport" prompts you for a package name and type and repo location.\n'\
+            + 'It then creates a bare git repo in the location specified; imports the history from CVS and adds a default .gitignore.\n'\
+            + 'It removes the package from the CVS module list by commenting the definition out.\n'\
+            + '\n'
     version = '%prog 0.1'
     parser = optparse.OptionParser(usage=usage, version=version)
 
@@ -559,7 +573,8 @@ def process_options(argv):
     return options 
 
 commands = {
-    "initrepo" : initGitBareRepo
+    "initrepo" : initGitBareRepo,
+    "cvsimport" : importFromCVS
 }
 
 def main(argv=None):
