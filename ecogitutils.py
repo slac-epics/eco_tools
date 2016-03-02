@@ -34,7 +34,7 @@ def cloneMasterRepo(gitMasterRepo, tpath, packageName):
     return clonedFolder
 
 def createGitIgnore():
-    gitIgnoreLines = ["bin/", "CVS/", "O.*/", "RELEASE_SITE", "db/", "dbd/", "envPaths"]
+    gitIgnoreLines = ["bin/", "CVS/", "O.*/", "RELEASE_SITE", "db/", "dbd/", "envPaths", "*~"]
     with open(".gitignore", "w") as f:
         f.write("\n".join(gitIgnoreLines))
     subprocess.check_call(['git', 'add', '.gitignore'])
