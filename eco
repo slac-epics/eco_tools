@@ -474,12 +474,12 @@ def importFromCVS():
     checkCVS2GitPresent()
     
     # Ask the user for the name of the package
-    packageName = subprocess.check_output(["zenity", "--entry", "--title", "Package Name", "--text", "Please enter the name of the package"]).strip()
+    packageName = subprocess.check_output(["zenity", "--entry", "--title", "Module Name", "--text", "Please enter the name of the module"]).strip()
     if packageName in git_package2Location:
-        subprocess.check_call(["zenity", "--error", "--title", "Error", "--text", "The package " + packageName + " already is already registered and exists in " + packageLocation])
+        subprocess.check_call(["zenity", "--error", "--title", "Error", "--text", "The module " + packageName + " is already registered and exists here - " + packageLocation])
         return
     if packageName not in cvs_modules2Location:
-        subprocess.check_call(["zenity", "--error", "--title", "Error", "--text", "The package " + packageName + " does not seem to be a CVS module."])
+        subprocess.check_call(["zenity", "--error", "--title", "Error", "--text", "The module " + packageName + " does not seem to be a CVS module."])
         return
     
     CVSpackageLocation = os.path.join(os.environ['CVSROOT'], cvs_modules2Location[packageName])
@@ -547,10 +547,10 @@ def process_options(argv):
             + '"eco initrepo" prompts you for a package name and type and repo location.\n'\
             + 'It then creates a bare git repo in the location specified; it also creates a default .gitignore and cram configuration for your package.\n'\
             + '\n'\
-            + 'eco also supports a command called cvsimport "eco cvsimport" that imports a module from CVS into a git bare repo.\n'\
-            + '"eco cvsimport" prompts you for a package name and type and repo location.\n'\
+            + 'eco also supports a command called cvs2git "eco cvs2git" that imports a module from CVS into a git bare repo.\n'\
+            + '"eco cvs2git" prompts you for a module name and type and repo location.\n'\
             + 'It then creates a bare git repo in the location specified; imports the history from CVS and adds a default .gitignore.\n'\
-            + 'It removes the package from the CVS module list by commenting the definition out.\n'\
+            + 'It comments out the module location in the CVSROOT/modules file; however, it does NOT do a cvs remove of the software from CVS.\n'\
             + '\n'
     version = '%prog 0.1'
     parser = optparse.OptionParser(usage=usage, version=version)
@@ -574,7 +574,7 @@ def process_options(argv):
 
 commands = {
     "initrepo" : initGitBareRepo,
-    "cvsimport" : importFromCVS
+    "cvs2git" : importFromCVS
 }
 
 def main(argv=None):
