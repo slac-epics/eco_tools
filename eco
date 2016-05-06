@@ -312,6 +312,7 @@ def assemble_cvs_inputs_from_term(options):
     if hasattr(options, 'tag') and options.tag:
         cvs_dict['RELEASE'] = options.tag
     else:
+        tags = []
         pathToGitRepo = determinePathToGitRepo(cvs_dict['REPOSITORY'])
         if pathToGitRepo:
             if os.path.exists(os.path.join(pathToGitRepo, "refs", "tags")):
@@ -395,20 +396,31 @@ def checkOutModule(packageName, tag, destinationFolder):
     
     pathToGitRepo = determinePathToGitRepo(packageName)
     if pathToGitRepo:
-        print packageName, "is a git package. Cloning the repository at", pathToGitRepo
-        if os.path.exists(destinationFolder):
-            print "The folder", os.path.abspath(destinationFolder), "already exists. If you intended to update the checkout, please do a git pull to pull in the latest changes."
-            print "Aborting....."
-            sys.exit(1)
-        cmd=['git', 'clone', '--recursive', pathToGitRepo, destinationFolder]
-        print cmd
-        subprocess.check_call(cmd)
-        os.chdir(destinationFolder)
-        if (tag != 'MAIN_TRUNK'):
-            # Do a headless checkout to the specified tag
-            cmd=['git', 'checkout', tag]
+        if pathToGitRepo.startswith("svn:///"):
+            pathToSVNRepo =  pathToGitRepo.replace("svn:///", "file:///")
+            if (tag == 'MAIN_TRUNK'):
+                cmd='svn checkout ' + pathToSVNRepo + ' ' + destinationFolder    
+                print cmd
+            else:
+                cmd='svn checkout --revision ' + tag + ' ' + pathToSVNRepo + ' ' + destinationFolder    
+                print cmd
+            os.system(cmd)
+            os.chdir(destinationFolder)
+        else:
+            print packageName, "is a git package. Cloning the repository at", pathToGitRepo
+            if os.path.exists(destinationFolder):
+                print "The folder", os.path.abspath(destinationFolder), "already exists. If you intended to update the checkout, please do a git pull to pull in the latest changes."
+                print "Aborting....."
+                sys.exit(1)
+            cmd=['git', 'clone', '--recursive', pathToGitRepo, destinationFolder]
             print cmd
             subprocess.check_call(cmd)
+            os.chdir(destinationFolder)
+            if (tag != 'MAIN_TRUNK'):
+                # Do a headless checkout to the specified tag
+                cmd=['git', 'checkout', tag]
+                print cmd
+                subprocess.check_call(cmd)
     else:
         if (tag == 'MAIN_TRUNK'):
             cmd='cvs checkout -P -d ' + destinationFolder + ' ' + packageName    
