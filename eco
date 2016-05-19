@@ -111,6 +111,10 @@ def parseCVSModulesTxt():
     '''Parse the CVS modules file and return a dict of packageName -> location'''
     package2Location = {}
     cvsModulesTxtFile = os.path.join(os.environ['CVSROOT'], 'CVSROOT', 'modules')
+    if not os.path.exists(cvsModulesTxtFile):
+        print "Cannot determine CVS modules from modules file."
+        return package2Location
+    
     with open(cvsModulesTxtFile, 'r') as f:
         lines = f.readlines()
     for line in lines:
