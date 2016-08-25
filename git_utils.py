@@ -3,7 +3,6 @@ Utilities for creating GIT bare repos, importing from CVS and such'''
 
 import os
 import subprocess
-import json
 import fileinput
 
 def determineGitRoot():
@@ -38,23 +37,7 @@ def createGitIgnore():
     with open(".gitignore", "w") as f:
         f.write("\n".join(gitIgnoreLines))
     subprocess.check_call(['git', 'add', '.gitignore'])
-    
-def createCramPackageInfo(packageName, apptype):
-    '''Create .cram/packageinfo'''
-    # Add .cram/packageinfo
-    packageInfo = {}
-    packageInfo['name'] = packageName
-    packageInfo['type'] = apptype
 
-    if not os.path.exists('.cram'):
-        os.makedirs('.cram')
-    packageInfofile = os.path.join('.cram', 'packageinfo')
-    with open(packageInfofile, 'w') as pkginfof:
-        json.dump(packageInfo, pkginfof)
-    
-    subprocess.check_call(['git', 'add', '.cram'])
-    subprocess.check_call(['git', 'add', '.cram/packageinfo'])
-    
 def commitAndPush():
     '''Call git commit and git push'''
     subprocess.check_call(['git', 'commit', '-m', 'Initial commit/import from eco. Added a default .gitignore and other defaults.'])
@@ -66,6 +49,7 @@ def addPackageToEcoModuleList(packageName, gitMasterRepo):
     print "Adding package", packageName, "to eco_modulelist"
     gitModulesTxtFolder = os.path.join(os.environ['TOOLS'], 'eco_modulelist')
     os.chdir(gitModulesTxtFolder)
+    subprocess.check_call(['git', 'pull', '--rebase'])
     with open('modulelist.txt', 'a') as f:
         f.write(packageName + "\t\t\t" + gitMasterRepo+"\n")
     subprocess.check_call(['git', 'add', 'modulelist.txt'])
@@ -73,24 +57,6 @@ def addPackageToEcoModuleList(packageName, gitMasterRepo):
     subprocess.check_call(['git', 'pull', '--rebase'])
     subprocess.check_call(['git', 'push', 'origin', 'master'])
     os.chdir(curDir)
-
-def determineCramAppType():
-    '''Ask the user the cram type of the package'''
-    # Ask the use the package type - Code from cram describe.
-    appTypes = {
-        'HIOC': 'A hard IOC using a st.cmd',
-        'SIOC': 'A soft IOC using a hashbang',
-        'HLA': 'A High level application',
-        'Tools': 'Scripts typically in the tools/scripts folder',
-        'Matlab': 'Matlab applications'
-    }
-    apptype = subprocess.check_output(['zenity', '--width=600', '--height=400',
-                                    '--list',
-                                    '--title', "Choose the type of software application",
-                                    '--column="Type"', '--column="Description"']
-                                    + list(reduce(lambda x, y: x + y, appTypes.items()))
-                                    ).strip()
-    return apptype
 
 def importHistoryFromCVS(tpath, gitMasterRepo, CVSpackageLocation):
     '''Import history into a bare repo using cvs2git. tpath is a precreated temporary folder.''' 
@@ -139,5 +105,9 @@ def removeModuleFromCVS(tpath, packageName, CVSpackageLocation):
     subprocess.check_call(['cvs', 'commit', '-m', 'eco commented out ' + packageName + ' as it was imported into git.'])
     
     os.chdir(curDir)
-    
+
+def createBranchFromTag( tag, branchName ):
+    '''Checkout the tag and create a branch using the tag as a starting point.'''
+    subprocess.check_call(['git', 'checkout', tag])
+    subprocess.check_call(['git', 'checkout', '-b', branchName])
 

@@ -1,0 +1,351 @@
+#!/usr/bin/python
+#
+# Purpose:
+#
+#	This script searches for releases of EPICS modules and reports
+#	which versions are available along with any dependencies.
+#
+#	However, in addition to EPICS modules, this script can show
+#	version information for the following as well:
+#
+#		base					- EPICS base
+#		modules					- All modules
+#		modules/<mod_name>		- Module named mod_name
+#		ioc/common/<ioc_name>	- common IOC named ioc_name
+#		ioc/amo/<ioc_name>		- AMO IOC named ioc_name
+#		ioc/sxr					- All SXR IOC's
+#		screens/edm/xpp			- XPP edm control room screens
+#		screens					- All control room screens
+#		etc.
+#
+#	If a release has a configure/RELEASE file which specifies
+#	BASE_MODULE_VERSION, it's value will be shown as the EPICS base version.
+#
+#	If the --verbose option is selected, all version macros
+#	matching *_MODULE_VERSION in the configure/RELEASE file
+#	will be shown.
+#
+#	Example:
+#		epics-versions -v ioc/common/Leviton
+#	Assuming the following directory is the latest release of ioc/common/Leviton:
+#		$(EPICS_SITE_TOP)/ioc/common/Leviton/R1.1.0
+#	Output would be:
+#		ioc/common/Leviton		R1.1.0		Base	R3.14.9-0.3.0
+#			AUTOSAVE_MODULE_VERSION         = R4.2.1.2-1.2.0
+#			IOCADMIN_MODULE_VERSION         = R2.0.0-1.1.0
+#			GENERALTIME_MODULE_VERSION      = R1.2.2.2-1.0.0
+#			SNMP_MODULE_VERSION             = R1.1.0-1.5.0
+#
+#
+# Copyright 2011,2012 Stanford University
+# Photon Controls and Data Systems
+# Author: Bruce Hill <bhill@slac.stanford.edu>
+#
+# Released under the GPLv2 licence <http://www.gnu.org/licenses/gpl-2.0.html>
+#
+DEF_SVN_REPO		= "file:///afs/slac/g/pcds/vol2/svn/pcds"
+DEF_SVN_STUB		= "epics/trunk"
+DEF_SVN_REL_DIR		= "epics/tags"
+DEF_SVN_EXEC		= "/usr/bin/svn"
+DEF_EPICS_TOP		= "/reg/g/pcds/package/epics/3.14"
+DEF_EPICS_TOP_AFS	= "/afs/slac/g/pcds/package/epics/3.14"
+debugScript			= False
+
+import re
+import sys
+import optparse
+import traceback
+import commands
+import os
+import pprint
+import fileinput
+
+# Create a pretty printer for nicer diagnostics
+pp	= pprint.PrettyPrinter( indent=4 )
+
+# Pre-compile regular expressions for speed
+numberRegExp	= re.compile( r"(\d+)" )
+versionRegExp	= re.compile( r"^\s*([A-Za-z0-9_-]*VERSION)\s*=\s*(\S*)\s*$" )
+
+class ValidateError( Exception ):
+	pass
+
+class svnError( Exception ):
+	pass
+
+def VersionToRelNumber( ver ):
+	relNumber = 0.0
+	try:
+		ver = ver.replace( '-', '.' )
+		ver = ver.replace( '_', '.' )
+		ver = ver.lstrip( 'R' )
+		verNumbers = ver.split( '.' )
+		scale = 1.0
+		for n in verNumbers:
+			m = numberRegExp.search( n )
+			if m and m.group(1):
+				relNumber += float(m.group(1)) / scale
+			scale *= 100.0
+	except:
+		pass
+	if opt.debug:
+		print "VersionToRelNumber: ver %s = %f" % ( ver, relNumber )
+	return relNumber
+
+def ExpandModuleList( arg, opt ):
+	selectedReleases = [ ]
+	# Create the path to the module
+	# If it doesn't exist, try some common prefixes
+	modPath = os.path.join( opt.EPICS_SITE_TOP, arg )
+	if not os.path.isdir( modPath ):
+		modPath = os.path.join( opt.EPICS_SITE_TOP, "modules", arg );
+	if not os.path.isdir( modPath ):
+		modPath = os.path.join( opt.EPICS_SITE_TOP, "screens", arg );
+	if not os.path.isdir( modPath ):
+		modPath = os.path.join( opt.EPICS_SITE_TOP, "screens", "edm", arg );
+	if not os.path.isdir( modPath ):
+		modPath = os.path.join( opt.EPICS_SITE_TOP, "ioc", "common", arg );
+	if not os.path.isdir( modPath ):
+		modPath = os.path.join( opt.EPICS_SITE_TOP, "ioc", "amo", arg );
+	if not os.path.isdir( modPath ):
+		modPath = os.path.join( opt.EPICS_SITE_TOP, "ioc", "sxr", arg );
+	if not os.path.isdir( modPath ):
+		modPath = os.path.join( opt.EPICS_SITE_TOP, "ioc", "xpp", arg );
+	if not os.path.isdir( modPath ):
+		modPath = os.path.join( opt.EPICS_SITE_TOP, "ioc", "cxi", arg );
+	if not os.path.isdir( modPath ):
+		modPath = os.path.join( opt.EPICS_SITE_TOP, "ioc", "mec", arg );
+	if not os.path.isdir( modPath ):
+		modPath = os.path.join( opt.EPICS_SITE_TOP, "ioc", "xcs", arg );
+	if not os.path.isdir( modPath ):
+		modPath = os.path.join( opt.EPICS_SITE_TOP, "ioc", "xrt", arg );
+	if not os.path.isdir( modPath ):
+		modPath = os.path.join( opt.EPICS_SITE_TOP, "ioc", "fee", arg );
+	if not os.path.isdir( modPath ):
+		modPath = os.path.join( opt.EPICS_SITE_TOP, "ioc", "las", arg );
+	if not os.path.isdir( modPath ):
+		modPath = os.path.join( opt.EPICS_SITE_TOP, "ioc", arg );
+
+	# See if this is a screens release
+	screenArg	= False
+	if modPath.startswith( os.path.join( opt.EPICS_SITE_TOP, "screens" ) ):
+		screenArg	= True
+
+	if opt.debug:
+		print "ExpandModulePath: Expanding %s ..." % ( modPath )
+	for dirPath, dirs, files in os.walk( modPath ):
+		if len( dirs ) == 0:
+			continue
+		if '.svn' in dirs:
+			dirs.remove( '.svn' )
+		if 'CVS' in dirs:
+			dirs.remove( 'CVS' )
+
+		# Loop through the directories looking for releases
+		releases = [ ]
+		dirs.sort()
+		for d in dirs[:]:
+			release = os.path.join( dirPath, d )
+			if screenArg:
+				verPath = os.path.join( release, "Makefile" )
+			else:
+				verPath = os.path.join( release, "configure", "RELEASE" )
+
+			if os.path.isfile( verPath ):
+				# For PCDS, only show releases starting with "R"
+				if opt.EPICS_SITE_TOP != DEF_EPICS_TOP or d[0] == 'R':
+					if opt.debug:
+						print "ExpandModulePath: Found ", release
+					releases += [ release ]
+				# Remove from list so we don't search inside the release
+				dirs.remove( d )
+
+		if len( releases ) == 0:
+			continue;
+
+		# Create the release set so we can order the releases by version number
+		releaseSet	= { }
+		for release in releases:
+			( reldir, ver ) = os.path.split( release )
+			relNumber = VersionToRelNumber( ver )
+			while relNumber in releaseSet:
+				relNumber -= 1e-12
+			releaseSet[ relNumber ] = release
+
+		#if opt.debug:
+		#	print "ExpandModulePath Module Releases: "
+		#	pp.pprint( releaseSet )
+
+		for release in sorted( releaseSet.keys(), reverse = True ):
+			selectedReleases += [ releaseSet[ release ] ]
+
+	if opt.debug:
+		print "ExpandModulePath Selected Releases: "
+		pp.pprint( selectedReleases )
+	return selectedReleases
+
+def ReportReleases( module, releases, opt ):
+	if opt.debug:
+		print "ReportReleases: ", module
+	found = False
+	prior = None
+	for release in releases:
+		reported = ReportRelease( release, prior, opt )
+		if reported != None:
+			found = True
+			prior = reported
+	return found
+
+def ReportRelease( release, prior, opt ):
+
+	# Get the module and version from the release string
+	( relPath, ver ) = os.path.split( release )
+	module = relPath.replace( opt.EPICS_SITE_TOP, "" )
+	module = module.lstrip( "/" )
+	if opt.debug:
+		print "ReportRelease: ", module, prior
+	if module == prior and not opt.showAll:
+		return None
+
+	dependents		= {}
+	if not module.startswith( "screens" ):
+		# Get the base and dependent modules from configure/RELEASE
+		configRelease	= os.path.join( release, "configure", "RELEASE" )
+		for line in	fileinput.input( configRelease ):
+			m = versionRegExp.search( line )
+			if m and m.group(1) and m.group(2):
+				dependents[ m.group(1) ] = m.group(2)
+
+	baseVer = ""
+	if "BASE_MODULE_VERSION" in dependents:
+		# See if they've restricted output to a specific base version
+		if opt.base and opt.base != dependents[ "BASE_MODULE_VERSION" ]:
+			return None
+		if opt.wide:
+			baseVer = " BASE=" + dependents[ "BASE_MODULE_VERSION" ]
+		else:
+			baseVer = "%-14s = %s" % ( "BASE", dependents[ "BASE_MODULE_VERSION" ] )
+
+	# Print the module and version, along with base version if any
+	print "%-28s %-14s %s" % ( module, ver, baseVer ),
+	if not opt.wide:
+		print
+
+	# Show dependents for --verbose
+	if opt.verbose:
+		# Don't repeat the base version
+		if "BASE_MODULE_VERSION" in dependents:
+			del dependents[ "BASE_MODULE_VERSION" ]
+		for dep in sorted( dependents.keys() ):
+			# Print dependent info w/o newline (trailing ,)
+			depRoot = dep.replace( "_MODULE_VERSION", "" )
+			if opt.wide:
+				# Don't print newline in wide mode 
+				print " %s=%s" % ( depRoot, dependents[ dep ] ),
+			else:
+				print "%-28s %-14s %-14s = %s" % ( "", "", depRoot, dependents[ dep ] )
+
+	if opt.wide:
+		print
+	return module
+
+# Entry point of the script. This is main()
+try:
+	parser = optparse.OptionParser( description	= "Report on available module versions and dependencies",
+									usage = "usage: %prog [options] MODULE ...\n"
+											"\tMODULE can be one or more of:\n"
+											"\t\tbase\n"
+											"\t\tmodules\n"
+											"\t\tmodules/<MODULE_NAME>\n"
+											"\t\tioc\n"
+											"\t\tioc/<hutch>\n"
+											"\t\tioc/<hutch>/<IOC_NAME>\n"
+											"\t\tscreens/edm/<hutch>\n"
+											"\t\tetc ...\n"
+											"\tEx: %prog ioc/xpp\n"
+											"\tFor help: %prog --help" )
+	parser.set_defaults(	verbose		= False,
+							revision	= "HEAD",
+							debug		= debugScript )
+
+	parser.add_option(	"-a", "--all", dest="showAll", action="store_true",
+						help="display all revisions of each module" )
+
+	parser.add_option(	"-v", "--verbose", dest="verbose", action="store_true",
+						help="show dependent modules" )
+
+	parser.add_option(	"-d", "--debug", dest="debug", action="store_true",
+						help="display more info for debugging script" )
+
+	parser.add_option(	"-b", "--base",
+						help="Restrict output to modules for specified base version\n"
+							 "ex. --base=R3.14.9-0.3.0" )
+
+	parser.add_option(	"-w", "--wide", dest="wide", action="store_true",
+						help="Wide output, all module info on one line\n"	)
+
+	parser.add_option(	"--top", dest="EPICS_SITE_TOP", metavar="TOP",
+						default=DEF_EPICS_TOP,
+						help="Top of local EPICS release area\n"
+							 "ex. --top=/reg/g/pcds/package/epics/3.14" )
+
+	# Future options
+	# TODO: Allow browsing for versions in svn repository
+	#add_option(	"", "--revision", dest="revision",
+	#					help="specify svn revision, defaults to %default"	)
+	#add_option(	"-b", "--branch", dest="branch",
+	#					help="svn branch to release, "
+	#						"ex. $REPO/epics/branch/bugFix/ioc/cam/R0.2.1" )
+	#add_option(	"--repo", "SVN repository address."
+	#add_option(	"--prefix", "path to the root of the release area"
+
+	# Parse the command line arguments
+	( opt, args ) = parser.parse_args()
+
+	# Make sure we have a valid EPICS_SITE_TOP
+	if os.path.isdir( DEF_EPICS_TOP ):
+		opt.EPICS_SITE_TOP = DEF_EPICS_TOP
+	else:
+		opt.EPICS_SITE_TOP = DEF_EPICS_TOP_AFS
+
+	# validate the arglist
+	if not args or not args[0]:
+		raise ValidateError, "No valid modules specified."
+
+	for module in args:
+		releases	= ExpandModuleList( module, opt )
+
+		# validate the module specification
+		if not releases or not releases[0]:
+			raise ValidateError, "Invalid module:" + module
+
+		# Report all releases for this module
+		if not ReportReleases( module, releases, opt ):
+			print "%s: No releases found matching specification.\n" % module
+
+	# All done!
+	sys.exit(0)
+
+except ValidateError:
+	print "Error: %s\n" % sys.exc_value 
+	parser.print_usage()
+	sys.exit(6)
+
+except svnError:
+	print "\nsvn FAILURE"
+	print "%s\n" % sys.exc_value 
+	print "Please copy script output and notify someone appropriate"
+	sys.exit(4)
+
+except KeyboardInterrupt:
+	print "\nERROR: interrupted by user."
+	sys.exit(2)
+
+except SystemExit:
+	raise
+
+except:
+	if debugScript:
+		traceback.print_tb(sys.exc_traceback)
+	print "%s exited with ERROR:\n%s\n" % ( sys.argv[0], sys.exc_value )
+	sys.exit( 1 )
