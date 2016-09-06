@@ -29,12 +29,6 @@ def importBranchTo( repo, parentBranch, srcBranch, srcBranchEnd=None, mergePoint
     if mergePoints is None or len(mergePoints.keys()) == 0:
         raise Exception( 'Must provide at least one merge point!' )
  
-    for key in mergePoints.keys():
-        if not repo.is_ancestor( key, srcBranch ):
-            raise Exception( 'Merge point %.7s is not on branch %s!' % ( key, srcBranch ) )
-        if not repo.is_ancestor( mergePoints[key].hexsha, parentBranch ):
-            raise Exception( 'Parent commit %.7s is not on branch %s!' % ( mergePoints[key].hexsha, parentBranch ) )
-
     srcCommits = list( repo.iter_commits(srcBranch) )
     initial = srcCommits[-1].hexsha
     if not initial in mergePoints:
@@ -134,8 +128,7 @@ if __name__ == '__main__':
             print 'Merge point %.7s is not on branch %s!' % ( mergeCommit.hexsha, args.srcBranch )
             sys.exit(1)
         if not gitRepo.is_ancestor( mergeParent.hexsha, args.parentBranch ):
-            print 'Parent commit %.7s is not on parent branch %s!' % ( mergeParent.hexsha, args.parentBranch )
-            sys.exit(1)
+            print 'Warning, parent commit %.7s is not on parent branch %s!' % ( mergeParent.hexsha, args.parentBranch )
         mergePoints[ mergeCommit.hexsha ] = mergeParent
 
     # Hack for testing
