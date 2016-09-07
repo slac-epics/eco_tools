@@ -5,6 +5,20 @@ import os
 import subprocess
 import fileinput
 
+import gc
+
+from cvs2svn_lib.git_run_options import GitRunOptions
+from cvs2svn_lib.context import Ctx
+from cvs2svn_lib.pass_manager import PassManager
+from cvs2svn_lib.passes import passes
+from cvs2svn_lib.main import main
+from cvs2svn_lib.symbol_strategy import ExcludeTrivialImportBranchRule
+from cvs2svn_lib.symbol_strategy import UnambiguousUsageRule
+from cvs2svn_lib.symbol_strategy import BranchIfCommitsRule
+from cvs2svn_lib.symbol_strategy import HeuristicStrategyRule
+from cvs2svn_lib.symbol_strategy import AllBranchRule
+from cvs2svn_lib.symbol_strategy import HeuristicPreferredParentRule
+
 def determineGitRoot():
     '''Get the root folder for GIT repos at SLAC'''
     gitRoot = "/afs/slac/g/cd/swe/git/repos/"
@@ -58,20 +72,64 @@ def addPackageToEcoModuleList(packageName, gitMasterRepo):
     subprocess.check_call(['git', 'push', 'origin', 'master'])
     os.chdir(curDir)
 
-def importHistoryFromCVS(tpath, gitMasterRepo, CVSpackageLocation):
-    '''Import history into a bare repo using cvs2git. tpath is a precreated temporary folder.''' 
+def importHistoryFromCVS(tpath, gitRepo, CVSpackageLocation):
+    '''Import history into a git repo using cvs2git. tpath is a precreated temporary folder.''' 
     curDir = os.getcwd()
     os.chdir(tpath)
     os.mkdir("cvs2git-tmp")
-    if not os.path.exists(os.path.join(os.environ['TOOLS'], "cvs2git", "current", "cvs2git")):
-        raise Exception("Cannot find cvs2git in ${TOOLS} " + gitMasterRepo)
-    subprocess.check_call([os.path.join(os.environ['TOOLS'], "cvs2git", "current", "cvs2git"),
-                           "--blobfile=cvs2git-tmp/git-blob.dat", 
-                           "--dumpfile=cvs2git-tmp/git-dump.dat", 
-                           "--username=cvs2git",
-                           CVSpackageLocation])
+
+    #cvs2git_path = os.path.join(os.environ['TOOLS'], "cvs2git", "current", "cvs2git")
+    #if not os.path.exists( cvs2git_path ):
+    #   raise Exception("Cannot find cvs2git in " + cvs2git_path)
+    # Note: can't use --options option to read author info from a cvs2git options
+    # file along w/ a cmd line CVSpackageLocation as cvs2git does not support that combo.
+    #subprocess.check_call([ cvs2git_path,
+    #                      "--blobfile=cvs2git-tmp/git-blob.dat", 
+    #                      "--dumpfile=cvs2git-tmp/git-dump.dat", 
+    #                      "--username=cvs2git",
+    #   "--options=%s" % os.path.join(os.environ['TOOLS'], "cvs2git", "current", "cvs2git-slac.options"),
+    #                      CVSpackageLocation])
+    
+    # Here's an alternative to using cmd line cvs2git by directly invoking
+    # the cvs2git python classes that supports author info
+    pass_manager = PassManager(passes)
+ 
+    # Read SLAC cvs2git options file for author info
+    # This maps cvs userid to git style user name and email
+    # The options file also specifies:
+    #	blobfile		cvs2git-tmp/git-blob.dat
+    #	dumpfile		cvs2git-tmp/git-dump.dat
+    #	username		cvs2git
+    run_options = GitRunOptions( 'cvs2git', [
+                        "--options=%s" % os.path.join( os.environ['TOOLS'],
+                            "cvs2git", "current", "cvs2git-slac.options"), ], pass_manager )
+ 
+    # Set project location and strategy
+    run_options.set_project(
+            CVSpackageLocation,
+            symbol_transforms=run_options.options.symbol_transforms,
+            symbol_strategy_rules=[
+                ExcludeTrivialImportBranchRule(),
+                UnambiguousUsageRule(),
+                BranchIfCommitsRule(),
+                HeuristicStrategyRule(),
+                HeuristicPreferredParentRule() ] )
+
+    # Run cvs2git conversion
+    main( 'cvs2git', run_options, pass_manager )
+
+    # Re-enable garbage collection
+    gc.enable()
+
     cvsgitdumppath = os.path.abspath(tpath)
-    os.chdir(gitMasterRepo)
+
+    # If a gitRepo wasn't provided, create a new bare repo
+    if gitRepo is None:
+        gitRepo = os.path.join( repoParentDir, module+".git")
+    if not os.path.exists(gitRepo):
+        gitRepo = initBareRepo( repoParentDir, module )
+    os.chdir(gitRepo)
+
     # Use Python Pipes to import CVS dump into GIT
     p1 = subprocess.Popen(['cat', os.path.join(cvsgitdumppath, "cvs2git-tmp", "git-blob.dat"), os.path.join(cvsgitdumppath, "cvs2git-tmp", "git-dump.dat")], stdout=subprocess.PIPE)
     p2 = subprocess.Popen(['git', 'fast-import'], stdin=p1.stdout)

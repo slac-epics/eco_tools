@@ -13,11 +13,9 @@ def importModule( module ):
     CVSpackageLocation = os.path.join( os.environ['CVSROOT'], 'epics/site/src', module )
     print "Importing CVS module %s from %s" % ( module, CVSpackageLocation )
  
-    # Create a bare repo to load the CVS history into
-    gitRepo = initBareRepo( defaultModulesDir, module )
-
+    # Import the CVS history using a tmp folder
     tpath = tempfile.mkdtemp()
-    importHistoryFromCVS(tpath, gitRepo, CVSpackageLocation)
+    importHistoryFromCVS(tpath, None, CVSpackageLocation)
     shutil.rmtree(tpath)
 
 if __name__ == '__main__':
