@@ -15,7 +15,7 @@ def importModule( module ):
  
     # Import the CVS history using a tmp folder
     tpath = tempfile.mkdtemp()
-    importHistoryFromCVS(tpath, None, CVSpackageLocation)
+    importHistoryFromCVS(tpath, None, CVSpackageLocation, modulesDir=defaultModulesDir, module=module )
     shutil.rmtree(tpath)
 
 if __name__ == '__main__':

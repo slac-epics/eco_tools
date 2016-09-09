@@ -72,7 +72,7 @@ def addPackageToEcoModuleList(packageName, gitMasterRepo):
     subprocess.check_call(['git', 'push', 'origin', 'master'])
     os.chdir(curDir)
 
-def importHistoryFromCVS(tpath, gitRepo, CVSpackageLocation):
+def importHistoryFromCVS(tpath, gitRepo, CVSpackageLocation, modulesDir=None, module=None):
     '''Import history into a git repo using cvs2git. tpath is a precreated temporary folder.''' 
     curDir = os.getcwd()
     os.chdir(tpath)
@@ -125,9 +125,9 @@ def importHistoryFromCVS(tpath, gitRepo, CVSpackageLocation):
 
     # If a gitRepo wasn't provided, create a new bare repo
     if gitRepo is None:
-        gitRepo = os.path.join( repoParentDir, module+".git")
+        gitRepo = os.path.join( modulesDir, module+".git")
     if not os.path.exists(gitRepo):
-        gitRepo = initBareRepo( repoParentDir, module )
+        gitRepo = initBareRepo( modulesDir, module )
     os.chdir(gitRepo)
 
     # Use Python Pipes to import CVS dump into GIT
