@@ -24,6 +24,12 @@ if __name__ == '__main__':
     parser.add_argument( '-m', '--module', action='append', required=True, help='CVS module name to import.' )
 
     args = parser.parse_args( )
+
+    # TODO: Need to do a better job of handling differences in LCLS vs PCDS env
+    if 'TOOLS' not in os.environ:
+        if os.path.exists( '/afs/slac/g/lcls/tools' ):
+            os.environ['TOOLS'] = '/afs/slac/g/lcls/tools'
+
     for m in args.module:
         importModule( m )
 

@@ -596,6 +596,12 @@ commands = {
 
 def main(argv=None):
     options = process_options(argv)
+
+	# TODO: Need to do a better job of handling differences in LCLS vs PCDS env
+	if 'TOOLS' not in os.environ:
+		if os.path.exists( '/afs/slac/g/lcls/tools' )
+			os.environ['TOOLS'] = '/afs/slac/g/lcls/tools' 
+
     if not validate_environment_settings():
         return -1
     if (options.input_file_path):
