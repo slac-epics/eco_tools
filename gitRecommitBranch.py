@@ -71,13 +71,13 @@ def importBranchTo( repo, parentBranch, srcBranch, srcBranchEnd=None, mergePoint
                 print ")"
 
         if commit.author_tz_offset < 0:
-            author_date	= "%d -%04d" % ( commit.authored_date,  -commit.author_tz_offset	  )
+            author_date	= "%d -%04d" % ( commit.authored_date,  -commit.author_tz_offset/3600	  )
         else:
-            author_date	= "%d +%04d" % ( commit.authored_date,	commit.author_tz_offset	  )
+            author_date	= "%d +%04d" % ( commit.authored_date,	commit.author_tz_offset/3600	  )
         if commit.committer_tz_offset < 0:
-            commit_date	= "%d -%04d" % ( commit.committed_date, -commit.committer_tz_offset )
+            commit_date	= "%d -%04d" % ( commit.committed_date, -commit.committer_tz_offset/3600 )
         else:
-            commit_date	= "%d +%04d" % ( commit.committed_date,	commit.committer_tz_offset )
+            commit_date	= "%d +%04d" % ( commit.committed_date,	commit.committer_tz_offset/3600 )
         newCommit	= Commit.create_from_tree( repo, repo.tree(commit.tree), commit.message,
                         parent_commits=parents,
                         author=commit.author,		author_date=author_date,
@@ -87,14 +87,20 @@ def importBranchTo( repo, parentBranch, srcBranch, srcBranchEnd=None, mergePoint
 
         # Remap any tags from the old commit to the new one
         for tagRef in tags:
-            if ( tagRef.commit != commit and
-               ( tagRef.commit.parents is None or tagRef.commit.parents[0] != commit ) ):
+            #if ( tagRef.commit != commit and
+            #   ( tagRef.commit.parents is None or
+            #	 len(tagRef.commit.parents) == 0 or
+            #	 tagRef.commit.parents[0].tree != commit.tree ) ):
+            #	continue
+            if tagRef.commit.tree != commit.tree:
                 continue
+            #print "tag %s: %s %.7s" % ( tagRef.name, tagRef.commit.message, tagRef.commit.hexsha )
+            #print "commit %s %.7s" % ( commit.message, commit.hexsha )
             if tagRef.tag is not None:
                 if tagRef.tag.tagger_tz_offset < 0:
-                    committer_date	= "%d -%04d" % ( tagRef.tag.tagged_date, -tagRef.tag.tagger_tz_offset )
+                    committer_date	= "%d -%04d" % ( tagRef.tag.tagged_date, -tagRef.tag.tagger_tz_offset/3600 )
                 else:
-                    committer_date	= "%d +%04d" % ( tagRef.tag.tagged_date,  tagRef.tag.tagger_tz_offset )
+                    committer_date	= "%d +%04d" % ( tagRef.tag.tagged_date,  tagRef.tag.tagger_tz_offset/3600 )
                 with gitRepo.git.custom_environment( GIT_COMMITTER_DATE  = "%s" % committer_date,
                                                      GIT_COMMITTER_EMAIL = "%s" % tagRef.tag.tagger.email,
                                                      GIT_COMMITTER_NAME  = "%s" % tagRef.tag.tagger.name ):

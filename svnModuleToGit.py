@@ -6,6 +6,7 @@ import os.path
 import re
 import shutil
 import tempfile
+import subprocess
 from git_utils import *
 
 svnRepoEnvVar		= 'CTRL_REPO'
