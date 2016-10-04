@@ -1,6 +1,25 @@
-#!/usr/bin/python
-# This script release an EPICS package into the release area.
-# It is written to work on an SVN repository.
+#!/usr/bin/env python
+import re
+import sys
+import shutil
+import optparse
+import traceback
+import tempfile
+import commands
+import stat
+import os
+import subprocess
+from git_utils import *
+from svn_utils import *
+from Releaser  import *
+from svnReleaser  import *
+
+# This script releases an EPICS package into the release area.
+# It is written to support the following version control repositories:
+#	PCDS SVN repository
+#	LCLS CVS repository
+#   SLAC git repositories under /afs/slac/g/cd/swe/git/repos
+#
 # Packages include the following:
 #	base				- EPICS base
 #	extensions			- EPICS extensions
@@ -21,7 +40,7 @@
 #	Checkout the release version to the release area
 #	Build the release version in the release area
 #
-# Copyright 2010,2011,2012,2014 Stanford University
+# Copyright 2010,2011,2012,2014,2015,2016 Stanford University
 # Author: Bruce Hill <bhill@slac.stanford.edu>
 #
 # TODO: Branch releases working, but could use more testing w/ different variations
@@ -29,378 +48,30 @@
 #
 # Released under the GPLv2 licence <http://www.gnu.org/licenses/gpl-2.0.html>
 #
-DEF_SVN_REPO		= "file:///afs/slac/g/pcds/vol2/svn/pcds"
-DEF_SVN_STUB1		= "epics/trunk"
-DEF_SVN_STUB2		= "trunk/pcds/epics"
-DEF_SVN_REL_DIR		= "epics/tags"
-DEF_SVN_EXEC		= "/usr/bin/svn"
-DEF_EPICS_TOP		= "/reg/g/pcds/package/epics/3.14"
+DEF_CVS_REPO		= "/afs/slac/g/lcls/cvs"
+DEF_GIT_REPOS		= "/afs/slac/g/cd/swe/git/repos"
+#DEF_GIT_REPOS		= "git@code.stanford.edu:slac-epics"
+
+DEF_CVS_MODULES		= DEF_CVS_REPO  + "/epics/site/src"
+DEF_GIT_MODULES		= DEF_GIT_REPOS + "/package/pcds/epics/modules"
+#DEF_GIT_MODULES	= DEF_GIT_REPOS
+
+DEF_EPICS_TOP_PCDS	= "/reg/g/pcds/package/epics/3.14"
+DEF_EPICS_TOP_LCLS	= "/afs/slac/g/lcls/epics"
 DEF_EPICS_TOP_AFS	= "/afs/slac/g/pcds/package/epics/3.14"
-DEF_GROUP_OWNER		= "ps-pcds"
+DEF_LCLS_GROUP_OWNER= "lcls"
+DEF_PCDS_GROUP_OWNER= "ps-pcds"
 debugScript			= False
-
-import re
-import sys
-import shutil
-import optparse
-import traceback
-import tempfile
-import commands
-import stat
-import os
-import subprocess
-
-class BuildError( Exception ):
-	pass
-
-class ValidateError( Exception ):
-	pass
-
-class svnError( Exception ):
-	pass
-
-class InstallError( Exception ):
-	pass
-
-class Releaser(object):
-	def __init__( self ):
-		self._package	= ""
-		self._version	= ""
-		self._retcode	= 0
-		self._svnExec	= DEF_SVN_EXEC
-		self._svnStub1	= DEF_SVN_STUB1
-		self._svnStub2	= DEF_SVN_STUB2
-		self._svnRepo	= DEF_SVN_REPO
-		self._prefix	= defaultEpicsSiteTop
-		self._grpowner	= DEF_GROUP_OWNER
-		self._svnRelDir	= DEF_SVN_REL_DIR
-		self._svnReleaseTag	= None
-		# Create a directory where files will be checked-out
-		self._tmpDir	= tempfile.mktemp("-epics-release")
-
-	def __del__( self ):
-		self.DoCleanup( 0 )
-
-	def DoCleanup( self, errCode = 0 ):
-		self._retcode = errCode
-		if self._opt.debug and self._retcode != 0:
-			traceback.print_tb(sys.exc_traceback)
-			print "%s exited with return code %d." % (sys.argv[0], retcode)
-
-		if self._opt.keeptmp:
-			if os.path.exists(self._tmpDir):
-				print "\n--keeptmp flag set. Remove the tmp build directory manually:"
-				print "\t%s" % (self._tmpDir)
-		else:
-			if self._opt.verbose:
-				print "Cleaning up temporary files ..."
-			sys.stdout.flush()
-			try:
-				sys.stdout.flush()
-				if os.path.exists(self._tmpDir):
-					if self._opt.verbose:
-						print "rm -rf", self._tmpDir
-					shutil.rmtree( self._tmpDir )
-			except:
-				print "failed:\n%s." % (sys.exc_value)
-				print "\nCould not remove the following directories, remove them manually:"
-				if os.path.exists(self._tmpDir):
-					print "\t%s" % (self._tmpDir)
-
-	def svnGetWorkingBranch( self ):
-		try:
-			svnInfo = self.execute( "%s info ." % ( self._svnExec ))
-			for line in svnInfo.splitlines():
-				if line is None:
-					return None
-				if line.startswith( "URL:" ):
-					curBranch = line.split()[1]
-					( curHead, curTail ) = os.path.split( curBranch )
-					return curBranch
-		except RuntimeError:
-			return None
-
-	def svnPathExists( self, svnPath, revision=None ):
-		try:
-			if revision:
-				contents = self.execute( "%s ls %s@%s" % ( self._svnExec, svnPath, revision))
-			else:
-				contents = self.execute( "%s ls %s" % ( self._svnExec, svnPath ) )
-			return True
-		except RuntimeError:
-			return False
-
-	def ValidateArgs( self ):
-		# validate the svn package spec
-		if not self.svnPathExists( self._svnRepo ):
-			raise ValidateError, "Cannot access SVN repository %s" % (self._svnRepo)
-
-		# validate the module specification
-		if self._package and "current" in self._package[0]:
-			raise ValidateError, "The module specification must not contain \"current\": %s" % (self._package[0])
-
-		# See if we're in a package directory
-		defaultPackage	= None
-		workingBranch	= self.svnGetWorkingBranch()
-		if workingBranch:
-			if self._opt.debug:
-				print "workingBranch:", workingBranch
-			branchHead	= workingBranch
-			defStub1	= os.path.join( self._svnRepo, self._svnStub1 )
-			defStub2	= os.path.join( self._svnRepo, self._svnStub2 )
-			while branchHead != "":
-				( branchHead, branchTail ) = os.path.split( branchHead )
-				if	defaultPackage is None:
-					# The first tail must be "current"
-					if branchTail != "current":
-						break
-					defaultPackage = ""
-					continue
-				# Prepend the tail to the defaultPackage
-				if	len(defaultPackage) == 0:
-					defaultPackage = branchTail
-				else:
-					defaultPackage = os.path.join( branchTail, defaultPackage )
-
-				# See if we're done
-				if branchHead == defStub1:
-					break
-				if branchHead == defStub2:
-					break
-				if branchHead == "":
-					defaultPackage = ""
-			if self._opt.debug:
-				print "defaultPackage:", defaultPackage
-
-		# If we have a defaultPackage from the working directory,
-		# Check it against the other otions
-		if defaultPackage:
-			if not self._package or not self._package[0]:
-				self._package = [ defaultPackage ]
-
-		# Determine the release package SVN URL
-		if not self._opt.branch:
-			if not self._package or not self._package[0]:
-				raise ValidateError, "No release package specified"
-			if len( self._package ) > 1:
-				raise ValidateError, "Multiple  release packages specified: %s" % (self._package)
-			if workingBranch:
-				self._opt.branch = workingBranch
-			else:
-				self._opt.branch = os.path.join(	self._svnRepo, self._svnStub2,
-													self._package[0], "current"	)
-				if not self.svnPathExists( self._opt.branch, self._opt.revision ):
-					self._opt.branch = os.path.join(self._svnRepo, self._svnStub1,
-													self._package[0], "current"	)
-
-		# Make sure the release package exists
-		if not self.svnPathExists( self._opt.branch, self._opt.revision ):
-			raise ValidateError, "Invalid svn branch at rev %s\n\t%s" % (	self._opt.revision,
-																			self._opt.branch )
-
-		# validate release tag
-		if not self._opt.release:
-			raise ValidateError, "Release tag not specified (--release)"
-		if not re.match( r"(R\d+(\.\d+)+-\d+\.\d+\.\d+)|(R\d+\.\d+\.\d+)", self._opt.release ):
-			raise ValidateError, "%s is an invalid release tag: Must be R[<orig_release>-]<major>.<minor>.<bugfix>" % self._opt.release
-		if not self._svnReleaseTag:
-			if not self._package or not self._package[0]:
-				raise ValidateError, "No release package specified"
-			self._svnReleaseTag = os.path.join(	self._svnRepo, self._svnRelDir,
-												self._package[0], self._opt.release	)
-
-		if self._opt.noTag == False and self.svnPathExists( self._svnReleaseTag ):
-			raise ValidateError, "SVN release tag already exists: %s" % ( self._svnReleaseTag )
-#		try:
-#			if self.svnPathExists( self._svnReleaseTag ):
-#				raise ValidateError, "SVN release tag already exists: %s" % ( self._svnReleaseTag )
-#		except:
-#			pass
-#		else:
-#			raise ValidateError, "SVN release tag already exists: %s" % ( self._svnReleaseTag )
-
-		# validate release directory
-		if not os.path.exists(self._prefix):
-			raise ValidateError, "Invalid release directory %s" % ( self._prefix )
-		if not self._opt.installDir:
-			if not self._package or not self._package[0]:
-				raise ValidateError, "No release package specified"
-			self._opt.installDir = os.path.join(self._prefix,
-												self._package[0], self._opt.release	)
-
-		# validate release message
-		if not self._opt.message:
-			if self._opt.noMsg:
-				self._opt.message = ""
-			else:
-				print "Please enter a release comment (end w/ ctrl-d on blank line):"
-				comment = ""
-				try:
-					while True:
-						line = raw_input()
-						comment = "\n".join( [ comment, line ] ) 
-				except EOFError:
-					self._opt.message = comment
-
-		if self._opt.message is None:
-				raise ValidateError, "Release message not specified (-m)"
-
-		if workingBranch:
-			# Check release branch vs working dir branch
-			if self._opt.branch != workingBranch:
-				print "Release branch: %s\nWorking branch: %s" % ( self._opt.branch, workingBranch )
-				if not self._opt.batch:
-					confirmResp = raw_input( 'Release branch does not match working dir.  Proceed (Y/n)?' )
-					if len(confirmResp) != 0 and confirmResp != "Y" and confirmResp != "y":
-						branchMsg = "Branch mismatch!\n"
-						raise ValidateError, branchMsg
-
-		# validate self._grpowner	= DEF_GROUP_OWNER
-		if self._opt.debug:
-			print "ValidateArgs: Success"
-			print "  svnrepo:    %s" % self._svnRepo
-			print "  branch:     %s" % self._opt.branch
-			print "  release:    %s" % self._opt.release
-			print "  tag:        %s" % self._svnReleaseTag
-			print "  installDir: %s" % self._opt.installDir
-			print "  message:    %s" % self._opt.message
-
-	def execute( self, cmd, outputPipe = subprocess.PIPE ):
-		if self._opt.verbose:
-			print "EXEC: %s" % ( cmd )
-		proc = subprocess.Popen( cmd, shell = True, executable = "/bin/bash",
-								stdout = outputPipe, stderr = outputPipe )
-		(proc_stdout, proc_stderr) = proc.communicate( )
-		if self._opt.debug:
-			print "process returned", proc.returncode
-		if proc.returncode != 0:
-			errMsg = "Command Failed: %s\n" % ( cmd )
-			if proc_stdout:
-				errMsg += proc_stdout
-			if proc_stderr:
-				errMsg += proc_stderr
-			errMsg += "Return Code: %d\n" % ( proc.returncode )
-			raise RuntimeError, errMsg
-		return proc_stdout
-
-	def RemoveBuild( self, buildDir ):
-		print "\nRemoving build dir: %s ..." % ( buildDir )
-		if rel._opt.dryRun:
-			return
-
-		# Make sure we can write to the build directory
-		try:
-			self.execute("chmod -R u+w %s" % ( buildDir ))
-		except OSError:
-			raise BuildError, "Cannot make build dir writeable: %s" % ( buildDir )
-		except RuntimeError:
-			raise BuildError, "Build dir not found: %s" % ( buildDir )
-		try:
-			self.execute("/bin/rm -rf %s" % ( buildDir ))
-		except OSError:
-			raise BuildError, "Cannot remove build dir: %s" % ( buildDir )
-		except RuntimeError:
-			raise BuildError, "Build dir not found: %s" % ( buildDir )
-		print "Successfully removed build dir: %s ..." % ( buildDir )
-
-	def BuildRelease( self, buildBranch, buildDir ):
-		os.environ["EPICS_SITE_TOP"] = self._prefix
-		if not os.path.exists( buildDir ):
-			try:
-				if self._opt.debug:
-					print "mkdir -p",	buildDir
-				os.makedirs( buildDir, 0775 )
-			except OSError:
-				raise BuildError, "Cannot create build dir: %s" % ( buildDir )
-
-		# Make sure we can write to the build directory
-		try:
-			self.execute("chmod -R u+w %s" % ( buildDir ))
-		except OSError:
-			raise BuildError, "Cannot make build dir writeable: %s" % ( buildDir )
-
-		if self._opt.verbose:
-			print "Checking out: %s\nto build dir: %s ..." % ( buildBranch, buildDir )
-		outputPipe = None
-		if self._opt.quiet:
-			outputPipe = subprocess.PIPE
-		try:
-			self.execute( "%s co %s %s" % ( self._svnExec, buildBranch, buildDir ), outputPipe )
-		except RuntimeError:
-			raise BuildError, "BuildRelease: svn co failed for %s %s" % ( buildBranch, buildDir )
-
-		try:
-			print "Building Release in %s ..." % ( buildDir )
-			buildOutput = self.execute( "make -C %s" % buildDir, outputPipe )
-			if self._opt.debug:
-				print "BuildRelease: SUCCESS"
-		except RuntimeError, e:
-			print e
-			raise BuildError, "BuildRelease: FAILED"
-
-	def svnMakeDir( self, svnDir ):
-		try:
-			if self._svnRepo == svnDir:
-				return
-			if self.svnPathExists( svnDir ):
-				return
-			print "Creating SVN dir:", svnDir
-			self.execute( "%s mkdir --parents %s -m \"Creating release directory\"" % ( self._svnExec, svnDir ) )
-		except:
-			raise svnError, "Error: svnMakeDir %s\n%s" % ( svnDir, sys.exc_value )
-
-	def DoTestBuild( self ):
-		try:
-			self.BuildRelease( self._opt.branch, self._tmpDir )
-			self.DoCleanup()
-		except BuildError:
-			self.DoCleanup()
-			raise
-
-	def RemoveTag( self ):
-		print "\nRemoving %s release tag %s ..." % ( self._package[0], self._opt.release )
-		if rel._opt.dryRun:
-			return
-		self.svnMakeDir( os.path.split( self._svnReleaseTag )[0] )
-		svnRmTagCmd = "%s rm %s" % ( self._svnExec, self._svnReleaseTag ) 
-		self.execute( '%s -m "Removing unwanted tag %s for %s"' % ( svnRmTagCmd,
-							self._opt.release, self._package[0] ) ) 
-		print "Successfully removed %s release tag %s." % ( self._package[0], self._opt.release )
-
-	def TagRelease( self ):
-		if self._opt.verbose:
-			print "Tagging release ..."
-		self.svnMakeDir( os.path.split( self._svnReleaseTag )[0] )
-		svnTagCmd = "%s cp %s %s" % ( self._svnExec, self._opt.branch, self._svnReleaseTag ) 
-		self.execute( '%s -m "Release %s/%s: %s\n%s"' % (	svnTagCmd,
-															self._package[0],	self._opt.release,
-															self._opt.message,	svnTagCmd ) ) 
-
-	def InstallPackage( self ):
-		self.BuildRelease( self._svnReleaseTag, self._opt.installDir )
-
-		print "Fixing permissions ...",
-		sys.stdout.flush()
-		try:
-			groups = self.execute("id")
-			if re.search( groups, self._grpowner ):
-				self.execute("chgrp -R %s %s" % ( self._grpowner, self._opt.installDir ))
-			self.execute("chmod -R ugo-w %s" % ( self._opt.installDir ))
-			print "done"
-		except:
-			print "failed.\nERROR: %s." % ( sys.exc_value )
-
-		print "Package %s version %s released." % ( self._package[0], self._opt.release )
 
 
 # Entry point of the script. This is main()
 try:
 	# Make sure we have a valid EPICS_SITE_TOP
-	defaultEpicsSiteTop = DEF_EPICS_TOP 
+	defaultEpicsSiteTop = DEF_EPICS_TOP_LCLS 
 	if not os.path.isdir( defaultEpicsSiteTop ):
 		defaultEpicsSiteTop = DEF_EPICS_TOP_AFS
 	if not os.path.isdir( defaultEpicsSiteTop ):
-		raise ValidateError, ( "Can't find EPICS_SITE_TOP at %s" % DEF_EPICS_TOP )
+		raise ValidateError, ( "Can't find EPICS_SITE_TOP at %s" % defaultEpicsSiteTop )
 
 	parser = optparse.OptionParser( usage="usage: %prog [options] [ <module> ] -r <release> -m \"My release comments\"\n\tEx: %prog ioc/xpp/vacuum -r R0.1.0 -m \"Adding baratron gauge\"\n\tFor help: %prog --help" )
 	parser.set_defaults(	verbose		= False,
@@ -417,9 +88,9 @@ try:
 	parser.add_option(	"-v", "--verbose", dest="verbose", action="store_true",
 						help="show commands as they are executed" )
 	parser.add_option(	"-q", "--quiet", dest="quiet", action="store_true",
-						help="do not show build or svn checkout output" )
+						help="do not show build or checkout output" )
 	parser.add_option(	"", "--revision", dest="revision",
-						help="specify svn revision, defaults to %default"	)
+						help="specify revision or branch, defaults to %default"	)
 	parser.add_option(	"", "--noMsg", dest="noMsg", action="store_true",
 						help="do not include a release message"	)
 	parser.add_option(	"-n", "--noTag", dest="noTag", action="store_true",
@@ -427,7 +98,7 @@ try:
 	parser.add_option(	"", "--notag", dest="noTag", action="store_true",
 						help="do not tag, just rebuild an existing release"	)
 	parser.add_option(	"-b", "--branch", dest="branch",
-						help="svn branch to release, "
+						help="branch to release, "
 							"ex. $REPO/epics/branch/bugFix/ioc/cam/R0.2.1" )
 	parser.add_option(	"-i", "--install", dest="installDir",
 						help="install directory, "
@@ -435,7 +106,7 @@ try:
 	parser.add_option(	"-d", "--debug", dest="debug", action="store_true",
 						help="display more info for debugging script" )
 	parser.add_option(	"", "--dryRun", dest="dryRun", action="store_true",
-						help="Do test build but no svn tag or install" )
+						help="Do test build but no tag or install" )
 	parser.add_option(	"", "--noTestBuild", dest="noTestBuild", action="store_true",
 						help="Skip test build" )
 	parser.add_option(	"", "--rmBuild", dest="rmBuild", action="store_true",
@@ -452,18 +123,33 @@ try:
 	parser.add_option(	"",	  "--batch", dest="batch", action="store_true",
 						help="do not prompt for confirmation" )
 	# Future options
-	#add_option( "--repo", "SVN repository address."
+	#add_option( "--repo", "repository address."
 	#add_option( "--prefix", "path to the root of the release area"
 
 	# Parse the command line arguments
 	( opt, args ) = parser.parse_args()
 
-	# Create a release handler
-	rel	= Releaser( )
+	# See if this is an svn working dir
+	( svn_url, svn_branch, svn_tag ) = svnGetWorkingBranch()
+	if opt.debug:
+		print "svn_url:    %s" % svn_url
+		print "svn_branch: %s" % svn_branch
+		print "svn_tag:    %s" % svn_tag
 
-	# Handle the options
-	rel._opt = opt
-	rel._package = args
+	# See if this is a git working dir
+	( git_url, git_branch, git_tag ) = gitGetWorkingBranch()
+	if opt.debug:
+		print "git_url:    %s" % git_url
+		print "git_branch: %s" % git_branch
+		print "git_tag:    %s" % git_tag
+
+	rel = None
+	if git_url:
+		# Create a git release handler
+		rel	= gitReleaser( opt, args )
+	elif svn_url:
+		# Create an svn release handler
+		rel	= svnReleaser( opt, args )
 
 	# If removing old release, don't build or tag
 	if	rel._opt.nukeRelease:
@@ -493,7 +179,7 @@ try:
 		else:
 			print "installDir:  %s"	% rel._opt.installDir
 		if rel._opt.rmTag:
-			print "rm svn tag:  %s" % ( rel._svnReleaseTag )
+			print "rm tag:  %s" % ( rel._ReleaseTag )
 		confirmResp = raw_input( 'Proceed (Y/n)?' )
 		if len(confirmResp) != 0 and confirmResp != "Y" and confirmResp != "y":
 			sys.exit(0)
@@ -530,7 +216,7 @@ try:
 	if not rel._opt.noTestBuild:
 		rel.DoTestBuild()
 
-	# SVN release tag
+	# release tag
 	if not rel._opt.noTag:
 		rel.TagRelease( )
 
