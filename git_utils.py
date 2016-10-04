@@ -19,13 +19,51 @@ from cvs2svn_lib.symbol_strategy import HeuristicStrategyRule
 from cvs2svn_lib.symbol_strategy import AllBranchRule
 from cvs2svn_lib.symbol_strategy import HeuristicPreferredParentRule
 
-def determineGitRoot():
+def determineGitRoot( ):
     '''Get the root folder for GIT repos at SLAC'''
     gitRoot = "/afs/slac/g/cd/swe/git/repos/"
     # The GIT_REPO_ROOT variable is mainly used when testing eco and is not something that we really expect from the environment.
     if "GIT_REPO_ROOT" in os.environ:
         gitRoot = os.environ["GIT_REPO_ROOT"]
     return gitRoot
+
+def gitGetWorkingBranch( debug = False, verbose = False ):
+    '''See if the current directory is the top of an git working directory.
+    Returns a 3-tuple of [ url, branch, tag ], [ None, None, None ] on error.
+    For a valid git working dir, url must be a valid string, branch is the branch name,
+    and tag is either None or a tag name if HEAD refers to a tag name.'''
+    git_url    = None
+    git_branch = None
+    git_tag    = None
+    try:
+        gitInfo = subprocess.check_output( [ 'git', 'status' ] )
+        lines = gitInfo.splitlines()
+        if len(lines) > 0 and lines[0].startswith( '# On branch ' ):
+            git_branch = lines[0].split()[3]
+
+        gitInfo = subprocess.check_output( [ 'git', 'remote', '-v' ] )
+        for line in gitInfo.splitlines():
+            if line is None:
+                break
+            tokens = line.split()
+            if tokens[0] == 'origin':
+                git_url = tokens[1]
+                break
+
+        gitInfo = subprocess.check_output( [ 'git', 'name-rev', '--name-only', '--tags', 'HEAD' ] )
+        lines = gitInfo.splitlines()
+        if len(lines) > 0:
+            git_tag = lines[0].split('^')[0]
+
+    except OSError, e:
+        if debug or verbose:
+            print e
+        pass
+    except subprocess.CalledProcessError, e:
+        if debug or verbose:
+            print e
+        pass
+    return ( git_url, git_branch, git_tag )
 
 def initBareRepo(parentFolder, packageName):
     gitMasterRepo = os.path.join(parentFolder, packageName+".git")
