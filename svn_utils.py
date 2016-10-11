@@ -36,9 +36,11 @@ def svnGetWorkingBranch( ):
 def svnPathExists( svnPath, revision=None ):
     try:
         if revision:
-            contents = subprocess.check_output( [ 'svn', 'ls', '%s@%s' % ( svnPath, revision) ] )
+            contents = subprocess.check_output( [ 'svn', 'ls', '%s@%s' % ( svnPath, revision) ], stderr = subprocess.STDOUT )
         else:
-            contents = subprocess.check_output( [ 'svn', 'ls', svnPath ] )
+            contents = subprocess.check_output( [ 'svn', 'ls', svnPath ], stderr = subprocess.STDOUT )
         return True
     except RuntimeError:
+        return False
+    except subprocess.CalledProcessError:
         return False

@@ -36,12 +36,12 @@ def gitGetWorkingBranch( debug = False, verbose = False ):
     git_branch = None
     git_tag    = None
     try:
-        gitInfo = subprocess.check_output( [ 'git', 'status' ] )
+        gitInfo = subprocess.check_output( [ 'git', 'status' ], stderr=subprocess.STDOUT )
         lines = gitInfo.splitlines()
         if len(lines) > 0 and lines[0].startswith( '# On branch ' ):
             git_branch = lines[0].split()[3]
 
-        gitInfo = subprocess.check_output( [ 'git', 'remote', '-v' ] )
+        gitInfo = subprocess.check_output( [ 'git', 'remote', '-v' ], stderr=subprocess.STDOUT )
         for line in gitInfo.splitlines():
             if line is None:
                 break
@@ -50,7 +50,7 @@ def gitGetWorkingBranch( debug = False, verbose = False ):
                 git_url = tokens[1]
                 break
 
-        gitInfo = subprocess.check_output( [ 'git', 'name-rev', '--name-only', '--tags', 'HEAD' ] )
+        gitInfo = subprocess.check_output( [ 'git', 'name-rev', '--name-only', '--tags', 'HEAD' ], stderr=subprocess.STDOUT )
         lines = gitInfo.splitlines()
         if len(lines) > 0:
             git_tag = lines[0].split('^')[0]
