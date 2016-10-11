@@ -79,6 +79,13 @@ import readline
 import shutil
 import tempfile
 import json
+
+# TODO: Need to do a better job of handling differences in LCLS vs PCDS env
+if 'TOOLS' not in os.environ:
+    if os.path.exists( '/afs/slac/g/lcls/tools' ):
+        os.environ['TOOLS'] = '/afs/slac/g/lcls/tools' 
+sys.path.append( "%s/cvs2git/current" % os.environ['TOOLS'] )
+
 from cram_utils import *
 from git_utils import *
 
@@ -359,12 +366,19 @@ def assemble_cvs_inputs_from_term(options):
         readline.set_completer()
         readline.parse_and_bind('tab: self-insert')
 
-    destinationFolder = cvs_dict['RELEASE']
+    packageName = cvs_dict['REPOSITORY']
+    tagName     = cvs_dict['RELEASE']
+
     if options.destination:
-        destinationFolder = options.destination
-    print 'Using ' + cvs_dict['RELEASE'] + '. The name of the directory will be ' + destinationFolder + '.'
-    
-    checkOutModule(cvs_dict['REPOSITORY'], cvs_dict['RELEASE'], destinationFolder)
+        destinationPath = options.destination
+    else:
+        ( parent_dir, folder_name ) = os.path.split( os.getcwd() )
+        if folder_name == packageName:
+            destinationPath = tagName
+        else:
+            destinationPath = os.path.join( packageName, tagName )
+
+    checkOutModule( packageName, tagName, destinationPath )
 
 # Determine the package and tag to checkout
 def assemble_cvs_inputs_from_file(repo, rel):
@@ -375,52 +389,59 @@ def assemble_cvs_inputs_from_file(repo, rel):
 
     if cvs_dict['RELEASE'] == "" or cvs_dict['RELEASE'] == 'HEAD':
         cvs_dict['RELEASE'] = 'MAIN_TRUNK'
-    print 'Using ' + cvs_dict['RELEASE'] + '. The name of the directory will be \'MAIN TRUNK\'.'
 
-    # TO DO: does directory cvs_dict['REPOSITORY'] exist?
+    packageName = cvs_dict['REPOSITORY']
+    tagName     = cvs_dict['RELEASE']
 
-    if os.path.exists(cvs_dict['REPOSITORY']):
-        print 'directory exists, just change directory there to do the checkout'
+    ( parent_dir, folder_name ) = os.path.split( os.getcwd() )
+    if folder_name == packageName:
+        destinationPath = tagName
     else:
-        #os.mkdir(path[, mode]) add mode if you want...
-        os.mkdir(cvs_dict['REPOSITORY'])
+        destinationPath = os.path.join( packageName, tagName )
 
-    checkOutModule(cvs_dict['REPOSITORY'], cvs_dict['RELEASE'], cvs_dict['RELEASE'])
-    
-def checkOutModule(packageName, tag, destinationFolder):
+    checkOutModule( packageName, tagName, destinationPath )
+ 
+def checkOutModule(packageName, tag, destinationPath):
     '''Checkout the module from GIT/CVS. 
     We first check to see if GIT has the module; if so, we clone the repo from git and do a headless checkout for the selected tag.
     Otherwise, we issue a command to CVS.
     '''
-    if os.path.exists(packageName):
-        print 'directory exists, just change directory there to do the checkout'
-    else:
-        os.mkdir(packageName)
 
-    os.chdir(packageName)
-    
+    print "Checkout %s, tag %s, to directory %s" % ( packageName, tag, destinationPath )
+    confirmResp = raw_input( 'Proceed (Y/n)?' )
+    if len(confirmResp) != 0 and confirmResp != "Y" and confirmResp != "y":
+        print "Aborting....."
+        sys.exit(0)
+
+    if os.path.exists(destinationPath):
+        print 'Directory already exists!  Aborting.....'
+        sys.exit(0)
+
+    parent_dir = os.path.dirname( destinationPath )
+    if len(parent_dir) > 0 and parent_dir != '.' and not os.path.exists(parent_dir):
+        os.makedirs(parent_dir)
+
     pathToGitRepo = determinePathToGitRepo(packageName)
     if pathToGitRepo:
         if pathToGitRepo.startswith("svn:///"):
             pathToSVNRepo =  pathToGitRepo.replace("svn:///", "file:///")
-            if (tag == 'MAIN_TRUNK'):
-                cmd='svn checkout ' + pathToSVNRepo + ' ' + destinationFolder    
-                print cmd
+            if ( tag == 'MAIN_TRUNK' or tag == 'current' ):
+                cmd=[ 'svn', 'checkout', pathToSVNRepo, destinationPath ]
             else:
-                cmd='svn checkout --revision ' + tag + ' ' + pathToSVNRepo + ' ' + destinationFolder    
-                print cmd
-            os.system(cmd)
-            os.chdir(destinationFolder)
-        else:
-            print packageName, "is a git package. Cloning the repository at", pathToGitRepo
-            if os.path.exists(destinationFolder):
-                print "The folder", os.path.abspath(destinationFolder), "already exists. If you intended to update the checkout, please do a git pull to pull in the latest changes."
-                print "Aborting....."
-                sys.exit(1)
-            cmd=['git', 'clone', '--recursive', pathToGitRepo, destinationFolder]
+                cmd=[ 'svn', 'checkout', '--revision', tag, pathToSVNRepo, destinationPath ]
             print cmd
             subprocess.check_call(cmd)
-            os.chdir(destinationFolder)
+            os.chdir(destinationPath)
+        else:
+            print packageName, "is a git package. Cloning the repository at", pathToGitRepo
+            if os.path.exists(destinationPath):
+                print "The folder", os.path.abspath(destinationPath), "already exists. If you intended to update the checkout, please do a git pull to pull in the latest changes."
+                print "Aborting....."
+                sys.exit(1)
+            cmd=['git', 'clone', '--recursive', pathToGitRepo, destinationPath]
+            print cmd
+            subprocess.check_call(cmd)
+            os.chdir(destinationPath)
             if (tag != 'MAIN_TRUNK'):
                 # Do a headless checkout to the specified tag
                 cmd=['git', 'checkout', tag]
@@ -428,13 +449,13 @@ def checkOutModule(packageName, tag, destinationFolder):
                 subprocess.check_call(cmd)
     else:
         if (tag == 'MAIN_TRUNK'):
-            cmd='cvs checkout -P -d ' + destinationFolder + ' ' + packageName    
+            cmd='cvs checkout -P -d ' + destinationPath + ' ' + packageName    
             print cmd
         else:
-            cmd='cvs checkout -P -r '+ tag +' -d '+ destinationFolder +' ' + packageName    
+            cmd='cvs checkout -P -r '+ tag +' -d '+ destinationPath +' ' + packageName    
             print cmd
         os.system(cmd)
-        os.chdir(destinationFolder)
+        os.chdir(destinationPath)
 
 def determinePathToGitRepo(packageName):
     '''If the specified package is stored in GIT, then return the URL to the GIT repo. Otherwise, return None'''
@@ -596,11 +617,6 @@ commands = {
 
 def main(argv=None):
     options = process_options(argv)
-
-	# TODO: Need to do a better job of handling differences in LCLS vs PCDS env
-	if 'TOOLS' not in os.environ:
-		if os.path.exists( '/afs/slac/g/lcls/tools' )
-			os.environ['TOOLS'] = '/afs/slac/g/lcls/tools' 
 
     if not validate_environment_settings():
         return -1
