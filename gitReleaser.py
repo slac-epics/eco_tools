@@ -10,9 +10,9 @@ import os
 import subprocess
 
 import Releaser
-from svn_utils import *
+from git_utils import *
 
-DEF_SVN_REPO		= "file:///afs/slac/g/pcds/vol2/svn/pcds"
+DEF_SVN_REPO		= "file:///afs/slac/g/pcds/vol2/git/pcds"
 DEF_SVN_MODULES		= DEF_SVN_REPO  + "/trunk/pcds/epics/modules"
 DEF_SVN_STUB1		= "epics/trunk"
 DEF_SVN_STUB2		= "trunk/pcds/epics"
@@ -25,19 +25,19 @@ DEF_EPICS_TOP_AFS	= "/afs/slac/g/pcds/package/epics/3.14"
 DEF_LCLS_GROUP_OWNER= "lcls"
 DEF_PCDS_GROUP_OWNER= "ps-pcds"
 
-class svnError( Exception ):
+class gitError( Exception ):
     pass
 
-class svnReleaser( Releaser.Releaser ):
+class gitReleaser( Releaser.Releaser ):
     def __init__( self, opt, args ):
-        super(svnReleaser, self).__init__( opt, args )
+        super(gitReleaser, self).__init__( opt, args )
         self.grpowner	= DEF_PCDS_GROUP_OWNER
         self._version	= ""
         self._retcode	= 0
-        self._svnStub1	= DEF_SVN_STUB1
-        self._svnStub2	= DEF_SVN_STUB2
-        self._svnRepo	= DEF_SVN_REPO
-        self._svnRelDir	= DEF_SVN_REL_DIR
+        self._gitStub1	= DEF_SVN_STUB1
+        self._gitStub2	= DEF_SVN_STUB2
+        self._gitRepo	= DEF_SVN_REPO
+        self._gitRelDir	= DEF_SVN_REL_DIR
         # Make sure we have a valid EPICS_SITE_TOP
         defaultEpicsSiteTop = DEF_EPICS_TOP_LCLS 
         if not os.path.isdir( defaultEpicsSiteTop ):
@@ -53,13 +53,13 @@ class svnReleaser( Releaser.Releaser ):
 
         # See if we're in a package directory
         defaultPackage	= None
-        ( svn_url, svn_branch, svn_tag ) = svnGetWorkingBranch()
-        if svn_url:
+        ( git_url, git_branch, git_tag ) = gitGetWorkingBranch()
+        if git_url:
             if self._opt.debug:
-                print "svn_url:", svn_url
-            branchHead	= svn_url
-            defStub1	= os.path.join( self._svnRepo, self._svnStub1 )
-            defStub2	= os.path.join( self._svnRepo, self._svnStub2 )
+                print "git_url:", git_url
+            branchHead	= git_url
+            defStub1	= os.path.join( self._gitRepo, self._gitStub1 )
+            defStub2	= os.path.join( self._gitRepo, self._gitStub2 )
             while branchHead != "":
                 ( branchHead, branchTail ) = os.path.split( branchHead )
                 if	defaultPackage is None:
@@ -96,18 +96,18 @@ class svnReleaser( Releaser.Releaser ):
                 raise Releaser.ValidateError, "No release package specified"
             if len( self._package ) > 1:
                 raise Releaser.ValidateError, "Multiple  release packages specified: %s" % (self._package)
-            if svn_url:
-                self._opt.branch = svn_url
+            if git_url:
+                self._opt.branch = git_url
             else:
-                self._opt.branch = os.path.join(	self._svnRepo, self._svnStub2,
+                self._opt.branch = os.path.join(	self._gitRepo, self._gitStub2,
                                                     self._package[0], "current"	)
-                if not svnPathExists( self._opt.branch, self._opt.revision ):
-                    self._opt.branch = os.path.join(self._svnRepo, self._svnStub1,
+                if not gitPathExists( self._opt.branch, self._opt.revision ):
+                    self._opt.branch = os.path.join(self._gitRepo, self._gitStub1,
                                                     self._package[0], "current"	)
 
         # Make sure the release package exists
-        if not svnPathExists( self._opt.branch, self._opt.revision ):
-            raise Releaser.ValidateError, "Invalid svn branch at rev %s\n\t%s" % (	self._opt.revision,
+        if not gitPathExists( self._opt.branch, self._opt.revision ):
+            raise Releaser.ValidateError, "Invalid git branch at rev %s\n\t%s" % (	self._opt.revision,
                                                                             self._opt.branch )
 
         # validate release tag
@@ -118,13 +118,13 @@ class svnReleaser( Releaser.Releaser ):
         if not self._ReleaseTag:
             if not self._package or not self._package[0]:
                 raise Releaser.ValidateError, "No release package specified"
-            self._ReleaseTag = os.path.join(	self._svnRepo, self._svnRelDir,
+            self._ReleaseTag = os.path.join(	self._gitRepo, self._gitRelDir,
                                                 self._package[0], self._opt.release	)
 
-        if self._opt.noTag == False and svnPathExists( self._ReleaseTag ):
+        if self._opt.noTag == False and gitPathExists( self._ReleaseTag ):
             raise Releaser.ValidateError, "SVN release tag already exists: %s" % ( self._ReleaseTag )
 #		try:
-#			if svnPathExists( self._ReleaseTag ):
+#			if gitPathExists( self._ReleaseTag ):
 #				raise Releaser.ValidateError, "SVN release tag already exists: %s" % ( self._ReleaseTag )
 #		except:
 #			pass
@@ -157,10 +157,10 @@ class svnReleaser( Releaser.Releaser ):
         if self._opt.message is None:
                 raise Releaser.ValidateError, "Release message not specified (-m)"
 
-        if svn_url:
+        if git_url:
             # Check release branch vs working dir branch
-            if self._opt.branch != svn_url:
-                print "Release branch: %s\nWorking branch: %s" % ( self._opt.branch, svn_url )
+            if self._opt.branch != git_url:
+                print "Release branch: %s\nWorking branch: %s" % ( self._opt.branch, git_url )
                 if not self._opt.batch:
                     confirmResp = raw_input( 'Release branch does not match working dir.  Proceed (Y/n)?' )
                     if len(confirmResp) != 0 and confirmResp != "Y" and confirmResp != "y":
@@ -170,51 +170,51 @@ class svnReleaser( Releaser.Releaser ):
         # validate self._grpowner	= DEF_LCLS_GROUP_OWNER
         if self._opt.debug:
             print "ValidateArgs: Success"
-            print "  svnrepo:    %s" % self._svnRepo
+            print "  gitrepo:    %s" % self._gitRepo
             print "  branch:     %s" % self._opt.branch
             print "  release:    %s" % self._opt.release
             print "  tag:        %s" % self._ReleaseTag
             print "  installDir: %s" % self._opt.installDir
             print "  message:    %s" % self._opt.message
 
-    def CheckoutRelease( self, buildBranch, buildDir ):
+    def CheckoutRelease( buildBranch, buildDir ):
         if self._opt.verbose:
             print "Checking out: %s\nto build dir: %s ..." % ( buildBranch, buildDir )
         outputPipe = None
         if self._opt.quiet:
             outputPipe = subprocess.PIPE
         try:
-            self.execute( "svn co %s %s" % ( buildBranch, buildDir ), outputPipe )
+            self.execute( "git co %s %s" % ( buildBranch, buildDir ), outputPipe )
         except RuntimeError:
-            raise Releaser.BuildError, "BuildRelease: svn co failed for %s %s" % ( buildBranch, buildDir )
+            raise Releaser.BuildError, "BuildRelease: git co failed for %s %s" % ( buildBranch, buildDir )
 
-    def svnMakeDir( self, svnDir ):
+    def gitMakeDir( self, gitDir ):
         try:
-            if self._svnRepo == svnDir:
+            if self._gitRepo == gitDir:
                 return
-            if svnPathExists( svnDir ):
+            if gitPathExists( gitDir ):
                 return
-            print "Creating SVN dir:", svnDir
-            self.execute( "svn mkdir --parents %s -m \"Creating release directory\"" % ( svnDir ) )
+            print "Creating SVN dir:", gitDir
+            self.execute( "git mkdir --parents %s -m \"Creating release directory\"" % ( gitDir ) )
         except:
-            raise svnError, "Error: svnMakeDir %s\n%s" % ( svnDir, sys.exc_value )
+            raise gitError, "Error: gitMakeDir %s\n%s" % ( gitDir, sys.exc_value )
 
     def RemoveTag( self ):
         print "\nRemoving %s release tag %s ..." % ( self._package[0], self._opt.release )
         if rel._opt.dryRun:
             return
-        self.svnMakeDir( os.path.split( self._ReleaseTag )[0] )
-        svnRmTagCmd = "svn rm %s" % ( self._ReleaseTag ) 
-        self.execute( '%s -m "Removing unwanted tag %s for %s"' % ( svnRmTagCmd,
+        self.gitMakeDir( os.path.split( self._ReleaseTag )[0] )
+        gitRmTagCmd = "git rm %s" % ( self._ReleaseTag ) 
+        self.execute( '%s -m "Removing unwanted tag %s for %s"' % ( gitRmTagCmd,
                             self._opt.release, self._package[0] ) ) 
         print "Successfully removed %s release tag %s." % ( self._package[0], self._opt.release )
 
     def TagRelease( self ):
         if self._opt.verbose:
             print "Tagging release ..."
-        self.svnMakeDir( os.path.split( self._ReleaseTag )[0] )
-        svnTagCmd = "svn cp %s %s" % ( self._opt.branch, self._ReleaseTag ) 
-        self.execute( '%s -m "Release %s/%s: %s\n%s"' % (	svnTagCmd,
+        self.gitMakeDir( os.path.split( self._ReleaseTag )[0] )
+        gitTagCmd = "git cp %s %s" % ( self._opt.branch, self._ReleaseTag ) 
+        self.execute( '%s -m "Release %s/%s: %s\n%s"' % (	gitTagCmd,
                                                             self._package[0],	self._opt.release,
-                                                            self._opt.message,	svnTagCmd ) ) 
+                                                            self._opt.message,	gitTagCmd ) ) 
 

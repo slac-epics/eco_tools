@@ -1,6 +1,6 @@
-#import re
+import re
 import sys
-#import shutil
+import shutil
 #import optparse
 #import traceback
 import tempfile
@@ -59,7 +59,7 @@ class Releaser(object):
                 if os.path.exists(self.tmpDir):
                     print "\t%s" % (self.tmpDir)
     
-    def CheckoutRelease( buildBranch, buildDir ):
+    def CheckoutRelease( self, buildBranch, buildDir ):
         print "\nPlease override Releaser.CheckoutRelease() via a version control specific subclass."
         os.sys.exit()
 
@@ -113,7 +113,7 @@ class Releaser(object):
             raise BuildError, "Build dir not found: %s" % ( buildDir )
         print "Successfully removed build dir: %s ..." % ( buildDir )
 
-    def BuildRelease( self, buildBranch, buildDir ):
+    def BuildRelease( self, buildBranch, buildDir, outputPipe = subprocess.PIPE ):
         os.environ["EPICS_SITE_TOP"] = self._prefix
         if not os.path.exists( buildDir ):
             try:
@@ -133,6 +133,9 @@ class Releaser(object):
         self.CheckoutRelease( buildBranch, buildDir )
 
         # Build release
+        outputPipe = None
+        if self._opt.quiet:
+            outputPipe = subprocess.PIPE
         try:
             print "Building Release in %s ..." % ( buildDir )
             buildOutput = self.execute( "make -C %s" % buildDir, outputPipe )
