@@ -1,0 +1,101 @@
+function cvs_and_svn_to_git()
+{
+	cvsModuleToGit.py -m $1
+	svnModuleToGit.py -m $1
+	git clone $GIT_TOP/package/epics/modules/$1.git $1.git
+	cd $1.git
+	git fetch --tags
+	git remote add cvs-origin /afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/modules/from-cvs/$1.git
+	git remote add svn-origin /afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/modules/from-svn/$1.git
+	git fetch cvs-origin master:cvs-history --tags
+	git fetch svn-origin master:svn-history --tags
+}
+
+MergePoints for each module.  -m MergeCommit:Parent
+# NOTE - Don't include minor patches as merge points
+base:
+	master (cvs-MAIN_TRUNK):
+	-p github-3.14 -d lcls-trunk -s cvs-history -m 22abac:R3.14.12 -m fa8a3:R3.14.12.3 -m ac71c:R3.14.12.4
+	pcds-trunk:
+	-p github-3.14 -d pcds-trunk -s svn-history -e 0b48b009 -m 0b48b009:R3.14.11 -m bcba45:R3.14.12 -m e362e6:R3.14.12.2 -m 64e07ff:R3.14.12.3 -m 5db934:R3.14.12.4
+
+asyn:
+	lcls-trunk:	R4-4
+	-m 4f44511ecc:c96df3d999 -m 37defc47fb:R4-23 -m 6cc60240be:R4-25 -m dab7839670:R4-26
+	pcds-trunk:	
+	-m 52ef22554d:R4-10  -m 79c7834139:R4-14 -m 2e4b5a1e5f:R4-21 -m 8ccc85e918:R4-23 -m df240da729:R4-28 -m e1a1176dbe:R4-29 
+
+busy:
+	lcls-trunk:	R1-4
+	-m 94d24bca17:ecd69f7f04
+	pcds-trunk:	R1-3					R1-4					R1-6
+	-m 81bbf0fdcd:c2c82ccc09 -m 593565f84c:ecd69f7f04 -m 5479297463:59213c3bc2
+
+ipac:
+	lcls-trunk:	2.8
+	-m 36cf7cff18:2b3e81e6d0 -m 046341cb7e:2.11
+	pcds-old-trunk:
+	-m 28c8dbf:2.8
+	linux-acromag:
+	-m 7585188:new(Aug 2 08:27:42 2009 +0000)
+	-m 7585188:220422
+	pcds-trunk:
+	-p github-master -d pcds-trunk -m a4bd464634:2.8 -m 232e15:new(R2.8.4-1.0.0) -m R2.11.0-0.5.0:new(R2.11.0-0.1.1) -m f5b60a:linux-acromag
+	-p github-master -d pcds-trunk -m a4bd464634:2.8 -m 232e15:fa7f45            -m R2.11.0-0.5.0:901255f            -m f5b60a:linux-acromag
+
+sscan:
+	lcls-trunk:	SSCAN_2_5_2
+	-s cvs-history -e a9682ff -m a9682ff:R2-5-2 -m 520080a:R2-6-3 -m 9223e72:R2-7 -m e0e2c20:R2-8-1 
+	pcds-trunk:	R2.5.2.3-0.1.0
+	-p github-master -d pcds-trunk -s R2.5.2.3-0.1.0 -m 66dfc0f:sscan-R2-5-2-lcls3
+	-p github-master -d pcds-trunk -s svn-history  -m a867313:sscan-R2-5-2-lcls3 -m 394b04f:R2-6-6 -m f105d05:sscan-R2-7 -m 0a70337:sscan-R2-8-1 
+
+autosave:
+	lcls-trunk: aautosave-R5-5_1-0
+	-p github-master -d lcls-trunk -s cvs-history -m 95d4b:R4-2 -m 4af02:R4-2-1 -m dd369:R4-4 -m c1afe:R4-5 -m 9a0a1:R4-7 -m d1806:R4-8 -m 920df:R5-0 -m 48319:R5-5 
+	pcds-trunk: R5.1-0.4.0
+	-p autosave-R4-2-1-lcls1 -d pcds-old-trunk -s R4.2.1.2-0.1.0 -m 6de1b:autosave-R4-2-1-lcls1
+	-p github-master -d pcds-trunk -s svn-history -m 8b588:R4.2.1.2-0.1.0 -m b334f:R4-4 -m ceeef:R4-5 -m ef3eb:R4-6 -m 93d16:R4-8 -m 863cc:R5-0 -m 3b35:R5-1 -m 5f75e:R5-5 
+
+ADCore:
+	lcls-trunk: ADCore-R2-1_1-0
+	-p github-master -d lcls-trunk -s cvs-history -m 9c1b013:R2-1 
+	pcds-trunk: R2.1-0.5.0
+	-p github-master -d pcds-trunk -s svn-history -m f881a71:R2-0
+
+aravisGigE:
+	lcls-trunk:
+	pcds-trunk: R0.3.5.5-1.1.0
+	-p github-master -d pcds-trunk -s svn-history -e c2adaa -m c2adaa:d9aa26 -m b666:bf622 -m f78c6:bf622 -m 4c57:bf622 -m fedd6:bf622 
+
+ADProsilica:
+	lcls-trunk: ADProsilica-R2-0_1-0
+	-p github-master -d lcls-trunk -s cvs-history -m 79c43:R2-0
+	pcds-trunk: R2.1-0.12.0
+	-p github-master -d pcds-trunk -s svn-history -m 28b0b:R2-0 -m 3d776:R2-1
+
+calc:
+	lcls-trunk:
+	-p github-master -d lcls-trunk -s cvs-history -e a68a78 -m a68a78:R2-6-1
+	pcds-trunk:
+	-p github-master -d pcds-trunk -s svn-history -m b9924a:calc-R2-6-1-lcls3 -m a37d2f9:R3-0 -m c31722f:R3-1 -m50c8589:R3-2
+
+Still needed for ioc/common/gigECam:
+diagTimer
+event
+event2
+evrClient
+ffmpegServer
+iocAdmin
+timeStampFifo
+ADTimeStamp
+ADProfileMonitor
+
+Additional modules needed:
+motor
+pvaPy
+pvaSrv
+pvAccessCPP
+pvCommonCPP
+pvDataCPP
+

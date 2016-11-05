@@ -1,0 +1,16 @@
+BASE_MODULE_VERSION     = R3.14.12.4-1.2
+CONFIG_SITE_TOP         = /afs/slac/g/lcls/epics/config
+PACKAGE_SITE_TOP        = /afs/slac/g/lcls/package
+IOC_SITE_TOP			= /afs/slac/g/lcls/epics/iocTop
+EPICS_SITE_TOP          = /afs/slac/g/lcls/epics/$(BASE_MODULE_VERSION)
+EPICS_BASE              = $(EPICS_SITE_TOP)/base/$(BASE_MODULE_VERSION)
+EPICS_BASE_VER          = $(BASE_MODULE_VERSION)
+EPICS_MODULES           = $(EPICS_SITE_TOP)/modules
+EPICS_HOST_ARCH         = $(shell $(EPICS_BASE)/startup/EpicsHostArch)
+$(info Setting BASE_MODULE_VERSION=$(BASE_MODULE_VERSION) from $(EPICS_MODULES)/RELEASE_SITE)
+
+# Do we need these ?
+#TEMPLATE_TOP	        = $(EPICS_BASE)/templates/makeBaseApp/top
+#TOOLS_SITE_TOP			= /afs/slac/g/lcls/tools
+#ALARM_CONFIGS_TOP		= /afs/slac/g/lcls/tools/AlarmConfigsTop
+
