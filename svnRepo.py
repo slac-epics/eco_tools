@@ -28,9 +28,9 @@ DEF_PCDS_GROUP_OWNER= "ps-pcds"
 class svnError( Exception ):
     pass
 
-class svnReleaser( Releaser.Releaser ):
+class svnRepo( Releaser.Releaser ):
     def __init__( self, opt, args ):
-        super(svnReleaser, self).__init__( opt, args )
+        super(svnRepo, self).__init__( opt, args )
         self.grpowner	= DEF_PCDS_GROUP_OWNER
         self._version	= ""
         self._retcode	= 0

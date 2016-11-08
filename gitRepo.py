@@ -28,9 +28,9 @@ DEF_PCDS_GROUP_OWNER= "ps-pcds"
 class gitError( Exception ):
     pass
 
-class gitReleaser( Releaser.Releaser ):
+class gitRepo( Releaser.Releaser ):
     def __init__( self, opt, args ):
-        super(gitReleaser, self).__init__( opt, args )
+        super(gitRepo, self).__init__( opt, args )
         self.grpowner	= DEF_PCDS_GROUP_OWNER
         self._version	= ""
         self._retcode	= 0
