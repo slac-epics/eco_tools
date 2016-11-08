@@ -1,17 +1,36 @@
 #!/usr/bin/env python
 #==============================================================
 #
-#  Abs:  A tool to checkout an EPICS package and build the 
-#  package's RELEASE_SITE file. RELEASE_SITE is read by
-#  configure/RELEASE to fill in versions of dependent releases
-#  with the aim that no changes to configure/RELEASE are needed 
+#  Abs:  A tool to checkout an EPICS package
+#  Creates a configure/RELEASE.local file if not found to support local builds
 #
-#  Name: eco
+#  configure/RELEASE.local needs to be included from configure/RELEASE if not already
+#  there as it is in many of the new modules versions from the EPICS collaboration.
 #
-#  Facility:  SLAC/LCLS
+#  Also creates a RELEASE_SITE file if needed based on an eco_tools template.
+#  RELEASE_SITE is read by configure/RELEASE.local to define EPICS_BASE and EPICS_MODULES
+#  with the aim that no changes to configure/RELEASE are needed.
+#  Two possible locations for RELEASE_SITE are supported:
+#   Module's will use $TOP/../../RELEASE_SITE if found.  This is the pattern for
+#       our module releases, where $TOP/../.. is the same as the $EPICS_MODULES directory.
+#       Thus all module releases under $EPICS_SITE_TOP/R3.15.0-0.1.0/modules would
+#       share the same RELEASE_SITE defining BASE_MODULE_VERSION as R3.15.0-0.1.0
+#
+#   IOC's will typically add a RELEASE_SITE in $TOP so they can select which version
+#       of base to use.  These IOC RELEASE_SITE files should be added to the repo
+#       so they will get tagged w/ the release tag.
+#
+#   Module developers can also use a $TOP/RELEASE_SITE for standalone module development
+#   but should not add it to the repo so the module can be built against different
+#   versions of BASE.
+#
+#  Name: epics-checkout.py
+#
+#  Facility:  SLAC/LCLS/PCDS
 #
 #  Auth: 29-Nov-2010, Dayle Kotturi       (dayle)
 #  Auth: 04-Nov-2011, Murali Shankar      (mshankar)
+#  Auth: 10-Oct-2016, Bruce Hill          (bhill)
 #  Rev:  dd-mmm-yyyy, Reviewer's Name     (USERNAME)
 #
 #  Requested features to be added:
@@ -29,6 +48,7 @@
 #       for all/subset of iocs in checked out app?s iocBoot
 #
 #--------------------------------------------------------------
+#  For file history, please use the git log
 #  Mod:
 #  09-Dec-2010, Dayle Kotturi
 #    Bring in defaults for each setting from the environmens
@@ -80,16 +100,11 @@ import shutil
 import tempfile
 import json
 
-# TODO: Need to do a better job of handling differences in LCLS vs PCDS env
-if 'TOOLS' not in os.environ:
-    if os.path.exists( '/afs/slac/g/lcls/tools' ):
-        os.environ['TOOLS'] = '/afs/slac/g/lcls/tools' 
-sys.path.append( "%s/cvs2git/current" % os.environ['TOOLS'] )
-
 from cram_utils import *
 from git_utils import *
 
 
+GIT_REPO_MODULES = '/afs/slac/g/cd/swe/git/repos/package/epics/modules'
 
 __all__ = ['export_release_site_file', 'assemble_release_site_inputs_from_file','assemble_cvs_inputs_from_file', 'assemble_release_site_inputs_from_term', 'assemble_cvs_inputs_from_term']
 
@@ -184,13 +199,13 @@ def export_release_site_file(inputs):
     print >> out_file, '# We will build some tools/scripts that allow us to'
     print >> out_file, '# change this easily when relocating software.'
     print >> out_file, '#=============================================================================='
-    print >> out_file, 'EPICS_SITE_TOP=%s'  % inputs['EPICS_SITE_TOP'] 
-    print >> out_file, 'BASE_SITE_TOP=%s' % inputs['BASE_SITE_TOP']
-    print >> out_file, 'MODULES_SITE_TOP=%s' % inputs['MODULES_SITE_TOP']
-    print >> out_file, 'IOC_SITE_TOP=%s' % inputs['IOC_SITE_TOP']
-    print >> out_file, 'EPICS_BASE_VER=%s' % inputs['EPICS_BASE_VER']
-    print >> out_file, 'PACKAGE_SITE_TOP=%s' % inputs['PACKAGE_SITE_TOP']
-    print >> out_file, 'TOOLS_SITE_TOP=%s' % inputs['TOOLS_SITE_TOP']
+    print >> out_file, 'EPICS_SITE_TOP=%s'    % inputs['EPICS_SITE_TOP'] 
+    print >> out_file, 'BASE_SITE_TOP=%s'     % inputs['BASE_SITE_TOP']
+    print >> out_file, 'MODULES_SITE_TOP=%s'  % inputs['MODULES_SITE_TOP']
+    print >> out_file, 'IOC_SITE_TOP=%s'      % inputs['IOC_SITE_TOP']
+    print >> out_file, 'EPICS_BASE_VER=%s'    % inputs['EPICS_BASE_VER']
+    print >> out_file, 'PACKAGE_SITE_TOP=%s'  % inputs['PACKAGE_SITE_TOP']
+    print >> out_file, 'TOOLS_SITE_TOP=%s'    % inputs['TOOLS_SITE_TOP']
     print >> out_file, 'ALARM_CONFIGS_TOP=%s' % inputs['ALARM_CONFIGS_TOP']
     print >> out_file, '#=============================================================================='
     if out_file != sys.stdout:
@@ -200,6 +215,9 @@ def export_release_site_file(inputs):
     os.chdir('../..')
     
 def assemble_release_site_inputs_from_term():
+    if not validate_environment_settings():
+        return -1
+
     input_dict = {}
 
     prompt1 = 'Enter full path for EPICS_SITE_TOP or [RETURN] to use "'+os.getenv('EPICS_TOP')+'">'
@@ -315,24 +333,35 @@ def assemble_cvs_inputs_from_term(options):
 
     while not cvs_dict['REPOSITORY']:
        cvs_dict['REPOSITORY'] = raw_input('Enter name of module/package to checkout: ').strip()
+    packageName = cvs_dict['REPOSITORY']
 
     # Remove completer after we are done...
     readline.set_completer()
     readline.set_completer_delims(" \t\n")
     readline.parse_and_bind('tab: self-insert')
 
+    dirName     = ""
+    tagName     = ""
     if hasattr(options, 'tag') and options.tag:
-        cvs_dict['RELEASE'] = options.tag
+        tagName = options.tag
     else:
         tags = []
-        pathToGitRepo = determinePathToGitRepo(cvs_dict['REPOSITORY'])
+        pathToGitRepo = determinePathToGitRepo( packageName )
+        autoGitPath = False
+        if autoGitPath and not pathToGitRepo:
+            pathToGitRepo = os.path.join( GIT_REPO_MODULES, packageName + '.git' )
+            if not os.path.exists( pathToGitRepo ):
+                pathToGitRepo = None
         if pathToGitRepo:
+            dirName = '%s-git' % packageName
             if os.path.exists(os.path.join(pathToGitRepo, "refs", "tags")):
                 # Determine the list of tags..
                 tags = os.listdir(os.path.join(pathToGitRepo, "refs", "tags"))
             else:
                 print "Git repo at", pathToGitRepo, "does not seem to have any tags"
+    
         else:
+            dirName = 'MAIN_TRUNK'
             p1 = subprocess.Popen(['cvs', '-Q', 'rlog', '-h', cvs_dict['REPOSITORY']], stdout=subprocess.PIPE)
             p2 = subprocess.Popen(['awk', '-F"[.:]"', '/^\t/&&$(NF-1)!=0{print $1}'], stdin=p1.stdout, stdout=subprocess.PIPE)
             p1.stdout.close()  # Allow p1 to receive a SIGPIPE if p2 exits.
@@ -357,28 +386,37 @@ def assemble_cvs_inputs_from_term(options):
             readline.set_completer(tagCompleter)
             readline.set_completer_delims(" \t\n")
             readline.parse_and_bind("tab: complete")
-            
-        prompt1 = 'Enter name of tag or [RETURN] to use HEAD>'
-        cvs_dict['RELEASE'] = raw_input(prompt1).strip()
-        if cvs_dict['RELEASE'] == "":
-            cvs_dict['RELEASE'] = 'MAIN_TRUNK'
+
+        prompt1 = 'Enter name of tag or [RETURN] to create a sandbox named %s>' % dirName
+        tagName = raw_input(prompt1).strip()
+        if  tagName == "" and dirName == 'MAIN_TRUNK':
+            tagName = 'MAIN_TRUNK'
 
         readline.set_completer()
         readline.parse_and_bind('tab: self-insert')
 
-    packageName = cvs_dict['REPOSITORY']
-    tagName     = cvs_dict['RELEASE']
+    if tagName != "":
+        dirName = tagName
+    cvs_dict['RELEASE'] = dirName
 
     if options.destination:
         destinationPath = options.destination
     else:
         ( parent_dir, folder_name ) = os.path.split( os.getcwd() )
         if folder_name == packageName:
-            destinationPath = tagName
+            destinationPath = dirName
         else:
-            destinationPath = os.path.join( packageName, tagName )
+            destinationPath = os.path.join( packageName, dirName )
 
+    curDir = os.getcwd()
     checkOutModule( packageName, tagName, destinationPath )
+
+    # See if we need to create a RELEASE_SITE file
+    if  (   not os.path.isfile( 'RELEASE_SITE' )
+        and not os.path.isfile( os.path.join( '..', '..', 'RELEASE_SITE' ) ) ):
+        inputs = assemble_release_site_inputs_from_term()
+        export_release_site_file(inputs)
+    # os.chdir(curDir)
 
 # Determine the package and tag to checkout
 def assemble_cvs_inputs_from_file(repo, rel):
@@ -399,7 +437,15 @@ def assemble_cvs_inputs_from_file(repo, rel):
     else:
         destinationPath = os.path.join( packageName, tagName )
 
+    curDir = os.getcwd()
     checkOutModule( packageName, tagName, destinationPath )
+
+    # See if we need to create a RELEASE_SITE file
+    if  (   not os.path.isfile( 'RELEASE_SITE' )
+        and not os.path.isfile( os.path.join( '..', '..', 'RELEASE_SITE' ) ) ):
+        inputs = assemble_release_site_inputs_from_file()
+        export_release_site_file(inputs)
+    # os.chdir(curDir)
  
 def checkOutModule(packageName, tag, destinationPath):
     '''Checkout the module from GIT/CVS. 
@@ -407,7 +453,10 @@ def checkOutModule(packageName, tag, destinationPath):
     Otherwise, we issue a command to CVS.
     '''
 
-    print "Checkout %s, tag %s, to directory %s" % ( packageName, tag, destinationPath )
+    if tag == '':
+        print "Checkout %s to sandbox directory %s" % ( packageName, destinationPath )
+    else:
+        print "Checkout %s, tag %s, to directory %s" % ( packageName, tag, destinationPath )
     confirmResp = raw_input( 'Proceed (Y/n)?' )
     if len(confirmResp) != 0 and confirmResp != "Y" and confirmResp != "y":
         print "Aborting....."
@@ -421,7 +470,9 @@ def checkOutModule(packageName, tag, destinationPath):
     if len(parent_dir) > 0 and parent_dir != '.' and not os.path.exists(parent_dir):
         os.makedirs(parent_dir)
 
+    # See if we can find it in with the git repos
     pathToGitRepo = determinePathToGitRepo(packageName)
+
     if pathToGitRepo:
         if pathToGitRepo.startswith("svn:///"):
             pathToSVNRepo =  pathToGitRepo.replace("svn:///", "file:///")
@@ -433,7 +484,7 @@ def checkOutModule(packageName, tag, destinationPath):
             subprocess.check_call(cmd)
             os.chdir(destinationPath)
         else:
-            print packageName, "is a git package. Cloning the repository at", pathToGitRepo
+            print packageName, "is a git package.\nCloning the repository at", pathToGitRepo
             if os.path.exists(destinationPath):
                 print "The folder", os.path.abspath(destinationPath), "already exists. If you intended to update the checkout, please do a git pull to pull in the latest changes."
                 print "Aborting....."
@@ -442,7 +493,7 @@ def checkOutModule(packageName, tag, destinationPath):
             print cmd
             subprocess.check_call(cmd)
             os.chdir(destinationPath)
-            if (tag != 'MAIN_TRUNK'):
+            if (tag != ''):
                 # Do a headless checkout to the specified tag
                 cmd=['git', 'checkout', tag]
                 print cmd
@@ -506,21 +557,21 @@ def initGitBareRepo():
     subprocess.check_call(["zenity", "--info", "--title", "Repo created for " + packageName, "--text", "Done creating bare repo for package " + packageName + ". Use eco to clone this repo into your working directory."])
 
 def importFromCVS():
-    '''Import module from CVS and place into new git repo. Uses ${TOOLS}/cvs2git/current/cvs2git to do the actual importing'''
+    '''Import package from CVS and place into new git repo. Uses ${TOOLS}/cvs2git/current/cvs2git to do the actual importing'''
     gitRoot = determineGitRoot()
     checkCVS2GitPresent()
  
     # Ask the user for the name of the package
-    packageName = subprocess.check_output(["zenity", "--entry", "--title", "Module Name", "--text", "Please enter the name of the module"]).strip()
+    packageName = subprocess.check_output(["zenity", "--entry", "--title", "Package Name", "--text", "Please enter the name of the package"]).strip()
     if packageName in git_package2Location:
-        subprocess.check_call(["zenity", "--error", "--title", "Error", "--text", "The module " + packageName + " is already registered and exists here - " + packageLocation])
+        subprocess.check_call(["zenity", "--error", "--title", "Error", "--text", "The package " + packageName + " is already registered and exists here - " + packageLocation])
         return
     if packageName not in cvs_modules2Location:
-        subprocess.check_call(["zenity", "--error", "--title", "Error", "--text", "The module " + packageName + " does not seem to be a CVS module."])
+        subprocess.check_call(["zenity", "--error", "--title", "Error", "--text", "The package " + packageName + " does not seem to be a CVS package."])
         return
     
     CVSpackageLocation = os.path.join(os.environ['CVSROOT'], cvs_modules2Location[packageName])
-    print "Importing CVS module from ", CVSpackageLocation
+    print "Importing CVS package from ", CVSpackageLocation
     
     # Ask the use where the master repo is to be created
     bareRepoParentFolder = subprocess.check_output(["zenity", "--file-selection", "--title", "Please choose the parent folder where you want to create the master git repo", "--directory", "--filename="+gitRoot]).strip()
@@ -561,9 +612,6 @@ def module_callback(option, opt_str, value, parser):
         print 'Setting tag to ' + parser.rargs[0]
         setattr(parser.values, 'tag', parser.rargs[0])
         parser.rargs.pop(0)
-    else:
-        print 'Defaulting tag to MAIN_TRUNK'
-        setattr(parser.values, 'tag', 'MAIN_TRUNK')
 
 def process_options(argv):
     if argv is None:
@@ -571,21 +619,21 @@ def process_options(argv):
 
     usage = 'Usage: %prog <Command or File_listing_packages_and_tags (one pair per line)>\n'\
             + '\n'\
-            + 'eco is a script that wraps git clone/cvs checkout and does some additional things that make compilation of modules within the EPICS/LCLS environment easier.\n'\
-            + 'The main intent of eco is to get hardcoded paths out of configure/RELEASE.\n'\
-            + 'It generates a file called RELEASE_SITE that contains these hardcoded paths; the configure/RELEASE now instead includes RELEASE_SITE\n'\
+            + 'epics-checkout (eco) is a script that wraps git clone/cvs checkout and does some additional things that make compilation of modules within the EPICS LCLS/PCDS environment easier.\n'\
+            + 'The main intent of epics-checkout is to get hardcoded paths out of configure/RELEASE.\n'\
+            + 'It generates a file called RELEASE_SITE that contains these hardcoded paths; the configure/RELEASE.local now instead includes RELEASE_SITE\n'\
             + '\n'\
-            + 'eco has interactive and batch modes.\n'\
-            + 'To start eco in interactive mode, simply type eco\n'\
+            + 'epics-checkout has interactive and batch modes.\n'\
+            + 'To start epics-checkout in interactive mode, simply type epics-checkout or eco\n'\
             + 'For the batch mode, you can pass in a file containing a list of the modules you want to checkout; for example, eco modulelist.txt.\n'\
             + 'Each line in this file contains the module name and the branch/tag label. \n'\
             + 'For example, a line for the sequencer would have "seq  seq-R2-0-11-lcls4"\n'\
             + '\n'\
-            + 'eco also supports a command called initrepo "eco initrepo" that creates a bare git repository for your package.\n'\
-            + '"eco initrepo" prompts you for a package name and type and repo location.\n'\
+            + 'epics-checkout also supports a command called initrepo "eco initrepo" that creates a bare git repository for your package.\n'\
+            + '"epics-checkout initrepo" prompts you for a package name and type and repo location.\n'\
             + 'It then creates a bare git repo in the location specified; it also creates a default .gitignore and cram configuration for your package.\n'\
             + '\n'\
-            + 'eco also supports a command called cvs2git "eco cvs2git" that imports a module from CVS into a git bare repo.\n'\
+            + 'epics-checkout also supports a command called cvs2git "eco cvs2git" that imports a module from CVS into a git bare repo.\n'\
             + '"eco cvs2git" prompts you for a module name and type and repo location.\n'\
             + 'It then creates a bare git repo in the location specified; imports the history from CVS and adds a default .gitignore.\n'\
             + 'It comments out the module location in the CVSROOT/modules file; however, it does NOT do a cvs remove of the software from CVS.\n'\
@@ -594,7 +642,7 @@ def process_options(argv):
     parser = optparse.OptionParser(usage=usage, version=version)
 
     parser.add_option('-v', '--verbose', action='store_true', dest='verbose', help='print verbose output')
-    parser.add_option('-m', '--module',  action='callback', dest='module', help='CVS module to checkout, optionally add the tag to use instead of MAIN_TRUNK', type='string', callback=module_callback)
+    parser.add_option('-m', '--module',  action='callback', dest='module', help='Module to checkout, optionally add the tag to use', type='string', callback=module_callback)
     parser.add_option('-d', '--destination',  action='store', dest='destination', help='Checkout the package to this folder. Uses cvs -d. For example, eco -d CATER_12345 on MAIN_TRUNK checks out MAIN_TRUNK into a folder called CATER_12345. This option is ignored in batch mode.', type='string')
     # parser.add_option('-t', '--tag',  action='store', dest='tag', help='CVS tag to checkout - defaults to MAIN_TRUNK', type='string', default='MAIN_TRUNK')
 
@@ -618,8 +666,6 @@ commands = {
 def main(argv=None):
     options = process_options(argv)
 
-    if not validate_environment_settings():
-        return -1
     if (options.input_file_path):
         if options.input_file_path in commands:
             commands[options.input_file_path]()
@@ -644,8 +690,6 @@ def main(argv=None):
             print 'value is: ' + value
 
             assemble_cvs_inputs_from_file(key,value)
-            inputs = assemble_release_site_inputs_from_file()
-            export_release_site_file(inputs)
            
             print 'done with ' + line
             # repeat above for all lines in file
@@ -654,8 +698,6 @@ def main(argv=None):
 
     else:
         assemble_cvs_inputs_from_term(options)
-        inputs = assemble_release_site_inputs_from_term()
-        export_release_site_file(inputs)
 
     return 0
     
