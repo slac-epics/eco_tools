@@ -9,6 +9,9 @@ import os
 import pprint
 import signal
 import traceback
+
+from version_utils import *
+
 #
 # Purpose:
 #
@@ -64,10 +67,8 @@ debugScript         = False
 pp  = pprint.PrettyPrinter( indent=4 )
 
 # Pre-compile regular expressions for speed
-numberRegExp        = re.compile( r"(\d+)" )
 baseVersionRegExp   = re.compile( r"^\s*([A-Za-z0-9_-]*BASE[A-Za-z0-9_-]*VER[SION]*)\s*=\s*(\S*)\s*$" )
 versionRegExp       = re.compile( r"^\s*([A-Za-z0-9_-]*VERSION)\s*=\s*(\S*)\s*$" )
-releaseRegExp       = re.compile( r"([^0-9]*)R(\d+)[-_.](\d+)(.*)" )
 parentRegExp        = re.compile( r"RELEASE\s*=\s*(\S*)\s*$" )
 
 class ValidateError( Exception ):
@@ -77,35 +78,6 @@ def debug_signal_handler(signal, frame):
     import pdb
     pdb.set_trace()
 signal.signal(signal.SIGINT, debug_signal_handler)
-
-def VersionToRelNumber( version ):
-    relNumber = 0.0
-    try:
-        ver = version
-        if opt.debug:
-            print "VersionToRelNumber: %s" % ( ver )
-        verMatch = releaseRegExp.search( ver )
-        if verMatch:
-            ver = verMatch.group(2) + '.' + verMatch.group(3) + verMatch.group(4)
-        ver = ver.replace( '-', '.' )
-        ver = ver.replace( '_', '.' )
-        verNumbers = ver.split( '.' )
-        scale = 1.0
-        for n in verNumbers:
-            m = numberRegExp.search( n )
-            if m and m.group(1):
-                relNumber += float(m.group(1)) / scale
-            scale *= 100.0
-    except:
-        pass
-    if opt.debug:
-        print "VersionToRelNumber: %s = %f" % ( version, relNumber )
-    return relNumber
-
-def isReleaseCandidate(release):
-    match = releaseRegExp.search( release )
-    if match:
-        return True
 
 def ExpandModulePath( moduleTop, module, opt ):
     # Create the path to module
