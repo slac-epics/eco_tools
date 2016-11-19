@@ -108,6 +108,11 @@ GIT_REPO_MODULES = '/afs/slac/g/cd/swe/git/repos/package/epics/modules'
 
 __all__ = ['export_release_site_file', 'assemble_release_site_inputs_from_file','assemble_cvs_inputs_from_file', 'assemble_release_site_inputs_from_term', 'assemble_cvs_inputs_from_term']
 
+def getEnv( envVar ):
+    result = os.getenv( envVar )
+    if not result:
+        result = '?'
+    return result
 
 def parseGitModulesTxt():
     '''Parse the GIT modules txt file and return a dict of packageName -> location'''
@@ -215,57 +220,56 @@ def export_release_site_file(inputs):
     os.chdir('../..')
     
 def assemble_release_site_inputs_from_term():
-    if not validate_environment_settings():
-        return -1
+    validate_environment_settings()
 
     input_dict = {}
 
-    prompt1 = 'Enter full path for EPICS_SITE_TOP or [RETURN] to use "'+os.getenv('EPICS_TOP')+'">'
+    prompt1 = 'Enter full path for EPICS_SITE_TOP or [RETURN] to use "'+getEnv('EPICS_TOP')+'">'
     input_dict['EPICS_SITE_TOP'] = raw_input(prompt1).strip()
     if input_dict['EPICS_SITE_TOP'] == "":
-        input_dict['EPICS_SITE_TOP'] = os.getenv('EPICS_TOP') # want something like, for eg, /usr/local/facet/epics    
+        input_dict['EPICS_SITE_TOP'] = getEnv('EPICS_TOP') # want something like, for eg, /usr/local/facet/epics    
     print 'Using ' + input_dict['EPICS_SITE_TOP']
 
-    prompt2 = 'Enter full path for BASE_SITE_TOP or [RETURN] to use "'+os.getenv('EPICS_BASE_TOP')+'">'
+    prompt2 = 'Enter full path for BASE_SITE_TOP or [RETURN] to use "'+getEnv('EPICS_BASE_TOP')+'">'
     input_dict['BASE_SITE_TOP'] = raw_input(prompt2).strip()
     if input_dict['BASE_SITE_TOP'] == "":
-        input_dict['BASE_SITE_TOP'] = os.getenv('EPICS_BASE_TOP') # want something like, for eg,  /usr/local/facet/epics/base
+        input_dict['BASE_SITE_TOP'] = getEnv('EPICS_BASE_TOP') # want something like, for eg,  /usr/local/facet/epics/base
     print 'Using ' + input_dict['BASE_SITE_TOP']
 
-    prompt3 = 'Enter full path for MODULES_SITE_TOP or [RETURN] to use "'+os.getenv('EPICS_MODULES_TOP')+'">'
+    prompt3 = 'Enter full path for MODULES_SITE_TOP or [RETURN] to use "'+getEnv('EPICS_MODULES_TOP')+'">'
     input_dict['MODULES_SITE_TOP'] = raw_input(prompt3).strip()
     if input_dict['MODULES_SITE_TOP'] == "":
-        input_dict['MODULES_SITE_TOP'] = os.getenv('EPICS_MODULES_TOP') # want something like, for eg, /usr/local/facet/epics/modules/R3-14-8-2
+        input_dict['MODULES_SITE_TOP'] = getEnv('EPICS_MODULES_TOP') # want something like, for eg, /usr/local/facet/epics/modules/R3-14-8-2
     print 'Using ' + input_dict['MODULES_SITE_TOP']
 
-    prompt4 = 'Enter full path for IOC_SITE_TOP or [RETURN] to use "'+os.getenv('EPICS_IOC_TOP')+'">'
+    prompt4 = 'Enter full path for IOC_SITE_TOP or [RETURN] to use "'+getEnv('EPICS_IOC_TOP')+'">'
     input_dict['IOC_SITE_TOP'] = raw_input(prompt4).strip()
     if input_dict['IOC_SITE_TOP'] == "":
-        input_dict['IOC_SITE_TOP'] = os.getenv('EPICS_IOC_TOP') # want something like, for eg, /usr/local/facet/epics/iocTop
+        input_dict['IOC_SITE_TOP'] = getEnv('EPICS_IOC_TOP') # want something like, for eg, /usr/local/facet/epics/iocTop
     print 'Using ' + input_dict['IOC_SITE_TOP']
 
-    prompt5 = 'Enter full path for EPICS_BASE_VER or [RETURN] to use "'+os.getenv('EPICS_BASE_VER')+'">'
+    prompt5 = 'Enter full path for EPICS_BASE_VER or [RETURN] to use "'+getEnv('EPICS_BASE_VER')+'">'
     input_dict['EPICS_BASE_VER'] = raw_input(prompt5).strip()
     if input_dict['EPICS_BASE_VER'] == "":
-        input_dict['EPICS_BASE_VER'] = os.getenv('EPICS_BASE_VER') # want something like, for eg, base-R3-14-12
+        input_dict['EPICS_BASE_VER'] = getEnv('EPICS_BASE_VER') # want something like, for eg, base-R3-14-12
     print 'Using ' + input_dict['EPICS_BASE_VER']
 
-    prompt6 = 'Enter full path for PACKAGE_SITE_TOP or [RETURN] to use "'+os.getenv('PACKAGE_TOP')+'">'
+    prompt6 = 'Enter full path for PACKAGE_SITE_TOP or [RETURN] to use "'+getEnv('PACKAGE_TOP')+'">'
     input_dict['PACKAGE_SITE_TOP'] = raw_input(prompt6).strip()
     if input_dict['PACKAGE_SITE_TOP'] == "":
-        input_dict['PACKAGE_SITE_TOP'] = os.getenv('PACKAGE_TOP')
+        input_dict['PACKAGE_SITE_TOP'] = getEnv('PACKAGE_TOP')
     print 'Using ' + input_dict['PACKAGE_SITE_TOP']
 
-    prompt6 = 'Enter full path for TOOLS_SITE_TOP or [RETURN] to use "'+os.getenv('TOOLS')+'">'
+    prompt6 = 'Enter full path for TOOLS_SITE_TOP or [RETURN] to use "'+getEnv('TOOLS')+'">'
     input_dict['TOOLS_SITE_TOP'] = raw_input(prompt6).strip()
     if input_dict['TOOLS_SITE_TOP'] == "":
-        input_dict['TOOLS_SITE_TOP'] = os.getenv('TOOLS')
+        input_dict['TOOLS_SITE_TOP'] = getEnv('TOOLS')
     print 'Using ' + input_dict['TOOLS_SITE_TOP']
 
-    prompt6 = 'Enter full path for ALARM_CONFIGS_TOP or [RETURN] to use "'+os.path.join(os.getenv('TOOLS'), 'AlarmConfigsTop')+'">'
+    prompt6 = 'Enter full path for ALARM_CONFIGS_TOP or [RETURN] to use "'+os.path.join(getEnv('TOOLS'), 'AlarmConfigsTop')+'">'
     input_dict['ALARM_CONFIGS_TOP'] = raw_input(prompt6).strip()
     if input_dict['ALARM_CONFIGS_TOP'] == "":
-        input_dict['ALARM_CONFIGS_TOP'] = os.path.join(os.getenv('TOOLS'), 'AlarmConfigsTop')
+        input_dict['ALARM_CONFIGS_TOP'] = os.path.join(getEnv('TOOLS'), 'AlarmConfigsTop')
     print 'Using ' + input_dict['ALARM_CONFIGS_TOP']
 
     return input_dict
@@ -274,28 +278,28 @@ def assemble_release_site_inputs_from_term():
 def assemble_release_site_inputs_from_file():
     input_dict = {}
 
-    input_dict['EPICS_SITE_TOP'] = os.getenv('EPICS_TOP') # want something like, for eg, /usr/local/facet/epics    
+    input_dict['EPICS_SITE_TOP'] = getEnv('EPICS_TOP') # want something like, for eg, /usr/local/facet/epics    
     print 'Using ' + input_dict['EPICS_SITE_TOP']
 
-    input_dict['BASE_SITE_TOP'] = os.getenv('EPICS_BASE_TOP') # want something like, for eg,  /usr/local/facet/epics/base
+    input_dict['BASE_SITE_TOP'] = getEnv('EPICS_BASE_TOP') # want something like, for eg,  /usr/local/facet/epics/base
     print 'Using ' + input_dict['BASE_SITE_TOP']
 
-    input_dict['MODULES_SITE_TOP'] = os.getenv('EPICS_MODULES_TOP') # want something like, for eg, /usr/local/facet/epics/modules/R3-14-8-2
+    input_dict['MODULES_SITE_TOP'] = getEnv('EPICS_MODULES_TOP') # want something like, for eg, /usr/local/facet/epics/modules/R3-14-8-2
     print 'Using ' + input_dict['MODULES_SITE_TOP']
 
-    input_dict['IOC_SITE_TOP'] = os.getenv('EPICS_IOC_TOP') # want something like, for eg, /usr/local/facet/epics/iocTop
+    input_dict['IOC_SITE_TOP'] = getEnv('EPICS_IOC_TOP') # want something like, for eg, /usr/local/facet/epics/iocTop
     print 'Using ' + input_dict['IOC_SITE_TOP']
 
-    input_dict['EPICS_BASE_VER'] = os.getenv('EPICS_BASE_VER') # want something like, for eg, base-R3-14-12
+    input_dict['EPICS_BASE_VER'] = getEnv('EPICS_BASE_VER') # want something like, for eg, base-R3-14-12
     print 'Using ' + input_dict['EPICS_BASE_VER']
 
-    input_dict['PACKAGE_SITE_TOP'] = os.getenv('PACKAGE_TOP')
+    input_dict['PACKAGE_SITE_TOP'] = getEnv('PACKAGE_TOP')
     print 'Using ' + input_dict['PACKAGE_SITE_TOP']
 
-    input_dict['TOOLS_SITE_TOP'] = os.getenv('TOOLS')
+    input_dict['TOOLS_SITE_TOP'] = getEnv('TOOLS')
     print 'Using ' + input_dict['TOOLS_SITE_TOP']
 
-    input_dict['ALARM_CONFIGS_TOP'] = os.path.join(os.getenv('TOOLS'), 'AlarmConfigsTop')
+    input_dict['ALARM_CONFIGS_TOP'] = os.path.join(getEnv('TOOLS'), 'AlarmConfigsTop')
     print 'Using ' + input_dict['ALARM_CONFIGS_TOP']
 
     return input_dict
@@ -304,11 +308,17 @@ def validate_environment_settings():
     '''We use several environment variables as defaults. This method checks to make sure that these environment variables are set. 
     Its probably better to force the user to set these environment variables than to fight make at a later stage.'''
     needed_env_vars = ['EPICS_TOP', 'EPICS_BASE_TOP', 'EPICS_MODULES_TOP', 'EPICS_IOC_TOP', 'EPICS_BASE_VER', 'PACKAGE_TOP', 'TOOLS']
+    notFound = []
     for needed_env_var in needed_env_vars:
         if needed_env_var not in os.environ:
-            print "The environment variable ", needed_env_var, "has not been defined. Did you remember to source the correct enviromnent script?"
-            return False
-    return True
+            notFound += [ needed_env_var ]
+    if len(notFound) == 0:
+        return True
+    print "WARNING: environment variable(s) not defined:\n   ",
+    for var in notFound:
+        print "%s " % var,
+    print "\nDid you remember to source the correct enviromnent script?"
+    return False
 
 
 # Determine the package and tag to checkout
@@ -498,6 +508,12 @@ def checkOutModule(packageName, tag, destinationPath):
                 cmd=['git', 'checkout', tag]
                 print cmd
                 subprocess.check_call(cmd)
+            #else: TODO Checkout a default branch if one isn't already selected.
+            # 1. current release branch
+            # 2. master
+            # 3. github-master
+            # 4. lcls-trunk
+            # 5. pcds-trunk
     else:
         if (tag == 'MAIN_TRUNK'):
             cmd='cvs checkout -P -d ' + destinationPath + ' ' + packageName    
@@ -510,8 +526,21 @@ def checkOutModule(packageName, tag, destinationPath):
 
 def determinePathToGitRepo(packageName):
     '''If the specified package is stored in GIT, then return the URL to the GIT repo. Otherwise, return None'''
+    # See if the package was listed in $TOOLS/eco_modulelist/modulelist.txt
     if packageName in git_package2Location:
         return git_package2Location[packageName]
+    # Check under the root of the git repo area for a bare repo w/ the right name
+    gitRoot = determineGitRoot()
+    gitPackageDir = packageName + ".git"
+    for dirPath, dirs, files in os.walk( gitRoot, topdown=True ):
+        if len( dirs ) == 0:
+            continue
+        for dir in dirs[:]:
+            if dir == gitPackageDir:
+                return os.path.join( gitRoot, dirPath, dir )
+            if dir.endswith( ".git" ):
+                # Remove from list so we don't search recursively
+                dirs.remove( dir )
     return None
 
 
