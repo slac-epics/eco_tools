@@ -46,43 +46,52 @@ class svnRepo( Releaser.Releaser ):
             raise Releaser.ValidateError, ( "Can't find EPICS_SITE_TOP at %s" % defaultEpicsSiteTop )
         self._prefix	= defaultEpicsSiteTop
 
+    def GetWorkingBranch( self ):
+        return svnGetWorkingBranch()
+
+    def GetDefaultPackage( self, package ):
+        # See if we're in a package directory
+        defaultPackage	= None
+        ( svn_url, svn_branch, svn_tag ) = svnGetWorkingBranch()
+        if not svn_url:
+            print "Current directory is not an svn working dir!"
+            return None
+
+        if self._opt.debug:
+            print "svn_url:", svn_url
+
+        branchHead	= svn_url
+        defStub1	= os.path.join( self._svnRepo, self._svnStub1 )
+        defStub2	= os.path.join( self._svnRepo, self._svnStub2 )
+        while branchHead != "":
+            ( branchHead, branchTail ) = os.path.split( branchHead )
+            if	defaultPackage is None:
+                # The first tail must be "current"
+                if branchTail != "current":
+                    break
+                defaultPackage = ""
+                continue
+            # Prepend the tail to the defaultPackage
+            if	len(defaultPackage) == 0:
+                defaultPackage = branchTail
+            else:
+                defaultPackage = os.path.join( branchTail, defaultPackage )
+
+            # See if we're done
+            if branchHead == defStub1:
+                break
+            if branchHead == defStub2:
+                break
+            if branchHead == "":
+                defaultPackage = ""
+        if self._opt.debug:
+            print "defaultPackage:", defaultPackage
+        return defaultPackage
+
     def ValidateArgs( self ):
         # validate the module specification
         if self._package and "current" in self._package[0]:
             raise Releaser.ValidateError, "The module specification must not contain \"current\": %s" % (self._package[0])
-
-        # See if we're in a package directory
-        defaultPackage	= None
-        ( svn_url, svn_branch, svn_tag ) = svnGetWorkingBranch()
-        if svn_url:
-            if self._opt.debug:
-                print "svn_url:", svn_url
-            branchHead	= svn_url
-            defStub1	= os.path.join( self._svnRepo, self._svnStub1 )
-            defStub2	= os.path.join( self._svnRepo, self._svnStub2 )
-            while branchHead != "":
-                ( branchHead, branchTail ) = os.path.split( branchHead )
-                if	defaultPackage is None:
-                    # The first tail must be "current"
-                    if branchTail != "current":
-                        break
-                    defaultPackage = ""
-                    continue
-                # Prepend the tail to the defaultPackage
-                if	len(defaultPackage) == 0:
-                    defaultPackage = branchTail
-                else:
-                    defaultPackage = os.path.join( branchTail, defaultPackage )
-
-                # See if we're done
-                if branchHead == defStub1:
-                    break
-                if branchHead == defStub2:
-                    break
-                if branchHead == "":
-                    defaultPackage = ""
-            if self._opt.debug:
-                print "defaultPackage:", defaultPackage
 
         # If we have a defaultPackage from the working directory,
         # Check it against the other options

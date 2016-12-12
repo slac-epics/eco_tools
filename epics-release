@@ -11,8 +11,9 @@ import os
 import subprocess
 from git_utils import *
 from svn_utils import *
-from Releaser  import *
-from svnReleaser  import *
+from gitRepo  import *
+from svnRepo  import *
+from Releaser import *
 
 # This script releases an EPICS package into the release area.
 # It is written to support the following version control repositories:
@@ -49,12 +50,8 @@ from svnReleaser  import *
 # Released under the GPLv2 licence <http://www.gnu.org/licenses/gpl-2.0.html>
 #
 DEF_CVS_REPO		= "/afs/slac/g/lcls/cvs"
-DEF_GIT_REPOS		= "/afs/slac/g/cd/swe/git/repos"
-#DEF_GIT_REPOS		= "git@code.stanford.edu:slac-epics"
 
 DEF_CVS_MODULES		= DEF_CVS_REPO  + "/epics/site/src"
-DEF_GIT_MODULES		= DEF_GIT_REPOS + "/package/pcds/epics/modules"
-#DEF_GIT_MODULES	= DEF_GIT_REPOS
 
 DEF_EPICS_TOP_PCDS	= "/reg/g/pcds/package/epics/3.14"
 DEF_EPICS_TOP_LCLS	= "/afs/slac/g/lcls/epics"
@@ -129,27 +126,30 @@ try:
 	# Parse the command line arguments
 	( opt, args ) = parser.parse_args()
 
-	# See if this is an svn working dir
-	( svn_url, svn_branch, svn_tag ) = svnGetWorkingBranch()
-	if opt.debug:
-		print "svn_url:    %s" % svn_url
-		print "svn_branch: %s" % svn_branch
-		print "svn_tag:    %s" % svn_tag
-
 	# See if this is a git working dir
 	( git_url, git_branch, git_tag ) = gitGetWorkingBranch()
-	if opt.debug:
+	if git_url and opt.debug:
 		print "git_url:    %s" % git_url
 		print "git_branch: %s" % git_branch
 		print "git_tag:    %s" % git_tag
 
-	rel = None
+	repo = None
 	if git_url:
 		# Create a git release handler
-		rel	= gitReleaser( opt, args )
-	elif svn_url:
-		# Create an svn release handler
-		rel	= svnReleaser( opt, args )
+		repo = gitRepo( git_url, git_branch, git_tag )
+
+	else:
+		# See if this is an svn working dir
+		( svn_url, svn_branch, svn_tag ) = svnGetWorkingBranch()
+		if svn_url:
+			if opt.debug:
+				print "svn_url:    %s" % svn_url
+				print "svn_branch: %s" % svn_branch
+				print "svn_tag:    %s" % svn_tag
+			# Create an svn release handler
+			repo = svnRepo( svn_url, svn_branch, svn_tag )
+
+	rel = Releaser( repo, opt, args )
 
 	# If removing old release, don't build or tag
 	if	rel._opt.nukeRelease:

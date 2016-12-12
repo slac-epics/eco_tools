@@ -8,6 +8,7 @@ import tempfile
 #import stat
 import os
 import subprocess
+import Repo
 
 class BuildError( Exception ):
     pass
@@ -19,7 +20,8 @@ class InstallError( Exception ):
     pass
 
 class Releaser(object):
-    def __init__( self, opt, args ):
+    def __init__( self, repo, opt, args ):
+        self._repo		= repo
         self._opt		= opt
         self._package	= args
         self._package	= ""
@@ -59,21 +61,121 @@ class Releaser(object):
                 if os.path.exists(self.tmpDir):
                     print "\t%s" % (self.tmpDir)
     
-    def CheckoutRelease( self, buildBranch, buildDir ):
-        print "\nPlease override Releaser.CheckoutRelease() via a version control specific subclass."
-        os.sys.exit()
-
     def RemoveTag( self ):
-        print "\nPlease override Releaser.RemoveTag() via a version control specific subclass."
-        os.sys.exit()
+        return self._repo.RemoveTag( self._package[0], self._opt.release )
     
     def TagRelease( self ):
-        print "\nPlease override Releaser.TagRelease() via a version control specific subclass."
-        os.sys.exit()
+        return self._repo.TagRelease( self._package[0], self._opt.release, self._opt.branch, self._opt.message )
 
     def ValidateArgs( self ):
-        print "\nPlease override Releaser.ValidateArgs() via a version control specific subclass."
-        os.sys.exit()
+        # validate the module specification
+        if self._package and "current" in self._package[0]:
+            raise ValidateError, "The module specification must not contain \"current\": %s" % (self._package[0])
+
+        # See if we're in a package directory
+        defaultPackage	= None
+        ( repo_url, repo_branch, repo_tag ) = self._repo.GetWorkingBranch()
+        if repo_url:
+            if self._opt.debug:
+                print "Releaser.ValidateArgs: repo_url =", repo_url
+                print "Releaser.ValidateArgs: package  =", self._package
+            defaultPackage = self._repo.GetDefaultPackage( self._package )
+
+        if self._opt.debug:
+            print "defaultPackage:", defaultPackage
+
+        # If we have a defaultPackage from the working directory,
+        # Check it against the other options
+        if defaultPackage:
+            if not self._package or not self._package[0]:
+                self._package = [ defaultPackage ]
+
+        # Determine the release package SVN URL
+        if not self._opt.branch:
+            if not self._package or not self._package[0]:
+                raise ValidateError, "No release package specified"
+            if len( self._package ) > 1:
+                raise ValidateError, "Multiple  release packages specified: %s" % (self._package)
+            if repo_url:
+                self._opt.branch = repo_url
+            else:
+                self._opt.branch = os.path.join(	self._repo, self._gitStub2,
+                                                    self._package[0], "current"	)
+                if not gitPathExists( self._opt.branch, self._opt.revision ):
+                    self._opt.branch = os.path.join(self._repo, self._gitStub1,
+                                                    self._package[0], "current"	)
+
+        # Make sure the release package exists
+        if not gitPathExists( self._opt.branch, self._opt.revision ):
+            raise ValidateError, "Invalid git branch at rev %s\n\t%s" % (	self._opt.revision,
+                                                                            self._opt.branch )
+
+        # validate release tag
+        if not self._opt.release:
+            raise ValidateError, "Release tag not specified (--release)"
+        if not re.match( r"(R\d+(\.\d+)+-\d+\.\d+\.\d+)|(R\d+\.\d+\.\d+)", self._opt.release ):
+            raise ValidateError, "%s is an invalid release tag: Must be R[<orig_release>-]<major>.<minor>.<bugfix>" % self._opt.release
+        if not self._ReleaseTag:
+            if not self._package or not self._package[0]:
+                raise ValidateError, "No release package specified"
+            self._ReleaseTag = os.path.join(	self._repo, self._gitRelDir,
+                                                self._package[0], self._opt.release	)
+
+        if self._opt.noTag == False and gitPathExists( self._ReleaseTag ):
+            raise ValidateError, "SVN release tag already exists: %s" % ( self._ReleaseTag )
+#		try:
+#			if gitPathExists( self._ReleaseTag ):
+#				raise ValidateError, "SVN release tag already exists: %s" % ( self._ReleaseTag )
+#		except:
+#			pass
+#		else:
+#			raise ValidateError, "SVN release tag already exists: %s" % ( self._ReleaseTag )
+
+        # validate release directory
+        if not os.path.exists(self._prefix):
+            raise ValidateError, "Invalid release directory %s" % ( self._prefix )
+        if not self._opt.installDir:
+            if not self._package or not self._package[0]:
+                raise ValidateError, "No release package specified"
+            self._opt.installDir = os.path.join(self._prefix,
+                                                self._package[0], self._opt.release	)
+
+        # validate release message
+        if not self._opt.message:
+            if self._opt.noMsg:
+                self._opt.message = ""
+            else:
+                print "Please enter a release comment (end w/ ctrl-d on blank line):"
+                comment = ""
+                try:
+                    while True:
+                        line = raw_input()
+                        comment = "\n".join( [ comment, line ] ) 
+                except EOFError:
+                    self._opt.message = comment
+
+        if self._opt.message is None:
+                raise ValidateError, "Release message not specified (-m)"
+
+        if repo_url:
+            # Check release branch vs working dir branch
+            if self._opt.branch != repo_url:
+                print "Release branch: %s\nWorking branch: %s" % ( self._opt.branch, repo_url )
+                if not self._opt.batch:
+                    confirmResp = raw_input( 'Release branch does not match working dir.  Proceed (Y/n)?' )
+                    if len(confirmResp) != 0 and confirmResp != "Y" and confirmResp != "y":
+                        branchMsg = "Branch mismatch!\n"
+                        raise ValidateError, branchMsg
+
+        # validate self._grpowner	= DEF_LCLS_GROUP_OWNER
+        if self._opt.debug:
+            print "ValidateArgs: Success"
+            print "  repo_url:    %s" % repo_url
+            print "  branch:     %s" % self._opt.branch
+            print "  release:    %s" % self._opt.release
+            print "  tag:        %s" % self._ReleaseTag
+            print "  installDir: %s" % self._opt.installDir
+            print "  message:    %s" % self._opt.message
 
     def execute( self, cmd, outputPipe = subprocess.PIPE ):
         if self._opt.verbose:
@@ -130,7 +232,7 @@ class Releaser(object):
             raise BuildError, "Cannot make build dir writeable: %s" % ( buildDir )
 
         # Checkout release to build dir
-        self.CheckoutRelease( buildBranch, buildDir )
+        self._repo.CheckoutRelease( buildBranch, buildDir )
 
         # Build release
         outputPipe = None
