@@ -80,18 +80,28 @@ calc:
 	pcds-trunk:
 	-p github-master -d pcds-trunk -s svn-history -m b9924a:calc-R2-6-1-lcls3 -m a37d2f9:R3-0 -m c31722f:R3-1 -m50c8589:R3-2
 
-Still needed for ioc/common/gigECam:
-diagTimer
-event
-event2
-evrClient
-ffmpegServer
-iocAdmin
-timeStampFifo
-ADTimeStamp
-ADProfileMonitor
+iocAdmin:
+	lcls-trunk:	 Abandoning cvs-history as Stephanie has all the relevent changes in github.
+	 However, I'm keeping a copy of it as lcls-trunk which I can use to derive PCDS changes vs our last merge from LCLS iocAdmin-R3-0-0
+	pcds-trunk:
+	-p lcls-trunk -d pcds-trunk -s svn-history -m 3751ef4:iocAdmin-R2-0-0 -m 726e9d5:iocAdmin-R2-0-1 -m 7c95f33:iocAdmin-R3-0-0
 
-Additional modules needed:
+diagTimer: Just from svn, so svn trunk became master.  Move to github?
+
+Still needed for ioc/common/gigECam:
+ADProfileMonitor - Just from cvs
+
+# Big can of worms - leave out of gigECam for now
+event - cvs and svn
+event2 - svn
+evrClient - git
+
+# Nice to have
+ADTimeStamp - Needs event
+ffmpegServer - Can add later
+timeStampFifo - Needs event2's timestamped eventCode fifo's
+
+Additional modules requested:
 motor
 pvaPy
 pvaSrv
