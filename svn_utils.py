@@ -13,7 +13,7 @@ def svnGetWorkingBranch( ):
     the last component of the working dir path.  tag is either None or the same
     as branch if path matches the svn tags naming scheme.'''
     try:
-        svnInfo = subprocess.check_output( [ 'svn', 'info', '.' ] )
+        svnInfo = subprocess.check_output( [ 'svn', 'info', '.' ], stderr=subprocess.STDOUT )
         for line in svnInfo.splitlines():
             if line is None:
                 break
