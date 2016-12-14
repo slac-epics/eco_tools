@@ -2,10 +2,17 @@
 Utilities for creating GIT bare repos, importing from CVS and such'''
 
 import os
-import subprocess
 import fileinput
+import subprocess
+import sys
 
 import gc
+
+# TODO: Need to do a better job of handling differences in LCLS vs PCDS env
+if 'TOOLS' not in os.environ:
+    if os.path.exists( '/afs/slac/g/lcls/tools' ):
+        os.environ['TOOLS'] = '/afs/slac/g/lcls/tools' 
+sys.path.append( "%s/cvs2git/current" % os.environ['TOOLS'] )
 
 from cvs2svn_lib.git_run_options import GitRunOptions
 from cvs2svn_lib.context import Ctx
@@ -19,9 +26,13 @@ from cvs2svn_lib.symbol_strategy import HeuristicStrategyRule
 from cvs2svn_lib.symbol_strategy import AllBranchRule
 from cvs2svn_lib.symbol_strategy import HeuristicPreferredParentRule
 
+DEF_GIT_REPOS		= "/afs/slac/g/cd/swe/git/repos"
+#DEF_GIT_REPOS		= "git@code.stanford.edu:slac-epics"
+DEF_GIT_MODULES		= DEF_GIT_REPOS + "/package/pcds/epics/modules"
+
 def determineGitRoot( ):
     '''Get the root folder for GIT repos at SLAC'''
-    gitRoot = "/afs/slac/g/cd/swe/git/repos/"
+    gitRoot = DEF_GIT_REPOS
     # The GIT_REPO_ROOT variable is mainly used when testing eco and is not something that we really expect from the environment.
     if "GIT_REPO_ROOT" in os.environ:
         gitRoot = os.environ["GIT_REPO_ROOT"]
