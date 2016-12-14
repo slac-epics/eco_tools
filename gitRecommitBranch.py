@@ -11,8 +11,9 @@ import shutil
 import sys
 import tempfile
 
-# Import GitPython classes
-# GitPython can be obtained from https://github.com/gitpython-developers/GitPython
+
+# Add git-utils-0.2.0 release w/ GitPython to path
+import gitdb
 from git import *
 
 def importBranchTo( repo, parentBranch, srcBranch, srcBranchEnd=None, mergePoints=None, dstBranch='new-branch', verbose=False ):
