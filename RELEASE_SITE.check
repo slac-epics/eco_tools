@@ -1,0 +1,39 @@
+# RELEASE_SITE.check
+#
+# Check for multiple inclusions of RELEASE_SITE
+ifneq ($(wildcard "$(TOP)/../../RELEASE_SITE"),)
+ifneq ($(wildcard "$(TOP)/RELEASE_SITE"),)
+$(error Two RELEASE_SITE files found: $(TOP)/RELEASE_SITE and $(TOP)/../../RELEASE_SITE!)
+endif
+endif
+
+# Check for undefined EPICS_MODULES
+ifndef EPICS_MODULES
+
+# Show which RELEASE_SITE files are found or not found
+ifeq ($(wildcard "$(TOP)/../../RELEASE_SITE"),)
+$(info RELEASE_SITE Not found: $(TOP)/../../RELEASE_SITE)
+else
+$(info RELEASE_SITE Found: $(TOP)/../../RELEASE_SITE)
+endif
+ifeq ($(wildcard "$(TOP)/RELEASE_SITE"),)
+$(info RELEASE_SITE Not found: $(TOP)/RELEASE_SITE)
+else
+$(info RELEASE_SITE Found: $(TOP)/RELEASE_SITE)
+endif
+
+# Bail w/ an error
+$(error EPICS_MODULES not defined!)
+
+else
+# Check for valid EPICS_MODULES
+ifeq ($(wildcard $(EPICS_MODULES)),)
+$(error Invalid EPICS_MODULES: $(EPICS_MODULES))
+endif
+
+endif
+
+# Check BASE_MODULE_VERSION
+ifndef BASE_MODULE_VER
+BASE_MODULE_VER := $(EPICS_BASE_VER)
+endif

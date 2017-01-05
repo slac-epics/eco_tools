@@ -1,0 +1,24 @@
+# EPICS_BASE.check
+#
+# Check for undefined EPICS_BASE
+ifndef EPICS_BASE
+
+# Show which RELEASE_SITE files are found
+ifneq ($(wildcard "$(TOP)/../../RELEASE_SITE"),)
+$(info RELEASE_SITE Found: $(TOP)/../../RELEASE_SITE)
+endif
+ifneq ($(wildcard "$(TOP)/RELEASE_SITE"),)
+$(info RELEASE_SITE Found: $(TOP)/RELEASE_SITE)
+endif
+
+# Bail w/ an error
+$(error EPICS_BASE not defined!)
+
+else
+# Check for valid EPICS_BASE
+ifeq ($(wildcard $(EPICS_BASE)),)
+$(error Invalid EPICS_BASE: $(EPICS_BASE))
+endif
+
+endif
+
