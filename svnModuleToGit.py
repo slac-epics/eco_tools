@@ -76,9 +76,9 @@ def importTrunk( trunk, name, branches=[], tags=[], verbose=False ):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser( description='''This script creates a git repo for each specified svn module....
 ''')
-    parser.add_argument( '-m', '--module',   action='store',  help='svn module name to import.' )
-    parser.add_argument( '-b', '--branches', action='append', help='svn branch(es)  to import.', default=[] )
-    parser.add_argument( '-t', '--tags',	 action='append', help='svn tag paths   to import.', default=[] )
+    parser.add_argument( '-m', '--module',   action='store',  help='svn module name to import. (trunk is $CTRL_REPO/trunk/pcds/epics/modules/MODULE_NAME/current)' )
+    parser.add_argument( '-b', '--branches', action='append', help='svn branch(es)  to import. (relative to env CTRL_REPO)', default=[] )
+    parser.add_argument( '-t', '--tags',	 action='append', help='svn tag paths   to import. (relative to env CTRL_REPO)', default=[] )
     parser.add_argument( '-v', '--verbose',  action="store_true", help='show more verbose output.' )
     parser.add_argument( '-n', '--name',     help='name of GitHub Repo.' )
 
@@ -94,6 +94,7 @@ if __name__ == '__main__':
         trunk = args.branches[0]
         importTrunk( trunk, args.name, args.branches[1:], args.tags, args.verbose )
     else:
+        parser.print_help()
         print 'Please provide a module name, or one or more brances to import'
         sys.exit() 
 
