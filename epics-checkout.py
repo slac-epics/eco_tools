@@ -166,19 +166,6 @@ def parseCVSModulesTxt():
 git_package2Location = parseGitModulesTxt()
 cvs_modules2Location = parseCVSModulesTxt()
 
-
-def determine_archs():
-    '''Determine the various architectures from ${EPICS_BASE_RELEASE}/configure/CONFIG_SITE:CROSS_COMPILER_TARGET_ARCHS and from folders in ${EPICS_BASE_RELEASE}/bin. We return a sorted list of archs'''
-    lines = []
-    with open(os.path.expandvars('${EPICS_BASE_RELEASE}/configure/CONFIG_SITE'), 'r') as f:
-        lines = f.readlines()
-    archs_from_config_site = [line for line in lines if line.startswith('CROSS_COMPILER_TARGET_ARCHS')][0].strip().split('=')[1].split(' ')
-    archs_from_bin = os.listdir(os.path.expandvars('${EPICS_BASE_RELEASE}/bin'))
-
-    total_archs = sorted(set(archs_from_config_site)|set(archs_from_bin))
-    return total_archs
-
-
 def export_release_site_file(inputs):
     """
     Use the contents of a dictionary of top level dirs to create a 
@@ -195,7 +182,7 @@ def export_release_site_file(inputs):
         return None
 
     print >> out_file, '#=============================================================================='
-    print >> out_file, '#RELEASE Location of external products'
+    print >> out_file, '# RELEASE_SITE Location of EPICS_SITE_TOP, EPICS_MODULES, and BASE_MODULE_VERSION'
     print >> out_file, '# Run "gnumake clean uninstall install" in the application'
     print >> out_file, '# top directory each time this file is changed.'
     print >> out_file, ''
@@ -204,14 +191,20 @@ def export_release_site_file(inputs):
     print >> out_file, '# We will build some tools/scripts that allow us to'
     print >> out_file, '# change this easily when relocating software.'
     print >> out_file, '#=============================================================================='
+    print >> out_file, 'BASE_MODULE_VERSION=%s'%inputs['EPICS_BASE_VER']
     print >> out_file, 'EPICS_SITE_TOP=%s'    % inputs['EPICS_SITE_TOP'] 
     print >> out_file, 'BASE_SITE_TOP=%s'     % inputs['BASE_SITE_TOP']
-    print >> out_file, 'MODULES_SITE_TOP=%s'  % inputs['MODULES_SITE_TOP']
-    print >> out_file, 'IOC_SITE_TOP=%s'      % inputs['IOC_SITE_TOP']
+    print >> out_file, 'MODULES_SITE_TOP=%s'  % inputs['EPICS_MODULES']
+    print >> out_file, 'EPICS_MODULES=%s'     % inputs['EPICS_MODULES']
     print >> out_file, 'EPICS_BASE_VER=%s'    % inputs['EPICS_BASE_VER']
     print >> out_file, 'PACKAGE_SITE_TOP=%s'  % inputs['PACKAGE_SITE_TOP']
-    print >> out_file, 'TOOLS_SITE_TOP=%s'    % inputs['TOOLS_SITE_TOP']
-    print >> out_file, 'ALARM_CONFIGS_TOP=%s' % inputs['ALARM_CONFIGS_TOP']
+    print >> out_file, 'PSPKG_ROOT=%s'        % inputs['PSPKG_ROOT']
+    if 'IOC_SITE_TOP' in inputs:
+        print >> out_file, 'IOC_SITE_TOP=%s'      % inputs['IOC_SITE_TOP']
+    if 'TOOLS_SITE_TOP' in inputs:
+        print >> out_file, 'TOOLS_SITE_TOP=%s'    % inputs['TOOLS_SITE_TOP']
+    if 'ALARM_CONFIGS_TOP' in inputs:
+        print >> out_file, 'ALARM_CONFIGS_TOP=%s' % inputs['ALARM_CONFIGS_TOP']
     print >> out_file, '#=============================================================================='
     if out_file != sys.stdout:
         out_file.close()
@@ -219,107 +212,183 @@ def export_release_site_file(inputs):
     # change back to level where repo is
     os.chdir('../..')
     
-def assemble_release_site_inputs_from_term():
-    validate_environment_settings()
+def determine_epics_base_ver():
+    epics_base_ver = getEnv('EPICS_BASE_VER')
+    if epics_base_ver == '?':
+        epics_base_ver = getEnv('EPICS_VER')
+    if epics_base_ver == '?':
+        epics_base = getEnv('EPICS_BASE')
+        if epics_base == '?':
+            epics_base_ver = 'unknown'
+        else:
+            epics_base_ver = os.path.basename( epics_base )
+    return epics_base_ver
+
+def determine_epics_site_top():
+    epics_site_top = getEnv('EPICS_TOP')
+    if epics_site_top == '?':
+        epics_site_top = getEnv('EPICS_SITE_TOP')
+    if epics_site_top == '?':
+        epics_base = getEnv('EPICS_BASE')
+        if epics_base == '?':
+            epics_site_top = 'unknown'
+        else:
+            epics_base_top = os.path.dirname( epics_base )
+            epics_site_top = os.path.dirname( epics_base_top )
+            if epics_base.startswith( 'base-' ):
+                epics_ver = epics_base.replace( 'base-', '' )
+                epics_site_top = os.path.join( epics_site_top, epics_ver )
+            if epics_base.startswith( 'R3.14.12-' ):
+                epics_site_top = os.path.join( epics_site_top, '3.14' )
+    return epics_site_top
+
+def assemble_release_site_inputs_from_term( options ):
 
     input_dict = {}
 
-    prompt1 = 'Enter full path for EPICS_SITE_TOP or [RETURN] to use "'+getEnv('EPICS_TOP')+'">'
-    input_dict['EPICS_SITE_TOP'] = raw_input(prompt1).strip()
-    if input_dict['EPICS_SITE_TOP'] == "":
-        input_dict['EPICS_SITE_TOP'] = getEnv('EPICS_TOP') # want something like, for eg, /usr/local/facet/epics    
-    print 'Using ' + input_dict['EPICS_SITE_TOP']
+    epics_base_ver = determine_epics_base_ver()
+    epics_site_top = determine_epics_site_top()
 
-    prompt2 = 'Enter full path for BASE_SITE_TOP or [RETURN] to use "'+getEnv('EPICS_BASE_TOP')+'">'
-    input_dict['BASE_SITE_TOP'] = raw_input(prompt2).strip()
-    if input_dict['BASE_SITE_TOP'] == "":
-        input_dict['BASE_SITE_TOP'] = getEnv('EPICS_BASE_TOP') # want something like, for eg,  /usr/local/facet/epics/base
-    print 'Using ' + input_dict['BASE_SITE_TOP']
+    if epics_base_ver == '?':
+        print 'TODO: Provide list of available epics_base_ver options to choose from'
+    input_dict['EPICS_BASE_VER'] = epics_base_ver
+    if not options.batch:
+        prompt5 = 'Enter EPICS_BASE_VER or [RETURN] to use "' + epics_base_ver + '">'
+        user_input = raw_input(prompt5).strip()
+        if user_input:
+            input_dict['EPICS_BASE_VER'] = user_input
+    print 'Using EPICS_BASE_VER: ' + input_dict['EPICS_BASE_VER']
 
-    prompt3 = 'Enter full path for MODULES_SITE_TOP or [RETURN] to use "'+getEnv('EPICS_MODULES_TOP')+'">'
-    input_dict['MODULES_SITE_TOP'] = raw_input(prompt3).strip()
-    if input_dict['MODULES_SITE_TOP'] == "":
-        input_dict['MODULES_SITE_TOP'] = getEnv('EPICS_MODULES_TOP') # want something like, for eg, /usr/local/facet/epics/modules/R3-14-8-2
-    print 'Using ' + input_dict['MODULES_SITE_TOP']
+    input_dict['EPICS_SITE_TOP'] = epics_site_top
+    if not options.batch:
+        prompt1 = 'Enter full path for EPICS_SITE_TOP or [RETURN] to use "' + epics_site_top + '">'
+        user_input = raw_input(prompt1).strip()
+        if user_input:
+            input_dict['EPICS_SITE_TOP'] = user_input
+    print 'Using EPICS_SITE_TOP: ' + input_dict['EPICS_SITE_TOP']
 
-    prompt4 = 'Enter full path for IOC_SITE_TOP or [RETURN] to use "'+getEnv('EPICS_IOC_TOP')+'">'
-    input_dict['IOC_SITE_TOP'] = raw_input(prompt4).strip()
-    if input_dict['IOC_SITE_TOP'] == "":
-        input_dict['IOC_SITE_TOP'] = getEnv('EPICS_IOC_TOP') # want something like, for eg, /usr/local/facet/epics/iocTop
-    print 'Using ' + input_dict['IOC_SITE_TOP']
+    input_dict['BASE_SITE_TOP'] = os.path.join( input_dict['EPICS_SITE_TOP'], 'base' )
+    print 'Using BASE_SITE_TOP: ' + input_dict['BASE_SITE_TOP']
 
-    prompt5 = 'Enter full path for EPICS_BASE_VER or [RETURN] to use "'+getEnv('EPICS_BASE_VER')+'">'
-    input_dict['EPICS_BASE_VER'] = raw_input(prompt5).strip()
-    if input_dict['EPICS_BASE_VER'] == "":
-        input_dict['EPICS_BASE_VER'] = getEnv('EPICS_BASE_VER') # want something like, for eg, base-R3-14-12
-    print 'Using ' + input_dict['EPICS_BASE_VER']
+    epics_ver = input_dict['EPICS_BASE_VER']
+    if epics_ver.startswith( 'base-' ):
+        epics_ver = epics_ver.replace( 'base-', '' )
+    input_dict['EPICS_MODULES'] = os.path.join( input_dict['EPICS_SITE_TOP'], epics_ver, 'modules' )
+    if not os.path.isdir( input_dict['EPICS_MODULES'] ):
+        input_dict['EPICS_MODULES'] = os.path.join( input_dict['EPICS_SITE_TOP'], 'modules' )
+    print 'Using EPICS_MODULES: ' + input_dict['EPICS_MODULES']
 
-    prompt6 = 'Enter full path for PACKAGE_SITE_TOP or [RETURN] to use "'+getEnv('PACKAGE_TOP')+'">'
-    input_dict['PACKAGE_SITE_TOP'] = raw_input(prompt6).strip()
-    if input_dict['PACKAGE_SITE_TOP'] == "":
-        input_dict['PACKAGE_SITE_TOP'] = getEnv('PACKAGE_TOP')
-    print 'Using ' + input_dict['PACKAGE_SITE_TOP']
+    ioc_site_top = os.path.join( input_dict['EPICS_SITE_TOP'], 'iocTop' )
+    if os.path.isdir( ioc_site_top ):
+        input_dict['IOC_SITE_TOP'] = ioc_site_top
+        print 'Using IOC_SITE_TOP: ' + input_dict['IOC_SITE_TOP']
 
-    prompt6 = 'Enter full path for TOOLS_SITE_TOP or [RETURN] to use "'+getEnv('TOOLS')+'">'
-    input_dict['TOOLS_SITE_TOP'] = raw_input(prompt6).strip()
-    if input_dict['TOOLS_SITE_TOP'] == "":
-        input_dict['TOOLS_SITE_TOP'] = getEnv('TOOLS')
-    print 'Using ' + input_dict['TOOLS_SITE_TOP']
+    package_site_top = getEnv('PACKAGE_TOP')
+    if not os.path.isdir( package_site_top ):
+        package_site_top = getEnv('PACKAGE_SITE_TOP')
+    if not os.path.isdir( package_site_top ):
+        package_site_top = '/reg/g/pcds/package'
+    if not os.path.isdir( package_site_top ):
+        package_site_top = '/afs/slac/g/lcls/package'
+    if not os.path.isdir( package_site_top ):
+        package_site_top = '/afs/slac/g/pcds/package'
+    input_dict['PACKAGE_SITE_TOP'] = package_site_top
+    if not options.batch:
+        prompt6 = 'Enter full path for PACKAGE_SITE_TOP or [RETURN] to use "' + package_site_top + '">'
+        user_input = raw_input(prompt6).strip()
+        if user_input:
+            input_dict['PACKAGE_SITE_TOP'] = user_input
+    print 'Using PACKAGE_SITE_TOP: ' + input_dict['PACKAGE_SITE_TOP']
 
-    prompt6 = 'Enter full path for ALARM_CONFIGS_TOP or [RETURN] to use "'+os.path.join(getEnv('TOOLS'), 'AlarmConfigsTop')+'">'
-    input_dict['ALARM_CONFIGS_TOP'] = raw_input(prompt6).strip()
-    if input_dict['ALARM_CONFIGS_TOP'] == "":
-        input_dict['ALARM_CONFIGS_TOP'] = os.path.join(getEnv('TOOLS'), 'AlarmConfigsTop')
-    print 'Using ' + input_dict['ALARM_CONFIGS_TOP']
+    input_dict['PSPKG_ROOT'] = getEnv('PSPKG_ROOT')
+    if not os.path.isdir( input_dict['PSPKG_ROOT'] ):
+        input_dict['PSPKG_ROOT'] = '/reg/g/pcds/pkg_mgr'
+    if not os.path.isdir( input_dict['PSPKG_ROOT'] ):
+        input_dict['PSPKG_ROOT'] = '/afs/slac/g/pcds/pkg_mgr'
+    print 'Using PSPKG_ROOT: ' + input_dict['PSPKG_ROOT']
+
+    input_dict['TOOLS_SITE_TOP'] = ''
+    input_dict['ALARM_CONFIGS_TOP'] = ''
+    tools_site_top = getEnv('TOOLS')
+    if os.path.isdir(tools_site_top):
+        input_dict['TOOLS_SITE_TOP'] = tools_site_top
+        prompt6 = 'Enter full path for TOOLS_SITE_TOP or [RETURN] to use "' + tools_site_top + '">'
+        if not options.batch:
+            user_input = raw_input(prompt6).strip()
+            if user_input:
+                input_dict['TOOLS_SITE_TOP'] = user_input
+        if os.path.isdir( input_dict['TOOLS_SITE_TOP'] ):
+            print 'Using TOOLS_SITE_TOP: ' + input_dict['TOOLS_SITE_TOP']
+
+        alarm_configs_top = os.path.join(tools_site_top, 'AlarmConfigsTop')
+        prompt6 = 'Enter full path for ALARM_CONFIGS_TOP or [RETURN] to use "' + alarm_configs_top + '">'
+        input_dict['ALARM_CONFIGS_TOP'] = alarm_configs_top
+        if not options.batch:
+            user_input = raw_input(prompt6).strip()
+            if user_input:
+                input_dict['ALARM_CONFIGS_TOP'] = user_input
+        if os.path.isdir( input_dict['ALARM_CONFIGS_TOP'] ):
+            print 'Using ALARM_CONFIGS_TOP: ' + input_dict['ALARM_CONFIGS_TOP']
 
     return input_dict
 
-
-def assemble_release_site_inputs_from_file():
+def assemble_release_site_inputs_from_env():
     input_dict = {}
 
-    input_dict['EPICS_SITE_TOP'] = getEnv('EPICS_TOP') # want something like, for eg, /usr/local/facet/epics    
-    print 'Using ' + input_dict['EPICS_SITE_TOP']
+    input_dict['EPICS_BASE_VER'] = determine_epics_base_ver()
+    print 'Using EPICS_BASE_VER: ' + input_dict['EPICS_BASE_VER']
 
-    input_dict['BASE_SITE_TOP'] = getEnv('EPICS_BASE_TOP') # want something like, for eg,  /usr/local/facet/epics/base
-    print 'Using ' + input_dict['BASE_SITE_TOP']
+    epics_site_top = determine_epics_site_top()
+    input_dict['EPICS_SITE_TOP'] = epics_site_top
+    print 'Using EPICS_SITE_TOP: ' + input_dict['EPICS_SITE_TOP']
 
-    input_dict['MODULES_SITE_TOP'] = getEnv('EPICS_MODULES_TOP') # want something like, for eg, /usr/local/facet/epics/modules/R3-14-8-2
-    print 'Using ' + input_dict['MODULES_SITE_TOP']
+    input_dict['BASE_SITE_TOP'] = os.path.join( input_dict['EPICS_SITE_TOP'], 'base' )
+    print 'Using BASE_SITE_TOP: ' + input_dict['BASE_SITE_TOP']
 
-    input_dict['IOC_SITE_TOP'] = getEnv('EPICS_IOC_TOP') # want something like, for eg, /usr/local/facet/epics/iocTop
-    print 'Using ' + input_dict['IOC_SITE_TOP']
+    epics_ver = input_dict['EPICS_BASE_VER']
+    if epics_ver.startswith( 'base-' ):
+        epics_ver = epics_ver.replace( 'base-', '' )
+    input_dict['EPICS_MODULES'] = os.path.join( input_dict['EPICS_SITE_TOP'], 'modules', epics_ver  )
+    print 'Using EPICS_MODULES: ' + input_dict['EPICS_MODULES']
 
-    input_dict['EPICS_BASE_VER'] = getEnv('EPICS_BASE_VER') # want something like, for eg, base-R3-14-12
-    print 'Using ' + input_dict['EPICS_BASE_VER']
+    ioc_site_top = os.path.join( input_dict['EPICS_SITE_TOP'], 'iocTop' )
+    if os.path.isdir( ioc_site_top ):
+        input_dict['IOC_SITE_TOP'] = ioc_site_top
+        print 'Using IOC_SITE_TOP: ' + input_dict['IOC_SITE_TOP']
 
     input_dict['PACKAGE_SITE_TOP'] = getEnv('PACKAGE_TOP')
-    print 'Using ' + input_dict['PACKAGE_SITE_TOP']
+    if not os.path.isdir( input_dict['PACKAGE_SITE_TOP'] ):
+        if epics_site_top.startswith( '/reg/g/pcds' ):
+            input_dict['PACKAGE_SITE_TOP'] = '/reg/g/pcds/package'
+    if not os.path.isdir( input_dict['PACKAGE_SITE_TOP'] ):
+        if epics_site_top.startswith( '/afs/slac/g/lcls' ):
+            input_dict['PACKAGE_SITE_TOP'] = '/afs/slac/g/lcls/package'
+    if not os.path.isdir( input_dict['PACKAGE_SITE_TOP'] ):
+        if epics_site_top.startswith( '/afs/slac/g/pcds' ):
+            input_dict['PACKAGE_SITE_TOP'] = '/afs/slac/g/pcds/package'
+    print 'Using PACKAGE_SITE_TOP: ' + input_dict['PACKAGE_SITE_TOP']
+
+    input_dict['PSPKG_ROOT'] = getEnv('PSPKG_ROOT')
+    if not os.path.isdir( input_dict['PSPKG_ROOT'] ):
+        if epics_site_top.startswith( '/reg/g/pcds' ):
+            input_dict['PSPKG_ROOT'] = '/reg/g/pcds/package'
+    if not os.path.isdir( input_dict['PSPKG_ROOT'] ):
+        if epics_site_top.startswith( '/afs/slac/g/lcls' ):
+            input_dict['PSPKG_ROOT'] = '/afs/slac/g/lcls/package'
+    if not os.path.isdir( input_dict['PSPKG_ROOT'] ):
+        if epics_site_top.startswith( '/afs/slac/g/pcds' ):
+            input_dict['PSPKG_ROOT'] = '/afs/slac/g/pcds/package'
+    print 'Using PSPKG_ROOT: ' + input_dict['PSPKG_ROOT']
 
     input_dict['TOOLS_SITE_TOP'] = getEnv('TOOLS')
-    print 'Using ' + input_dict['TOOLS_SITE_TOP']
+    if os.path.isdir( input_dict['TOOLS_SITE_TOP'] ):
+        print 'Using TOOLS_SITE_TOP: ' + input_dict['TOOLS_SITE_TOP']
 
     input_dict['ALARM_CONFIGS_TOP'] = os.path.join(getEnv('TOOLS'), 'AlarmConfigsTop')
-    print 'Using ' + input_dict['ALARM_CONFIGS_TOP']
+    if os.path.isdir( input_dict['ALARM_CONFIGS_TOP'] ):
+        print 'Using ALARM_CONFIGS_TOP: ' + input_dict['ALARM_CONFIGS_TOP']
 
     return input_dict
-
-def validate_environment_settings():
-    '''We use several environment variables as defaults. This method checks to make sure that these environment variables are set. 
-    Its probably better to force the user to set these environment variables than to fight make at a later stage.'''
-    needed_env_vars = ['EPICS_TOP', 'EPICS_BASE_TOP', 'EPICS_MODULES_TOP', 'EPICS_IOC_TOP', 'EPICS_BASE_VER', 'PACKAGE_TOP', 'TOOLS']
-    notFound = []
-    for needed_env_var in needed_env_vars:
-        if needed_env_var not in os.environ:
-            notFound += [ needed_env_var ]
-    if len(notFound) == 0:
-        return True
-    print "WARNING: environment variable(s) not defined:\n   ",
-    for var in notFound:
-        print "%s " % var,
-    print "\nDid you remember to source the correct enviromnent script?"
-    return False
-
 
 # Determine the package and tag to checkout
 def assemble_cvs_inputs_from_term(options):
@@ -397,8 +466,9 @@ def assemble_cvs_inputs_from_term(options):
             readline.set_completer_delims(" \t\n")
             readline.parse_and_bind("tab: complete")
 
-        prompt1 = 'Enter name of tag or [RETURN] to create a sandbox named %s>' % dirName
-        tagName = raw_input(prompt1).strip()
+        if not options.batch:
+            prompt1 = 'Enter name of tag or [RETURN] to create a sandbox named %s>' % dirName
+            tagName = raw_input(prompt1).strip()
         if  tagName == "" and dirName == 'MAIN_TRUNK':
             tagName = 'MAIN_TRUNK'
 
@@ -419,17 +489,17 @@ def assemble_cvs_inputs_from_term(options):
             destinationPath = os.path.join( packageName, dirName )
 
     curDir = os.getcwd()
-    checkOutModule( packageName, tagName, destinationPath )
+    checkOutModule( packageName, tagName, destinationPath, batch=options.batch )
 
     # See if we need to create a RELEASE_SITE file
     if  (   not os.path.isfile( 'RELEASE_SITE' )
         and not os.path.isfile( os.path.join( '..', '..', 'RELEASE_SITE' ) ) ):
-        inputs = assemble_release_site_inputs_from_term()
+        inputs = assemble_release_site_inputs_from_term(options)
         export_release_site_file(inputs)
     # os.chdir(curDir)
 
 # Determine the package and tag to checkout
-def assemble_cvs_inputs_from_file(repo, rel):
+def assemble_cvs_inputs_from_file(repo, rel, options):
     cvs_dict = {}
 
     cvs_dict['REPOSITORY'] = repo
@@ -448,7 +518,7 @@ def assemble_cvs_inputs_from_file(repo, rel):
         destinationPath = os.path.join( packageName, tagName )
 
     curDir = os.getcwd()
-    checkOutModule( packageName, tagName, destinationPath )
+    checkOutModule( packageName, tagName, destinationPath, batch=options.batch )
 
     # See if we need to create a RELEASE_SITE file
     if  (   not os.path.isfile( 'RELEASE_SITE' )
@@ -457,7 +527,7 @@ def assemble_cvs_inputs_from_file(repo, rel):
         export_release_site_file(inputs)
     # os.chdir(curDir)
  
-def checkOutModule(packageName, tag, destinationPath):
+def checkOutModule(packageName, tag, destinationPath, batch=False ):
     '''Checkout the module from GIT/CVS. 
     We first check to see if GIT has the module; if so, we clone the repo from git and do a headless checkout for the selected tag.
     Otherwise, we issue a command to CVS.
@@ -467,10 +537,11 @@ def checkOutModule(packageName, tag, destinationPath):
         print "Checkout %s to sandbox directory %s" % ( packageName, destinationPath )
     else:
         print "Checkout %s, tag %s, to directory %s" % ( packageName, tag, destinationPath )
-    confirmResp = raw_input( 'Proceed (Y/n)?' )
-    if len(confirmResp) != 0 and confirmResp != "Y" and confirmResp != "y":
-        print "Aborting....."
-        sys.exit(0)
+    if not batch:
+        confirmResp = raw_input( 'Proceed (Y/n)?' )
+        if len(confirmResp) != 0 and confirmResp != "Y" and confirmResp != "y":
+            print "Aborting....."
+            sys.exit(0)
 
     if os.path.exists(destinationPath):
         print 'Directory already exists!  Aborting.....'
@@ -671,6 +742,7 @@ def process_options(argv):
     parser = optparse.OptionParser(usage=usage, version=version)
 
     parser.add_option('-v', '--verbose', action='store_true', dest='verbose', help='print verbose output')
+    parser.add_option('-b', '--batch',   action='store_true', dest='batch', help='Run without confirmation prompts')
     parser.add_option('-m', '--module',  action='callback', dest='module', help='Module to checkout, optionally add the tag to use', type='string', callback=module_callback)
     parser.add_option('-d', '--destination',  action='store', dest='destination', help='Checkout the package to this folder. Uses cvs -d. For example, eco -d CATER_12345 on MAIN_TRUNK checks out MAIN_TRUNK into a folder called CATER_12345. This option is ignored in batch mode.', type='string')
     # parser.add_option('-t', '--tag',  action='store', dest='tag', help='CVS tag to checkout - defaults to MAIN_TRUNK', type='string', default='MAIN_TRUNK')
@@ -702,7 +774,7 @@ def main(argv=None):
         try:
             in_file = open(options.input_file_path, 'r')
         except IOError, e:
-            sys.stderr.write('Could not open "%s": %s\n' % (options.input_file_path, e.strerror))
+            sys.stderr.write('Could not open module specification file "%s": %s\n' % (options.input_file_path, e.strerror))
             return None
 
         # Read in pairs (package release) one per line
@@ -718,7 +790,7 @@ def main(argv=None):
             print 'key is: ' + key
             print 'value is: ' + value
 
-            assemble_cvs_inputs_from_file(key,value)
+            assemble_cvs_inputs_from_file(key,value,options)
            
             print 'done with ' + line
             # repeat above for all lines in file
