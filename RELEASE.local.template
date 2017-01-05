@@ -1,27 +1,15 @@
 # RELEASE.local
 #
-# Fetch path relative EPICS_BASE and EPICS_MODULES
+# Read definitions of:
+#	EPICS_SITE_TOP
+#	BASE_MODULE_VERSION
+#	EPICS_MODULES 
 # from one of the following options
 -include $(TOP)/../../RELEASE_SITE
 -include $(TOP)/RELEASE_SITE
 
-# Check for multiple inclusions
-ifneq ($(wildcard "include $(TOP)/../../RELEASE_SITE"),)
-ifneq ($(wildcard "include $(TOP)/RELEASE_SITE"),)
-$(error Two RELEASE_SITE files found: $(TOP)/RELEASE_SITE and $(TOP)/../../RELEASE_SITE!)
-endif
-endif
-
-# Check for undefined EPICS_BASE or EPICS_MODULES
-ifndef EPICS_MODULES
-ifneq ($(wildcard "include $(TOP)/../../RELEASE_SITE"),)
-$(info RELEASE_SITE Read: $(TOP)/../../RELEASE_SITE)
-endif
-ifneq ($(wildcard "include $(TOP)/RELEASE_SITE"),)
-$(info RELEASE_SITE Read: $(TOP)/RELEASE_SITE)
-endif
-$(error EPICS_MODULES not defined!)
-endif
+# Check that EPICS_MODULES was defined in a RELEASE_SITE file
+-include $(TOP)/../../RELEASE_SITE.check
 
 # ==========================================================
 # Define the version strings for all needed modules
@@ -31,6 +19,9 @@ endif
 # Don't set your version to anything such as "test" that
 # could match a directory name.
 # ==========================================================
+$$LOOP(MODULE_DEPENDENCY)
+$$(PREFIX)_MODULE_VERSION	= $$(VERSION)
+$$ENDLOOP(MODULE_DEPENDENCY)
 
 # ==========================================================
 # Define module paths using pattern
@@ -38,22 +29,14 @@ endif
 #  or
 # FOO = /Full/Path/To/Development/Version 
 # ==========================================================
+$$LOOP(MODULE_DEPENDENCY)
+$$(PREFIX)		= $(EPICS_MODULES)/$$(DIRNAME)/$($$(PREFIX)_MODULE_VERSION)
+$$ENDLOOP(MODULE_DEPENDENCY)
 
-# =================================================================
-# Define EPICS_BASE
-# EPICS_BASE usually appears last so other apps can override stuff:
-# =================================================================
-EPICS_BASE=$(EPICS_SITE_TOP)/base/$(BASE_MODULE_VERSION)
 
-# Check for undefined EPICS_BASE or EPICS_MODULES
-ifneq ($(wildcard "$(EPICS_BASE)),)
-ifneq ($(wildcard "$(TOP)/../../RELEASE_SITE"),)
-$(info RELEASE_SITE Read: $(TOP)/../../RELEASE_SITE)
-endif
-ifneq ($(wildcard "$(TOP)/RELEASE_SITE"),)
-$(info RELEASE_SITE Read: $(TOP)/RELEASE_SITE)
-endif
-$(error Invalid EPICS_BASE directory: $(EPICS_BASE))
-endif
-# End of file
+# Set EPICS_BASE last so it appears last in the DB, DBD, INCLUDE, and LIB search paths
+EPICS_BASE              = $(EPICS_SITE_TOP)/base/$(BASE_MODULE_VERSION)
+
+# Check for undefined EPICS_BASE
+-include $(TOP)/../../EPICS_BASE.check
 

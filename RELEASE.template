@@ -1,0 +1,13 @@
+# RELEASE
+# Defines location of external products
+# Run "gnumake clean uninstall install" in the application
+# top directory each time this file is changed.
+-include $(TOP)/configure/RELEASE.local
+
+# Check for valid macro definitions for module release directories
+$$LOOP(MODULE_DEPENDENCY)
+ifeq ($(wildcard $($$(PREFIX))),)
+$(error Invalid $$(PREFIX): $($$(PREFIX)))
+endif
+$$ENDLOOP(MODULE_DEPENDENCY)
+
