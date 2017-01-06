@@ -1,11 +1,5 @@
 import re
 import sys
-#import shutil
-#import optparse
-#import traceback
-#import tempfile
-#import commands
-#import stat
 import os
 import subprocess
 
@@ -29,9 +23,9 @@ class gitRepo( Repo.Repo ):
         #self.grpowner	= DEF_PCDS_GROUP_OWNER
         #self._version	= ""
         #self._retcode	= 0
-        self.url        = url
-        self.branch     = branch
-        self.tag        = tag
+        self._url       = url
+        self._branch    = branch
+        self._tag       = tag
         self._gitRepo	= determineGitRoot()
 
     def GetWorkingBranch( self ):
@@ -39,6 +33,9 @@ class gitRepo( Repo.Repo ):
 
     def GetDefaultPackage( self, package ):
         return package
+
+    def GetTag( self ):
+        return self._tag
 
     def CheckoutRelease( self, buildBranch, buildDir, verbose=False, quiet=False ):
         if verbose:

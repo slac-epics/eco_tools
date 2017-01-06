@@ -1,43 +1,29 @@
 import re
 import sys
-#import shutil
-#import optparse
-#import traceback
-#import tempfile
-#import commands
-#import stat
 import os
 import subprocess
 
 import Releaser
+import Repo
+from repo_defaults import *
 from svn_utils import *
-
-DEF_SVN_REPO		= "file:///afs/slac/g/pcds/vol2/svn/pcds"
-DEF_SVN_MODULES		= DEF_SVN_REPO  + "/trunk/pcds/epics/modules"
-DEF_SVN_STUB1		= "epics/trunk"
-DEF_SVN_STUB2		= "trunk/pcds/epics"
-DEF_SVN_REL_DIR		= "epics/tags"
-
-# TODO: Move these to a common defaults file
-DEF_EPICS_TOP_PCDS	= "/reg/g/pcds/package/epics/3.14"
-DEF_EPICS_TOP_LCLS	= "/afs/slac/g/lcls/epics"
-DEF_EPICS_TOP_AFS	= "/afs/slac/g/pcds/package/epics/3.14"
-DEF_LCLS_GROUP_OWNER= "lcls"
-DEF_PCDS_GROUP_OWNER= "ps-pcds"
 
 class svnError( Exception ):
     pass
 
-class svnRepo( Releaser.Releaser ):
-    def __init__( self, opt, args ):
-        super(svnRepo, self).__init__( opt, args )
+class svnRepo( Repo.Repo ):
+    def __init__( self, url, branch=None, tag=None ):
+        super(svnRepo, self).__init__()
         self.grpowner	= DEF_PCDS_GROUP_OWNER
+        self._url	    = url
+        self._branch    = branch
+        self._tag    	= tag
         self._version	= ""
         self._retcode	= 0
         self._svnStub1	= DEF_SVN_STUB1
         self._svnStub2	= DEF_SVN_STUB2
         self._svnRepo	= DEF_SVN_REPO
-        self._svnRelDir	= DEF_SVN_REL_DIR
+        self._svnTags	= DEF_SVN_TAGS
         # Make sure we have a valid EPICS_SITE_TOP
         defaultEpicsSiteTop = DEF_EPICS_TOP_LCLS 
         if not os.path.isdir( defaultEpicsSiteTop ):
@@ -48,6 +34,13 @@ class svnRepo( Releaser.Releaser ):
 
     def GetWorkingBranch( self ):
         return svnGetWorkingBranch()
+
+    def FindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
+        (repo_url, repo_tag) = (None, None)
+        (packagePath, sep, packageName) = packageSpec.rpartition('/')
+
+        print "FindPackageRelease: Need to find packagePath=%s, packageName=%s\n" % (packagePath, packageName)
+        return (repo_url, repo_tag)
 
     def GetDefaultPackage( self, package ):
         # See if we're in a package directory
@@ -116,8 +109,7 @@ class svnRepo( Releaser.Releaser ):
 
         # Make sure the release package exists
         if not svnPathExists( self._opt.branch, self._opt.revision ):
-            raise Releaser.ValidateError, "Invalid svn branch at rev %s\n\t%s" % (	self._opt.revision,
-                                                                            self._opt.branch )
+            raise Releaser.ValidateError, "Invalid svn branch at rev %s\n\t%s" % (	self._opt.revision, self._opt.branch )
 
         # validate release tag
         if not self._opt.release:
@@ -127,7 +119,7 @@ class svnRepo( Releaser.Releaser ):
         if not self._ReleaseTag:
             if not self._package or not self._package[0]:
                 raise Releaser.ValidateError, "No release package specified"
-            self._ReleaseTag = os.path.join(	self._svnRepo, self._svnRelDir,
+            self._ReleaseTag = os.path.join(	self._svnRepo, self._svnTags,
                                                 self._package[0], self._opt.release	)
 
         if self._opt.noTag == False and svnPathExists( self._ReleaseTag ):

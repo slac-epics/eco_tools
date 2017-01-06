@@ -1,13 +1,9 @@
-import re
+#import re
 import sys
-import shutil
-#import optparse
-#import traceback
-import tempfile
-#import commands
-#import stat
+#import shutil
+#import tempfile
 import os
-import subprocess
+#import subprocess
 
 class Repo(object):
     def __init__( self ):
@@ -23,8 +19,8 @@ class Repo(object):
             traceback.print_tb(sys.exc_traceback)
             print "%s exited with return code %d." % (sys.argv[0], retcode)
 
-    def CheckoutPackage( self, buildBranch, buildDir ):
-        print "\nPlease override Repo.CheckoutPackage() via a version control specific subclass."
+    def CheckoutRelease( self, buildBranch, buildDir ):
+        print "\nPlease override Repo.CheckoutRelease() via a version control specific subclass."
         os.sys.exit()
 
     def RemoveTag( self ):
