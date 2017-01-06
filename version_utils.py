@@ -1,14 +1,5 @@
 #!/usr/bin/python
 import re
-#import sys
-#import optparse
-#import commands
-#import fileinput
-#import glob
-#import os
-#import pprint
-#import signal
-#import traceback
 #
 # Purpose:
 #

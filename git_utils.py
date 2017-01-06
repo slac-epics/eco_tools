@@ -28,7 +28,35 @@ from cvs2svn_lib.symbol_strategy import HeuristicPreferredParentRule
 
 DEF_GIT_REPOS		= "/afs/slac/g/cd/swe/git/repos"
 #DEF_GIT_REPOS		= "git@code.stanford.edu:slac-epics"
-DEF_GIT_MODULES		= DEF_GIT_REPOS + "/package/pcds/epics/modules"
+DEF_GIT_MODULES		= DEF_GIT_REPOS + "/package/epics/modules"
+LCLS_TOOLS			= '/afs/slac/g/lcls/tools'
+TOOLS_SITE_TOP		= os.environ['TOOLS']
+if  TOOLS_SITE_TOP is None:
+    TOOLS_SITE_TOP	= LCLS_TOOLS
+
+gitModulesTxtFile	= os.path.join( LCLS_TOOLS, 'eco_modulelist', 'modulelist.txt' )
+
+def parseGitModulesTxt():
+    '''Parse the GIT modules txt file and return a dict of packageName -> location'''
+    package2Location = {}
+    with open(gitModulesTxtFile, 'r') as f:
+        lines = f.readlines()
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        if line.startswith('#'):
+            continue
+        parts = line.split()
+        if(len(parts) < 2):
+            print "Error parsing ", gitModulesTxtFile, "Cannot break", line, "into columns with enough fields using spaces/tabs"
+            continue
+        packageName = parts[0]
+        packageLocation = parts[1]
+        package2Location[packageName] = packageLocation
+    return package2Location
+
+git_package2Location = parseGitModulesTxt()
 
 def determineGitRoot( ):
     '''Get the root folder for GIT repos at SLAC'''
@@ -38,33 +66,27 @@ def determineGitRoot( ):
         gitRoot = os.environ["GIT_REPO_ROOT"]
     return gitRoot
 
-def gitGetWorkingBranch( debug = False, verbose = False ):
-    '''See if the current directory is the top of an git working directory.
-    Returns a 3-tuple of [ url, branch, tag ], [ None, None, None ] on error.
-    For a valid git working dir, url must be a valid string, branch is the branch name,
-    and tag is either None or a tag name if HEAD refers to a tag name.'''
-    git_url    = None
-    git_branch = None
-    git_tag    = None
+def gitGetRemoteTag( url, tag, debug = False, verbose = False ):
+    '''Fetchs tags from a git repo url and looks for a match w/ the desired tag.
+    Returns a tuple of ( url, tag ), ( None, None ) on error.
+    For a matching git remote, url must be a valid string and tag must be found.'''
+    git_url     = None
+    git_tag     = None
+    if tag is None:
+        tag			= 'HEAD'
+        tag_spec	= tag
+    else:
+        tag_spec	= 'refs/tags/%s' % tag
     try:
-        gitInfo = subprocess.check_output( [ 'git', 'status' ], stderr=subprocess.STDOUT )
-        lines = gitInfo.splitlines()
-        if len(lines) > 0 and lines[0].startswith( '# On branch ' ):
-            git_branch = lines[0].split()[3]
-
-        gitInfo = subprocess.check_output( [ 'git', 'remote', '-v' ], stderr=subprocess.STDOUT )
-        for line in gitInfo.splitlines():
+        statusInfo = subprocess.check_output( [ 'git', 'ls-remote', url ], stderr=subprocess.STDOUT )
+        for line in statusInfo.splitlines():
             if line is None:
                 break
             tokens = line.split()
-            if tokens[0] == 'origin':
-                git_url = tokens[1]
+            if tokens[1] == tag_spec:
+                git_url = url
+                git_tag = tag
                 break
-
-        gitInfo = subprocess.check_output( [ 'git', 'name-rev', '--name-only', '--tags', 'HEAD' ], stderr=subprocess.STDOUT )
-        lines = gitInfo.splitlines()
-        if len(lines) > 0:
-            git_tag = lines[0].split('^')[0]
 
     except OSError, e:
         if debug or verbose:
@@ -74,7 +96,12 @@ def gitGetWorkingBranch( debug = False, verbose = False ):
         if debug or verbose:
             print e
         pass
-    return ( git_url, git_branch, git_tag )
+    if verbose:
+        if git_url:
+            print "gitGetRemoteTag: Found git_url=%s, git_tag=%s" % ( git_url, git_tag )
+        else:
+            print "gitGetRemoteTag: Unable to find url=%s, tag=%s" % ( url, tag )
+    return ( git_url, git_tag )
 
 def initBareRepo(parentFolder, packageName):
     gitMasterRepo = os.path.join(parentFolder, packageName+".git")
@@ -121,7 +148,7 @@ def addPackageToEcoModuleList(packageName, gitMasterRepo):
     subprocess.check_call(['git', 'push', 'origin', 'master'])
     os.chdir(curDir)
 
-def importHistoryFromCVS(tpath, gitRepo, CVSpackageLocation, modulesDir=None, module=None):
+def importHistoryFromCVS(tpath, gitRepoPath, CVSpackageLocation, modulesDir=None, module=None):
     '''Import history into a git repo using cvs2git. tpath is a precreated temporary folder.''' 
     curDir = os.getcwd()
     os.chdir(tpath)
@@ -172,12 +199,12 @@ def importHistoryFromCVS(tpath, gitRepo, CVSpackageLocation, modulesDir=None, mo
 
     cvsgitdumppath = os.path.abspath(tpath)
 
-    # If a gitRepo wasn't provided, create a new bare repo
-    if gitRepo is None:
-        gitRepo = os.path.join( modulesDir, module+".git")
-    if not os.path.exists(gitRepo):
-        gitRepo = initBareRepo( modulesDir, module )
-    os.chdir(gitRepo)
+    # If a gitRepoPath wasn't provided, create a new bare repo
+    if gitRepoPath is None:
+        gitRepoPath = os.path.join( modulesDir, module+".git")
+    if not os.path.exists(gitRepoPath):
+        gitRepoPath = initBareRepo( modulesDir, module )
+    os.chdir(gitRepoPath)
 
     # Use Python Pipes to import CVS dump into GIT
     p1 = subprocess.Popen(['cat', os.path.join(cvsgitdumppath, "cvs2git-tmp", "git-blob.dat"), os.path.join(cvsgitdumppath, "cvs2git-tmp", "git-dump.dat")], stdout=subprocess.PIPE)
@@ -217,4 +244,62 @@ def createBranchFromTag( tag, branchName ):
     '''Checkout the tag and create a branch using the tag as a starting point.'''
     subprocess.check_call(['git', 'checkout', tag])
     subprocess.check_call(['git', 'checkout', '-b', branchName])
+
+def gitGetWorkingBranch( debug = False, verbose = False ):
+    '''See if the current directory is the top of an git working directory.
+    Returns a 3-tuple of ( url, branch, tag ), ( None, None, None ) on error.
+    For a valid git working dir, url must be a valid string, branch is the branch name or None if detached,
+    tag is either None or a tag name if HEAD refers to a tag name.'''
+    repo_url    = None
+    repo_branch = None
+    repo_tag    = None
+    try:
+        repoCmd = [ 'git', 'status' ]
+        statusInfo = subprocess.check_output( repoCmd, stderr=subprocess.STDOUT )
+        statusLines = statusInfo.splitlines()
+        if len(statusLines) > 0 and statusLines[0].startswith( '# On branch ' ):
+            repo_branch = statusLines[0].split()[3]
+
+        repoCmd = [ 'git', 'remote', '-v' ]
+        statusInfo = subprocess.check_output( repoCmd, stderr=subprocess.STDOUT )
+        statusLines = statusInfo.splitlines()
+        for line in statusLines:
+            if line is None:
+                break
+            tokens = line.split()
+            if tokens[0] == 'origin':
+                repo_url = tokens[1]
+                break
+
+        statusInfo = subprocess.check_output( [ 'git', 'name-rev', '--name-only', '--tags', 'HEAD' ], stderr=subprocess.STDOUT )
+        statusLines = statusInfo.splitlines()
+        if len(statusLines) > 0:
+            repo_tag = statusLines[0].split('^')[0]
+
+    except OSError, e:
+        if debug or verbose:
+            print e
+        pass
+    except subprocess.CalledProcessError, e:
+        if debug or verbose:
+            print e
+        pass
+    return ( repo_url, repo_branch, repo_tag )
+
+def gitFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
+    (repo_url, repo_tag) = (None, None)
+    (packagePath, sep, packageName) = packageSpec.rpartition('/')
+    # See if the package was listed in $TOOLS/eco_modulelist/modulelist.txt
+    if packageName in git_package2Location:
+        url_path = git_package2Location[packageName]
+        (repo_url, repo_tag) = gitGetRemoteTag( url_path, tag, debug=debug, verbose=verbose )
+    else:
+        for url_root in [ DEF_GIT_MODULES, DEF_GIT_REPOS ]:
+            if packagePath:
+                url_path = '%s/%s/%s.git' % ( url_root, packagePath, packageName )
+            else:
+                url_path = '%s/%s.git' % ( url_root, packageName )
+            (repo_url, repo_tag) = gitGetRemoteTag( url_path, tag, debug=debug, verbose=verbose )
+            break
+    return (repo_url, repo_tag)
 
