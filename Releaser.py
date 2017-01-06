@@ -1,11 +1,7 @@
 import re
 import sys
 import shutil
-#import optparse
-#import traceback
 import tempfile
-#import commands
-#import stat
 import os
 import subprocess
 import Repo
@@ -72,13 +68,17 @@ class Releaser(object):
         if self._package and "current" in self._package[0]:
             raise ValidateError, "The module specification must not contain \"current\": %s" % (self._package[0])
 
-        # See if we're in a package directory
+        # validate the repo
+        if not self._repo:
+            raise ValidateError, "Repo not found for package %s" % (self._package[0])
         defaultPackage	= None
         ( repo_url, repo_branch, repo_tag ) = self._repo.GetWorkingBranch()
         if repo_url:
             if self._opt.debug:
-                print "Releaser.ValidateArgs: repo_url =", repo_url
-                print "Releaser.ValidateArgs: package  =", self._package
+                print "Releaser.ValidateArgs: repo_url    =", repo_url
+                print "Releaser.ValidateArgs: repo_branch =", repo_branch
+                print "Releaser.ValidateArgs: repo_tag    =", repo_tag
+                print "Releaser.ValidateArgs: package     =", self._package
             defaultPackage = self._repo.GetDefaultPackage( self._package )
 
         if self._opt.debug:
