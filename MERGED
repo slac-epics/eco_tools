@@ -86,6 +86,23 @@ iocAdmin:
 	pcds-trunk:
 	-p lcls-trunk -d pcds-trunk -s svn-history -m 3751ef4:iocAdmin-R2-0-0 -m 726e9d5:iocAdmin-R2-0-1 -m 7c95f33:iocAdmin-R3-0-0
 
+miscUtils:
+    master: no master so far, SPEAR version has more nested modules.
+    spear-history: master
+    spear-trunk: spear-history
+    lcls-trunk: cvs-history
+    pcds-trunk: 
+    -p cvs-history -d pcds-trunk -s svn-history -m 704f67d7659f7ca9e6f562d56d0a2b2f0510106f:miscUtils-R1-0-2-1
+
+snmp:
+    slac-master: svn-history
+    spear-history: N/A
+    spear-trunk: N/A
+    lcls-trunk: svn-history
+    pcds-trunk:
+
+    
+
 diagTimer: Just from svn, so svn trunk became master.  Move to github?
 
 Still needed for ioc/common/gigECam:
