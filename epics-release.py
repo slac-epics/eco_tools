@@ -25,7 +25,8 @@ from Releaser import *
 #	base				- EPICS base
 #	extensions			- EPICS extensions
 #	modules/<mod_name>	- Module named mod_name
-#	ioc/<ioc_name>		- IOC named ioc_name
+#	<ioc_name>			- LCLS IOC named ioc_name
+#	ioc/common/<ioc_name>	- Common IOC named ioc_name
 # For each package released
 # it will:
 #	Check for invalid versions in configure/RELEASE files
