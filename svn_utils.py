@@ -24,7 +24,7 @@ def svnPathExists( svnPath, revision=None, verbose=False ):
     except subprocess.CalledProcessError:
         return False
 
-def svnGetWorkingBranch( ):
+def svnGetWorkingBranch( debug=False, verbose=False ):
     '''See if the current directory is the top of an svn working directory.
     Returns a 3-tuple of [ url, branch, tag ], [ None, None, None ] on error.
     For a valid svn working dir, url must be a valid string, branch is typically

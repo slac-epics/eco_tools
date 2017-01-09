@@ -96,9 +96,12 @@ def find_release_repo( module, options ):
             repo = svnRepo( svn_url, svn_branch, svn_tag )
     return repo
 
-def build_release( release ):
+def build_release( release, destinationPath=None ):
     curDir = os.getcwd()
-    release.CheckOutRelease( release.GetWorkingBranch(), tagName, destinationPath )
+    if not destinationPath or len(destinationPath) < 2:
+        print "build_release error: No destinationPath specified for release %s, tag %s!" % ( release._url, release._tag )
+        return
+    release.CheckoutRelease( release.GetWorkingBranch(), release._tag, destinationPath )
 
 def checkOutModule(packageName, tag, destinationPath):
     '''Checkout the module from GIT/CVS. 
