@@ -10,4 +10,6 @@ fi
 export PSPKG_RELEASE=git-utils-0.2.0
 source $PSPKG_ROOT/etc/set_env.sh
 
-$TOOLS_SITE_TOP/eco_tools/epics-build.py $*
+eco_tools_dir=`dirname $0`
+
+$eco_tools_dir/epics-build.py $*
