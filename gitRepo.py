@@ -76,28 +76,44 @@ class gitRepo( Repo.Repo ):
                 raise gitError, "BuildRelease CalledProcessError: Failed to clone %s in %s" % ( self._url, buildDir )
 
         # See if we've already created a branch for this tag
-        branchRev = None
+        branchSha = None
         try:
             cmdList = [ "git", "show-ref", 'refs/heads/%s' % self._tag ]
             gitOutput = subprocess.check_output( cmdList ).splitlines()
             if len(gitOutput) == 1:
-                branchRev = gitOutput[0]
+                branchSha = gitOutput[0]
         except subprocess.CalledProcessError, e:
             pass
 
         try:
-            if branchRev:
-                # Checkout the branch
-                cmdList = [ "git", "checkout", 'refs/heads/%s' % self._tag ]
-                subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
-            else:
-                # Checkout the tag
-                cmdList = [ "git", "checkout", 'refs/tags/%s' % self._tag ]
+            # Fetch the tag
+            cmdList = [ "git", "fetch", "origin", self._tag ]
+            subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
+
+            # Get the tagSha
+            tagSha = None
+            cmdList = [ "git", "show-ref", 'refs/tags/%s' % self._tag ]
+            gitOutput = subprocess.check_output( cmdList ).splitlines()
+            if len(gitOutput) == 1:
+                tagSha = gitOutput[0]
+
+            if branchSha and branchSha != tagSha:
+                # Rename the branch to put it aside till we delete it later
+                cmdList = [ "git", "branch", "-m", self._tag, 'obs-' + self._tag ]
                 subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
 
-                # Create a branch from the tag for easier status checks if it doesn't already exist
-                cmdList = [ "git", "checkout", '-b', self._tag ]
+            # Checkout the tag
+            cmdList = [ "git", "checkout", 'refs/tags/%s' % self._tag ]
+            subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
+
+            if branchSha and branchSha != tagSha:
+                # Delete the obsolete branch
+                cmdList = [ "git", "branch", "-D", 'obs-' + self._tag ]
                 subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
+
+            # Create a branch from the tag for easier status checks if it doesn't already exist
+            cmdList = [ "git", "checkout", '-b', self._tag ]
+            subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
         except RuntimeError, e:
             print e
             os.chdir(curDir)
