@@ -62,6 +62,114 @@ DEF_PCDS_GROUP_OWNER= "ps-pcds"
 debugScript			= False
 
 
+# TODO: Cleanup this function
+def ValidateArgs( repo, package, verbose=False ):
+    # validate the repo
+    if not repo:
+        raise ValidateError, "Repo not found for package %s" % (package)
+    defaultPackage	= None
+    ( repo_url, repo_branch, repo_tag ) = repo.GetWorkingBranch()
+    if repo_url:
+        if verbose:
+            print "Releaser.ValidateArgs: repo_url    =", repo_url
+            print "Releaser.ValidateArgs: repo_branch =", repo_branch
+            print "Releaser.ValidateArgs: repo_tag    =", repo_tag
+            print "Releaser.ValidateArgs: package     =", package
+        defaultPackage = repo.GetDefaultPackage( package )
+
+    if verbose:
+        print "defaultPackage:", defaultPackage
+
+    # If we have a defaultPackage from the working directory,
+    # Check it against the other options
+    if defaultPackage:
+        if not package or not package[0]:
+            package = [ defaultPackage ]
+
+    # Determine the release package SVN URL
+    if not self._branch:
+        if not package or not package[0]:
+            raise ValidateError, "No release package specified"
+        if len( package ) > 1:
+            raise ValidateError, "Multiple  release packages specified: %s" % (package)
+        if repo_url:
+            self._branch = repo_url
+        else:
+            self._branch = os.path.join(	self._repo, self._gitStub2,
+                                                package[0], "current"	)
+            if not gitPathExists( self._branch, self._opt.revision ):
+                self._branch = os.path.join(self._repo, self._gitStub1,
+                                                package[0], "current"	)
+
+    # Make sure the release package exists
+    if not gitPathExists( self._branch, self._opt.revision ):
+        raise ValidateError, "Invalid git branch at rev %s\n\t%s" % (	self._opt.revision,
+                                                                        self._branch )
+
+    # validate release tag
+    if not self._tag:
+        raise ValidateError, "Release tag not specified (--release)"
+    if not re.match( r"(R\d+(\.\d+)+-\d+\.\d+\.\d+)|(R\d+\.\d+\.\d+)", self._tag ):
+        raise ValidateError, "%s is an invalid release tag: Must be R[<orig_release>-]<major>.<minor>.<bugfix>" % self._tag
+    if not self._ReleasePath:
+        if not package or not package[0]:
+            raise ValidateError, "No release package specified"
+        self._ReleasePath = os.path.join(	self._repo, self._gitRelDir,
+                                            package[0], self._tag	)
+
+    if self._noTag == False and gitPathExists( self._ReleasePath ):
+        raise ValidateError, "SVN release tag already exists: %s" % ( self._ReleasePath )
+#		try:
+#			if gitPathExists( self._ReleasePath ):
+#				raise ValidateError, "SVN release tag already exists: %s" % ( self._ReleasePath )
+#		except:
+#			pass
+#		else:
+#			raise ValidateError, "SVN release tag already exists: %s" % ( self._ReleasePath )
+
+    # validate release directory
+    if not os.path.exists(self._prefix):
+        raise ValidateError, "Invalid release directory %s" % ( self._prefix )
+    if not self._installDir:
+        if not package or not package[0]:
+            raise ValidateError, "No release package specified"
+        self._installDir = os.path.join(self._prefix,
+                                            package[0], self._tag	)
+
+    # validate release message
+    if not self._message:
+        print "Please enter a release comment (end w/ ctrl-d on blank line):"
+        comment = ""
+        try:
+            while True:
+                line = raw_input()
+                comment = "\n".join( [ comment, line ] ) 
+        except EOFError:
+            self._message = comment
+
+    if self._message is None:
+            raise ValidateError, "Release message not specified (-m)"
+
+    if repo_url:
+        # Check release branch vs working dir branch
+        if self._branch != repo_url:
+            print "Release branch: %s\nWorking branch: %s" % ( self._branch, repo_url )
+            if not self._batch:
+                confirmResp = raw_input( 'Release branch does not match working dir.  Proceed (Y/n)?' )
+                if len(confirmResp) != 0 and confirmResp != "Y" and confirmResp != "y":
+                    branchMsg = "Branch mismatch!\n"
+                    raise ValidateError, branchMsg
+
+    # validate self._grpowner	= DEF_LCLS_GROUP_OWNER
+    if verbose:
+        print "ValidateArgs: Success"
+        print "  repo_url:    %s" % repo_url
+        print "  branch:      %s" % self._branch
+        print "  tag:         %s" % self._tag
+        print "  releasePath: %s" % self._ReleasePath
+        print "  installDir:  %s" % self._installDir
+        print "  message:     %s" % self._message
+
 # Entry point of the script. This is main()
 try:
     # Make sure we have a valid EPICS_SITE_TOP

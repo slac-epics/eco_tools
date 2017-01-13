@@ -25,13 +25,15 @@ import readline
 import shutil
 import tempfile
 import json
+import Repo
+import gitRepo
+import svnRepo
+import Releaser 
+from git_utils import *
+from svn_utils import *
 
 # from cram_utils import *
 from repo_defaults import *
-from git_utils import *
-from gitRepo   import *
-from svn_utils import *
-from svnRepo   import *
 
 CVS_ROOT_TOP = '/afs/slac/g/lcls/cvs'
 GIT_REPO_MODULES = DEF_GIT_REPOS + '/package/epics/modules'
@@ -74,34 +76,20 @@ cvs_modules2Location = parseCVSModulesTxt()
 def build_modules( options ):
     releases = find_releases( options )
     for release in releases:
-        build_release( release )
+        release.InstallPackage( installTop=options.top )
  
 def find_releases( options ):
     releases = []
-    for package in options.package:
-        releases += [ find_release_repo( package, options ) ]
+    for package in options.packages:
+        releases += [ Releaser.find_release( package, options.verbose ) ]
     return releases
 
-def find_release_repo( module, options ):
-    repo = None
-    ( module_name, release_name ) = os.path.split( module )
-    (git_url, git_tag) = gitFindPackageRelease( module_name, release_name, verbose = options.verbose )
-    if git_url is not None:
-        repo = gitRepo( git_url, None, git_tag )
-    if repo is None:
-        (svn_url, svn_branch, svn_tag) = svnFindPackageRelease( module_name, release_name, debug = True, verbose = options.verbose )
-        if options.verbose:
-            print "find_release_repo: Found svn_url=%s, svn_path=%s, svn_tag=%s" % ( svn_url, svn_branch, svn_tag )
-        if svn_url is not None:
-            repo = svnRepo( svn_url, svn_branch, svn_tag )
-    return repo
-
-def build_release( release, destinationPath=None ):
-    curDir = os.getcwd()
-    if not destinationPath or len(destinationPath) < 2:
-        print "build_release error: No destinationPath specified for release %s, tag %s!" % ( release._url, release._tag )
-        return
-    release.CheckoutRelease( release.GetWorkingBranch(), release._tag, destinationPath )
+#def build_release( release, destinationPath=None ):
+#	curDir = os.getcwd()
+#	if not destinationPath or len(destinationPath) < 2:
+#		print "build_release error: No destinationPath specified for release %s, tag %s!" % ( release._url, release._tag )
+#		return
+#	release.CheckoutRelease( release.GetWorkingBranch(), release._tag, destinationPath )
 
 def checkOutModule(packageName, tag, destinationPath):
     '''Checkout the module from GIT/CVS. 
@@ -188,9 +176,9 @@ def process_options(argv):
             + 'i.e. Repo searched for in $TOP/[module-path/]module-name/release-version'
     epilog = epilog_fmt % ( gitModulesTxtFile, DEF_GIT_REPOS, DEF_SVN_REPO, CVS_ROOT_TOP )
     parser = argparse.ArgumentParser( description=description, epilog=epilog )
-    parser.add_argument( '-p', '--package',   action='append', \
+    parser.add_argument( '-p', '--package',   dest='packages', action='append', \
                         help='EPICS module-name/release-version. Ex: asyn/R4.30-1.0.1', default=[] )
-    parser.add_argument( '-b', '--base',     action='store',  help='Use to set EPICS_BASE in RELEASE_SITE' )
+#	parser.add_argument( '-b', '--base',     action='store',  help='Use to set EPICS_BASE in RELEASE_SITE' )
     parser.add_argument( '-f', '--input_file_path', action='store', help='Read list of module releases from this file' )
     parser.add_argument( '-r', '--repo',     action='store',  help='repo url' )
     parser.add_argument( '-t', '--top',      action='store',  help='Top of release area.' )
@@ -219,7 +207,7 @@ def main(argv=None):
             modulePath = line.strip()
             (module, release) = os.path.split( modulePath )
             if module and release:
-                options.package += [ modulePath ]
+                options.packages += [ modulePath ]
                 if options.verbose:
                     print 'Adding: %s' % modulePath
 
@@ -227,7 +215,7 @@ def main(argv=None):
 
         in_file.close()
 
-    if len( options.package ) == 0:
+    if len( options.packages ) == 0:
         print 'Error: No module/release packages specified!'
         return -1
 

@@ -7,13 +7,13 @@ import subprocess
 import fileinput
 from repo_defaults import *
 
-def svnPathExists( svnPath, revision=None, verbose=False ):
+def svnPathExists( svnPath, revision=None, debug=False ):
     try:
         if revision:
             repoCmd = [ 'svn', 'ls', '%s@%s' % ( svnPath, revision) ]
         else:
             repoCmd = [ 'svn', 'ls', svnPath ]
-        if verbose:
+        if debug:
             print "svnPathExists check_output: %s" % ' '.join( repoCmd )
         contents = subprocess.check_output( repoCmd, stderr = subprocess.STDOUT )
         # No need to check contents
@@ -24,7 +24,7 @@ def svnPathExists( svnPath, revision=None, verbose=False ):
     except subprocess.CalledProcessError:
         return False
 
-def svnGetWorkingBranch( debug=False, verbose=False ):
+def svnGetWorkingBranch( debug=False ):
     '''See if the current directory is the top of an svn working directory.
     Returns a 3-tuple of [ url, branch, tag ], [ None, None, None ] on error.
     For a valid svn working dir, url must be a valid string, branch is typically
@@ -52,11 +52,11 @@ def svnGetWorkingBranch( debug=False, verbose=False ):
                 break
 
     except OSError, e:
-        if debug or verbose:
+        if debug:
             print e
         pass
     except subprocess.CalledProcessError, e:
-        if debug or verbose:
+        if debug:
             print e
         pass
     return ( repo_url, repo_branch, repo_tag )
@@ -68,7 +68,7 @@ def svnFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
     if not tag.startswith( "R" ):
         tag = "R" + tag
     if verbose:
-        print "svnFindPackageRelease: Need to find packageSpec=%s, tag=%s\n" % (packageSpec, tag)
+        print "svnFindPackageRelease: Need to find packageSpec=%s, tag=%s" % (packageSpec, tag)
 
     svn_tag_paths  =  [ DEF_SVN_TAGS ]
     svn_tag_paths  += [ os.path.join( DEF_SVN_TAGS, 'modules' ) ]
@@ -77,13 +77,13 @@ def svnFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
 
     for path in svn_tag_paths:
         url = os.path.join( DEF_SVN_REPO, path, packageSpec, tag )
-        if svnPathExists( url, verbose=verbose ):
+        if svnPathExists( url, debug=debug ):
             (repo_url, repo_path, repo_tag) = ( url, path, tag )
             break
     if verbose:
         if repo_url:
-            print "svnFindPackageRelease: Found repo_url=%s, repo_path=%s, repo_tag=%s\n" % (repo_url, repo_path, repo_tag)
+            print "svnFindPackageRelease found %s/%s: url=%s, repo_path=%s, tag=%s" % (packageSpec, tag, repo_url, repo_path, repo_tag)
         else:
-            print "svnFindPackageRelease Error: Cannot find %s/%s\n" % (packageSpec, tag)
+            print "svnFindPackageRelease Error: Cannot find %s/%s" % (packageSpec, tag)
     return (repo_url, repo_path, repo_tag)
 

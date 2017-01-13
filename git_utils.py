@@ -277,11 +277,11 @@ def gitGetWorkingBranch( debug = False, verbose = False ):
             repo_tag = statusLines[0].split('^')[0]
 
     except OSError, e:
-        if debug or verbose:
+        if debug:
             print e
         pass
     except subprocess.CalledProcessError, e:
-        if debug or verbose:
+        if debug:
             print e
         pass
     return ( repo_url, repo_branch, repo_tag )
@@ -292,14 +292,19 @@ def gitFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
     # See if the package was listed in $TOOLS/eco_modulelist/modulelist.txt
     if packageName in git_package2Location:
         url_path = git_package2Location[packageName]
-        (repo_url, repo_tag) = gitGetRemoteTag( url_path, tag, debug=debug, verbose=verbose )
+        (repo_url, repo_tag) = gitGetRemoteTag( url_path, tag, debug=debug )
     else:
         for url_root in [ DEF_GIT_MODULES, DEF_GIT_REPOS ]:
             if packagePath:
                 url_path = '%s/%s/%s.git' % ( url_root, packagePath, packageName )
             else:
                 url_path = '%s/%s.git' % ( url_root, packageName )
-            (repo_url, repo_tag) = gitGetRemoteTag( url_path, tag, debug=debug, verbose=verbose )
+            (repo_url, repo_tag) = gitGetRemoteTag( url_path, tag, debug=debug )
             break
+    if verbose:
+        if repo_url:
+            print "gitFindPackageRelease found %s/%s: url=%s, tag=%s" % ( packageSpec, tag, repo_url, repo_tag )
+        else:
+            print "gitFindPackageRelease Error: Cannot find %s/%s" % (packageSpec, tag)
     return (repo_url, repo_tag)
 

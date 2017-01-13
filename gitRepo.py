@@ -19,14 +19,23 @@ class gitError( Exception ):
 
 class gitRepo( Repo.Repo ):
     def __init__( self, url, branch=None, tag=None ):
-        super(gitRepo, self).__init__( )
+        super(gitRepo, self).__init__( url, branch, tag )
         #self.grpowner	= DEF_PCDS_GROUP_OWNER
         #self._version	= ""
         #self._retcode	= 0
-        self._url       = url
-        self._branch    = branch
-        self._tag       = tag
-        self._gitRepo	= determineGitRoot()
+        #self._url       = url
+        #self._branch    = branch
+        #self._tag       = tag
+        #self._gitRepo	= determineGitRoot()
+
+#	def __repr__( self ):
+#		return "gitRepo"
+
+    def __str__( self ):
+        strRep =  super(svnRepo, self).__str__()
+        strRep += "%s prefix: %s" % ( self.__class__.__name__, self._prefix if self._prefix else 'None' )
+        #print __repr__(), "_gitRepo: ", _gitRepo
+        return strRep
 
     def GetWorkingBranch( self ):
         return gitGetWorkingBranch()
@@ -37,30 +46,86 @@ class gitRepo( Repo.Repo ):
     def GetTag( self ):
         return self._tag
 
-    def CheckoutRelease( self, buildBranch, buildDir, verbose=False, quiet=False ):
+    def CheckoutRelease( self, buildDir, verbose=True, quiet=False, dryRun=False ):
         if verbose:
-            print "Checking out: %s\nto build dir: %s ..." % ( buildBranch, buildDir )
+            print "Checking out: %s\nto build dir: %s ..." % ( self._url, buildDir )
+        if dryRun:
+            print "CheckoutRelease: --dryRun--"
+            return
+
         outputPipe = None
         if quiet:
             outputPipe = subprocess.PIPE
-        try:
-            self.execute( "git co %s %s" % ( buildBranch, buildDir ), outputPipe )
-        except RuntimeError:
-            raise Releaser.BuildError, "BuildRelease: git co failed for %s %s" % ( buildBranch, buildDir )
 
-    def RemoveTag( self, package, release, verbose=True, dryRun=False ):
+        curDir = os.getcwd()
+        if os.path.isdir( os.path.join( buildDir, '.git' ) ):
+            os.chdir( buildDir )
+        else:
+            try:
+                # Clone the repo
+                cmdList = [ "git", "clone", self._url, buildDir ]
+                subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
+                os.chdir( buildDir )
+            except RuntimeError, e:
+                print e
+                os.chdir(curDir)
+                raise gitError, "BuildRelease RuntimeError: Failed to clone %s to %s" % ( self._url, buildDir )
+            except subprocess.CalledProcessError, e:
+                print e
+                os.chdir(curDir)
+                raise gitError, "BuildRelease CalledProcessError: Failed to clone %s in %s" % ( self._url, buildDir )
+
+        # See if we've already created a branch for this tag
+        branchRev = None
+        try:
+            cmdList = [ "git", "show-ref", 'refs/heads/%s' % self._tag ]
+            gitOutput = subprocess.check_output( cmdList ).splitlines()
+            if len(gitOutput) == 1:
+                branchRev = gitOutput[0]
+        except subprocess.CalledProcessError, e:
+            pass
+
+        try:
+            if branchRev:
+                # Checkout the branch
+                cmdList = [ "git", "checkout", 'refs/heads/%s' % self._tag ]
+                subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
+            else:
+                # Checkout the tag
+                cmdList = [ "git", "checkout", 'refs/tags/%s' % self._tag ]
+                subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
+
+                # Create a branch from the tag for easier status checks if it doesn't already exist
+                cmdList = [ "git", "checkout", '-b', self._tag ]
+                subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
+        except RuntimeError, e:
+            print e
+            os.chdir(curDir)
+            raise gitError, "BuildRelease RuntimeError: Failed to checkout %s in %s" % ( self._tag, buildDir )
+        except subprocess.CalledProcessError, e:
+            print e
+            os.chdir(curDir)
+            raise gitError, "BuildRelease CalledProcessError: Failed to checkout %s in %s" % ( self._tag, buildDir )
+        os.chdir(curDir)
+
+    def RemoveTag( self, package, release, verbose=True, dryRun=True ):
         if verbose:
             print "\nRemoving %s release tag %s ..." % ( package, release )
         if dryRun:
+            print "RemoveTag: --dryRun--"
             return
-        gitRmTagCmd = "git rm %s" % ( release ) 
-        self.execute( '%s -m "Removing unwanted tag %s for %s"' % ( gitRmTagCmd,
-                            release, package ) ) 
+        comment = "Removing unwanted tag %s for %s" % ( gitRmTagCmd, release, package )
+        cmdList = [ "git", "tag", "-d", release ]
+        subprocess.check_call( cmdList )
         print "Successfully removed %s release tag %s." % ( package, release )
 
-    def TagRelease( self, package, release, branch=None, message="", verbose=False ):
+    def TagRelease( self, package, release, branch=None, message="", verbose=True, dryRun=True ):
         if verbose:
-            print "Tagging release ..."
-        gitTagCmd = "git tag %s" % ( release ) 
-        self.execute( '%s -m "Release %s/%s: %s"' % (	gitTagCmd, package,	release, message ) ) 
+            print "Tagging release %s %s ..." % ( self._branch, self._tag )
+        if dryRun:
+            print "TagRelease: --dryRun--"
+            return
+        comment = "Release %s/%s: %s" % ( package, release, message )
+        cmdList = [ "git", "tag", release, "-m", comment ]
+        subprocess.check_call( cmdList )
 
