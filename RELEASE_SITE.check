@@ -34,6 +34,6 @@ endif
 endif
 
 # Check BASE_MODULE_VERSION
-ifndef BASE_MODULE_VER
-BASE_MODULE_VER := $(EPICS_BASE_VER)
+ifndef BASE_MODULE_VERSION
+$(error BASE_MODULE_VERSION not defined!)
 endif

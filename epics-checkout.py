@@ -196,7 +196,6 @@ def export_release_site_file(inputs):
     print >> out_file, 'BASE_SITE_TOP=%s'     % inputs['BASE_SITE_TOP']
     print >> out_file, 'MODULES_SITE_TOP=%s'  % inputs['EPICS_MODULES']
     print >> out_file, 'EPICS_MODULES=%s'     % inputs['EPICS_MODULES']
-    print >> out_file, 'EPICS_BASE_VER=%s'    % inputs['EPICS_BASE_VER']
     print >> out_file, 'PACKAGE_SITE_TOP=%s'  % inputs['PACKAGE_SITE_TOP']
     print >> out_file, 'PSPKG_ROOT=%s'        % inputs['PSPKG_ROOT']
     if 'IOC_SITE_TOP' in inputs:

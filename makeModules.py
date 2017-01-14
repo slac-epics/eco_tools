@@ -148,7 +148,7 @@ def writeReleaseSite(path):
     releaseSite.write('BASE_SITE_TOP=' + os.environ['BASE_SITE_TOP'] + '\n')
     releaseSite.write('MODULES_SITE_TOP=' + os.environ['MODULES_SITE_TOP'] + '\n')
     releaseSite.write('IOC_SITE_TOP=' + os.environ['IOC_SITE_TOP'] + '\n')
-    releaseSite.write('EPICS_BASE_VER=' + os.environ['EPICS_BASE_VER'] + '\n')
+    releaseSite.write('BASE_MODULE_VERSION=' + os.environ['EPICS_BASE_VER'] + '\n')
     releaseSite.write('WWW_DIR=' + os.environ['WWW_DIR'] + '\n')
     releaseSite.write('#==============================================================================\n')
     releaseSite.close()
