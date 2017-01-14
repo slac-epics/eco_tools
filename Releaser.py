@@ -3,6 +3,9 @@ import sys
 import shutil
 import tempfile
 import os
+import grp
+import pwd
+import stat
 import subprocess
 import Repo
 import gitRepo
@@ -45,7 +48,7 @@ class Releaser(object):
         self._retcode	= 0
         # Create a directory where files will be checked-out
         self.tmpDir		= tempfile.mktemp("-epics-release")
-        self.grpowner	= None
+        self.grpOwner	= None
 
     def __del__( self ):
         self.DoCleanup( 0 )
@@ -63,9 +66,9 @@ class Releaser(object):
         else:
             if self._verbose:
                 print "Cleaning up temporary files ..."
-            sys.stdout.flush()
             try:
                 sys.stdout.flush()
+                sys.stderr.flush()
                 if os.path.exists(self.tmpDir):
                     if self._verbose:
                         print "rm -rf", self.tmpDir
@@ -107,7 +110,7 @@ class Releaser(object):
         if rel._dryRun:
             return
 
-        # Make sure we can write to the build directory
+        # Enable write access to build directory
         try:
             self.execute("chmod -R u+w %s" % ( buildDir ))
         except OSError:
@@ -122,8 +125,35 @@ class Releaser(object):
             raise BuildError, "Build dir not found: %s" % ( buildDir )
         print "Successfully removed build dir: %s ..." % ( buildDir )
 
+    def fixPermissions( self, dir ):
+        if self._verbose:
+            print "Fixing permissions for %s ..." % dir
+        sys.stdout.flush()
+        userId  = os.geteuid()
+        groupId = -1
+        groups  = subprocess.check_output( [ "id" ] ).splitlines()
+        if self.grpOwner is not None:
+            if re.search( groups, self.grpOwner ):
+                groupId = grp.getgrname(self.grpOwner).gr_gid 
+
+        fileMode = stat.S_IWUSR | stat.S_IWGRP \
+                 | stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH
+        dirMode  = stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH | fileMode
+        for dirPath, dirs, files in os.walk(dir):
+            pathStatus = os.stat( dirPath )
+            if userId == pathStatus.st_uid:
+                os.chmod( dirPath, pathStatus.st_mode | dirMode )
+                if groupId >= 0 and groupId != pathStatus.st_gid:
+                    os.chown( dirPath, -1, groupId )
+            for fileName in files:
+                filePath   = os.path.join( dirPath, fileName )
+                pathStatus = os.stat( filePath )
+                if userId == pathStatus.st_uid:
+                    os.chmod( filePath, pathStatus.st_mode | fileMode )
+                    if groupId >= 0 and groupId != pathStatus.st_gid:
+                        os.chown( filePath, -1, groupId )
+
     def BuildRelease( self, buildBranch, buildDir, outputPipe = subprocess.PIPE ):
-        # os.environ["EPICS_SITE_TOP"] = self._prefix
         if not buildDir:
             raise BuildError, "Build dir not defined!"
         if self._verbose:
@@ -158,6 +188,8 @@ class Releaser(object):
         if self._quiet:
             outputPipe = subprocess.PIPE
         try:
+            sys.stdout.flush()
+            sys.stderr.flush()
             print "Building Release in %s ..." % ( buildDir )
             buildOutput = self.execute( "make -C %s" % buildDir, outputPipe )
             if self._debug:
@@ -165,6 +197,10 @@ class Releaser(object):
         except RuntimeError, e:
             print e
             raise BuildError, "BuildRelease: FAILED"
+
+        sys.stdout.flush()
+        sys.stderr.flush()
+        self.fixPermissions( self._installDir )
 
     def DoTestBuild( self ):
         try:
@@ -175,42 +211,28 @@ class Releaser(object):
             raise
 
     def InstallPackage( self, installTop=None ):
+        '''Use InstallPackage to automatically dertermine the buildDir from installTop and the repo specs.
+        If you already know where to build you can just call BuildRelease() directly.'''
         if self._verbose:
+            self._repo.ShowRepo( titleLine="InstallPackage: " + self._package, prefix="	" )
             #print self._repo
-            print "\nInstallPackage: installTop: %s" % installTop
-            self._repo.ShowRepo( titleLine="InstallPackage: Repo", prefix="	" )
-            print "InstallPackage: _branch:    %s" % self._branch
-            print "InstallPackage: _package:   %s" % self._package
+            #print "\nInstallPackage: installTop: %s" % installTop
+            #print "InstallPackage: _branch:    %s" % self._branch
+            #print "InstallPackage: _package:   %s" % self._package
             #print "InstallPackage: _version:   %s" % self._version
 
         if not self._installDir:
             if not installTop:
-                print "InstallPackage Error: Unable to determine installDir!"
+                print "InstallPackage Error: Need valid installTop to determine installDir!"
                 return
             self._installDir = os.path.join( installTop, self._package )
 
         if self._installDir.startswith( DEF_EPICS_TOP_PCDS ):
-            self.grpowner = DEF_PCDS_GROUP_OWNER
+            self.grpOwner = DEF_PCDS_GROUP_OWNER
 
-        if self._verbose:
-            print "InstallPackage: Installing to %s" % self._installDir
         self.BuildRelease( self._ReleasePath, self._installDir )
-
-        print "Fixing permissions ...",
-        sys.stdout.flush()
-        try:
-            self.execute( 'find %s -type f -execdir chmod a-w  {} +' % ( self._installDir ) )
-            self.execute( 'find %s -type d -execdir chmod ug+w {} +' % ( self._installDir ) )
-            groups = self.execute("id")
-            if self.grpowner:
-                if re.search( groups, self.grpowner ):
-                    self.execute("chgrp -R %s %s" % ( self.grpowner, self._installDir ))
-            print "InstallPackage: Done fixing permissions."
-        except:
-            print "InstallPackage: Fixing permissions failed.\nERROR: %s." % ( sys.exc_value )
-            pass
-
-        print "Package %s installed to:\n%s" % ( self._package, self._installDir )
+        if self._verbose:
+            print "InstallPackage: %s installed to:\n%s" % ( self._package, os.path.realpath(self._installDir) )
 
 def find_release( package, verbose=False ):
     release = None
@@ -226,4 +248,6 @@ def find_release( package, verbose=False ):
                 print "find_release: Found svn_url=%s, svn_path=%s, svn_tag=%s" % ( svn_url, svn_branch, svn_tag )
             repo = svnRepo.svnRepo( svn_url, svn_branch, svn_tag )
             release = Releaser( repo, package )
+    if release is None:
+        print "find_release Error: Unable to find package %s in svn or git repos" % package
     return release

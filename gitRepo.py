@@ -78,7 +78,7 @@ class gitRepo( Repo.Repo ):
         # See if we've already created a branch for this tag
         branchSha = None
         try:
-            cmdList = [ "git", "show-ref", 'refs/heads/%s' % self._tag ]
+            cmdList = [ "git", "show-ref", '-s', 'refs/heads/%s' % self._tag ]
             gitOutput = subprocess.check_output( cmdList ).splitlines()
             if len(gitOutput) == 1:
                 branchSha = gitOutput[0]
@@ -92,7 +92,7 @@ class gitRepo( Repo.Repo ):
 
             # Get the tagSha
             tagSha = None
-            cmdList = [ "git", "show-ref", 'refs/tags/%s' % self._tag ]
+            cmdList = [ "git", "show-ref", '-s', 'refs/tags/%s' % self._tag ]
             gitOutput = subprocess.check_output( cmdList ).splitlines()
             if len(gitOutput) == 1:
                 tagSha = gitOutput[0]
@@ -106,14 +106,17 @@ class gitRepo( Repo.Repo ):
             cmdList = [ "git", "checkout", 'refs/tags/%s' % self._tag ]
             subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
 
-            if branchSha and branchSha != tagSha:
-                # Delete the obsolete branch
-                cmdList = [ "git", "branch", "-D", 'obs-' + self._tag ]
+            if branchSha != tagSha:
+                if branchSha:
+                    # Delete the obsolete branch
+                    cmdList = [ "git", "branch", "-D", 'obs-' + self._tag ]
+                    subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
+
+                # Create a branch from the tag for easier status checks if it doesn't already exist
+                # or if the old one didn't match the tag
+                cmdList = [ "git", "checkout", '-b', self._tag ]
                 subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
 
-            # Create a branch from the tag for easier status checks if it doesn't already exist
-            cmdList = [ "git", "checkout", '-b', self._tag ]
-            subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
         except RuntimeError, e:
             print e
             os.chdir(curDir)

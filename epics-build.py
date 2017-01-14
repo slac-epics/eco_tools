@@ -81,7 +81,9 @@ def build_modules( options ):
 def find_releases( options ):
     releases = []
     for package in options.packages:
-        releases += [ Releaser.find_release( package, options.verbose ) ]
+        release = Releaser.find_release( package, options.verbose )
+        if release is not None:
+            releases += [ release ]
     return releases
 
 #def build_release( release, destinationPath=None ):
