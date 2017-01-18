@@ -1,0 +1,14 @@
+
+1.	epics-checkout should use our SLAC templates when it creates the bare git repo.
+
+2.	epics-versions should consider makefile ifdef's instead of using a simple grep.
+	Possibly leverage off EPICS base checkRelease.pm script
+
+3.	epics-versions could allow a directory to be specified and it would show
+	EPICS_BASE, and each module dependency it finds assuming that directory is
+	the TOP of an epics package by searching $TOP/configure/RELEASE, etc
+	Include an option to show which file the macro was found.
+	See my bash function, evers(), for a bash equivalent.
+	Add a soft link shortcut named evers pointing to epics-versions.
+
+4.	?

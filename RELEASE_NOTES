@@ -1,0 +1,49 @@
+
+R1.0.0	?/?/2017, bhill
+	Updates to eco:
+		Now it's a soft link to bash script that runs epics-checkout.py.
+		There's also a soft link called epics-checkout to the same launch script.
+		The command line options are the same as the prior eco script.
+
+		However, now the first choice when epics-checkout searchs for the package
+		location is a git repo, if available.
+		The rational for this is tht the initial import of a cvs or svn package
+		to git is easy and doesn't take long.  Once in git, it's easier to do
+		any new work using git, using lcls-trunk or pcds-trunk as needed till the
+		merge is complete.
+		The next stop on the search list is $TOOLS/eco_modulelist/modulelist.txt.
+		If epics-checkout is having trouble finding your module, add a convenient
+		shortcut name in eco_modulelist.
+		Then CVS, and finally svn.
+		If the package isn't found in any of those, it errors out.
+	New EPICS utility scripts added:
+	epics-build:
+		Soft link to bash script that runs epics-build.py.
+		Allows building one or more module releases either via command line or via a batch file.
+	epics-versions:
+		Soft link to bash script that runs epics-versions.py.
+		Searches for the most current (or all) releases of one or more modules.
+		Can also show module dependencies via -v option
+		Also works for base, ioc/<IOC_NAME>, and some other common patterns
+	epics-release:
+		Soft link to bash script that runs epics-release.py.
+		Rework of a PCDS svn script that facilitates creating epics releases in a std fashion w/ one easy command
+
+V_0_0_8	5/6/2016, mshankar
+	Initial version of svn support.
+	Change command name to cvs2git per Mike Z. Improved documentation
+
+V_0_0_7	3/2/2016, mshankar
+	Change the gitignore to iocBoot/*/envPaths
+	Added *~ to the default .gitignore.
+
+V_0_0_6	2/19/2016, mshankar
+	Add support for eco cvsimport
+
+V_0_0_5	2/18/2016, mshankar
+	Move the dialogs to the front of the workflow. Use zenity to indicate success/failure.
+	Some testing on eco initrepo
+	Added a command initrepo that initializes an empty git repo. It also adds the package to eco_modulelist
+
+V_0_0_5	1/14/2016, mshankar
+	Turn off the delimiters for the module name tab completion as well

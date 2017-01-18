@@ -1,0 +1,117 @@
+Usage: epics-checkout.py <Command or File_listing_packages_and_tags (one pair per line)>
+
+epics-checkout (eco) is a script that wraps git clone/cvs checkout and does some additional things that make compilation of modules within the EPICS LCLS/PCDS environment easier.
+The main intent of epics-checkout is to get hardcoded paths out of configure/RELEASE.
+It generates a file called RELEASE_SITE that contains these hardcoded paths; the configure/RELEASE.local now instead includes RELEASE_SITE
+
+epics-checkout has interactive and batch modes.
+To start epics-checkout in interactive mode, simply type epics-checkout or eco
+For the batch mode, you can pass in a file containing a list of the modules you want to checkout; for example, eco modulelist.txt.
+Each line in this file contains the module name and the branch/tag label. 
+For example, a line for the sequencer would have "seq  seq-R2-0-11-lcls4"
+
+epics-checkout also supports a command called initrepo "eco initrepo" that creates a bare git repository for your package.
+"epics-checkout initrepo" prompts you for a package name and type and repo location.
+It then creates a bare git repo in the location specified; it also creates a default .gitignore and cram configuration for your package.
+
+epics-checkout also supports a command called cvs2git "eco cvs2git" that imports a module from CVS into a git bare repo.
+"eco cvs2git" prompts you for a module name and type and repo location.
+It then creates a bare git repo in the location specified; imports the history from CVS and adds a default .gitignore.
+It comments out the module location in the CVSROOT/modules file; however, it does NOT do a cvs remove of the software from CVS.
+
+
+
+Options:
+  --version             show program's version number and exit
+  -h, --help            show this help message and exit
+  -v, --verbose         print verbose output
+  -b, --batch           Run without confirmation prompts
+  -m MODULE, --module=MODULE
+                        Module to checkout, optionally add the tag to use
+  -d DESTINATION, --destination=DESTINATION
+                        Checkout the package to this folder. Uses cvs -d. For
+                        example, eco -d CATER_12345 on MAIN_TRUNK checks out
+                        MAIN_TRUNK into a folder called CATER_12345. This
+                        option is ignored in batch mode.
+usage: epics-versions.py [options] MODULE ...
+	MODULE can be one or more of:
+		base
+		modules
+		modules/<MODULE_NAME>
+		ioc
+		ioc/<hutch>
+		ioc/<hutch>/<IOC_NAME>
+		screens/edm/<hutch>
+		etc ...
+	Ex: epics-versions.py ioc/xpp
+	For help: epics-versions.py --help
+
+Report on available module versions and dependencies
+
+options:
+  -h, --help            show this help message and exit
+  -a, --all             display all revisions of each module
+  -v, --verbose         show dependent modules
+  -d, --debug           display more info for debugging script
+  -b BASE, --base=BASE  Restrict output to modules for specified base version
+                        ex. --base=R3.14.9-0.3.0
+  -w, --wide            Wide output, all module info on one line
+  --top=TOP             Top of EPICS module release area ex. --top=/afs/slac/g
+                        /pcds/package/epics/R3.14.12.5-0.1.0/modules
+  --allTops             Search all accessible known EPICS module release
+                        locations
+usage: epics-build.py [-h] [-p PACKAGES] [-f INPUT_FILE_PATH] [-r REPO]
+                      [-t TOP] [-v]
+
+epics-build builds one or EPICS module releases.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -p PACKAGES, --package PACKAGES
+                        EPICS module-name/release-version. Ex:
+                        asyn/R4.30-1.0.1
+  -f INPUT_FILE_PATH, --input_file_path INPUT_FILE_PATH
+                        Read list of module releases from this file
+  -r REPO, --repo REPO  repo url
+  -t TOP, --top TOP     Top of release area.
+  -v, --verbose         show more verbose output.
+
+Standard EPICS modules can be specified w/ just the module basename.
+Similarly, modules or packages listed in eco_modulelist
+(/afs/slac/g/lcls/tools/eco_modulelist/modulelist.txt) can be specified w/
+just the module or package name. Longer module repo paths will be checked
+against GIT_TOP (/afs/slac/g/cd/swe/git/repos). and also against svn tags top
+(file:///afs/slac/g/pcds/vol2/svn/pcds). and also cvs root
+(/afs/slac/g/lcls/cvs). i.e. Repo searched for in $TOP/[module-path/]module-
+name/release-version
+Usage: epics-release.py [options] [ <module> ] -r <release> -m "My release comments"
+	Ex: epics-release.py ioc/xpp/vacuum -r R0.1.0 -m "Adding baratron gauge"
+	For help: epics-release.py --help
+
+Options:
+  -h, --help            show this help message and exit
+  -r RELEASE, -R RELEASE, --release=RELEASE
+                        release version string, ex. -r R1.2.3-0.1.0
+  -m MESSAGE, --message=MESSAGE
+                        release message in quotes
+  -v, --verbose         show commands as they are executed
+  -q, --quiet           do not show build or checkout output
+  --revision=REVISION   specify revision or branch, defaults to HEAD
+  --noMsg               do not include a release message
+  -n, --noTag           do not tag, just rebuild an existing release
+  --notag               do not tag, just rebuild an existing release
+  -b BRANCH, --branch=BRANCH
+                        branch to release, ex.
+                        $REPO/epics/branch/bugFix/ioc/cam/R0.2.1
+  -i INSTALLDIR, --install=INSTALLDIR
+                        install directory, ex.
+                        /reg/g/pcds/package/epics/3.14/base/R0.0.1
+  -d, --debug           display more info for debugging script
+  --dryRun              Do test build but no tag or install
+  --noTestBuild         Skip test build
+  --rmBuild             Remove release build.  Does not do a new release.
+  --rmTag               Remove release tag.  Does not do a new release.
+  -x, --nukeRelease     Remove tag and build of release.  Does not do a new
+                        release.
+  --keeptmp             do not erase the temp build directory
+  --batch               do not prompt for confirmation
