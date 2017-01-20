@@ -108,6 +108,11 @@ seq:
    pcds-trunk:
    -p github-master -d pcds-trunk -s svn-history -m a66d86effed:R2-1-2
 
+edm extension:
+	lcls-trunk:
+		Already created by Murali
+	pcds-trunk:
+	-p github-debian-master -d pcds-trunk -s svn-history -m 0772824:784ea1d
 
 diagTimer: Just from svn, so svn trunk became master.  Move to github?
 
@@ -126,6 +131,8 @@ timeStampFifo - Needs event2's timestamped eventCode fifo's
 
 Additional modules requested:
 motor
+streamdevice
+caPutLog
 pvaPy
 pvaSrv
 pvAccessCPP
