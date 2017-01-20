@@ -101,7 +101,13 @@ snmp:
     lcls-trunk: svn-history
     pcds-trunk:
 
-    
+seq:
+   lcls-trunk:
+   -p github-master -d lcls-trunk -s cvs-history -m d509acfdf3f:R2-1-6
+
+   pcds-trunk:
+   -p github-master -d pcds-trunk -s svn-history -m a66d86effed:R2-1-2
+
 
 diagTimer: Just from svn, so svn trunk became master.  Move to github?
 
