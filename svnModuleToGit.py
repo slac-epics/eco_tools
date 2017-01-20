@@ -17,15 +17,15 @@ moduleDestDir		= "/afs/slac/g/cd/swe/git/repos/package/epics/modules/from-svn"
 authorsFile			= "/afs/slac/g/cd/swe/git/repos/package/epics/modules/authors.txt"
 svnRepoRoot         = os.environ[svnRepoEnvVar]
 
-def importModule( module, name=None, branches=[], tags=[], verbose=False ):
-    svnPackageLocation = os.path.join( svnRepoRoot, svnRepoTrunkPath, module )
-    print "Importing svn module %s from %s" % ( module, svnPackageLocation )
-    svn_trunk  = os.path.join( svnRepoTrunkPath, module, "current" )
-    svn_tags   = [ os.path.join( svnRepoTagsPath,	 module ) ]
+def importModule( module, name=None, trunk=None, branches=[], tags=[], verbose=False ):
+    if  trunk is None: 
+        trunk = os.path.join( svnRepoRoot, svnRepoTrunkPath, module, "current" )
+    print "Importing svn module %s from %s" % ( module, trunk )
+    svn_tags  = [ os.path.join( svnRepoTagsPath, module ) ]
     svn_tags += tags
     if name is None:
         name = module
-    importTrunk( svn_trunk, name, branches=branches, tags=svn_tags )
+    importTrunk( trunk, name, branches=branches, tags=svn_tags )
 
 def importTrunk( trunk, name, branches=[], tags=[], verbose=False ):
     # Create a tmp folder to work in
@@ -75,8 +75,12 @@ def importTrunk( trunk, name, branches=[], tags=[], verbose=False ):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser( description='''This script creates a git repo for each specified svn module....
+If you specify a module, the trunk and one tags branch are derived from the module name.
+If you do NOT specify a module, you must specify a package name and either a single trunk path, or at least one branch to import.
+Additional paths for both branches and tags may be added if desired either way.
 ''')
     parser.add_argument( '-m', '--module',   action='store',  help='svn module name to import. (trunk is $CTRL_REPO/trunk/pcds/epics/modules/MODULE_NAME/current)' )
+    parser.add_argument( '-T', '--trunk',	 action='store',  help='svn trunk path  to import. (relative to env CTRL_REPO)', default=None )
     parser.add_argument( '-b', '--branches', action='append', help='svn branch(es)  to import. (relative to env CTRL_REPO)', default=[] )
     parser.add_argument( '-t', '--tags',	 action='append', help='svn tag paths   to import. (relative to env CTRL_REPO)', default=[] )
     parser.add_argument( '-v', '--verbose',  action="store_true", help='show more verbose output.' )
@@ -84,15 +88,20 @@ if __name__ == '__main__':
 
     args = parser.parse_args( )
 
+    if args.module and args.trunk:
+        print 'Please specify either a module name or a trunk path, not both.'    
+        sys.exit()
+
     if args.module:
-        importModule( args.module, name=args.name, branches=args.branches,
+        importModule( args.module, name=args.name, trunk=args.trunk, branches=args.branches,
                       tags=args.tags, verbose=args.verbose )
-    elif len(args.branches) > 0: 
+    elif args.trunk is not None or len(args.branches) > 0:
         if not args.name:
             print 'Please provide a name for git repo'    
             sys.exit()
-        trunk = args.branches[0]
-        importTrunk( trunk, args.name, args.branches[1:], args.tags, args.verbose )
+        if  args.trunk is None:
+            args.trunk = args.branches[0]
+        importTrunk( args.trunk, args.name, args.branches[1:], args.tags, args.verbose )
     else:
         parser.print_help()
         print 'Please provide a module name, or one or more brances to import'

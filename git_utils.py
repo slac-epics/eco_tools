@@ -110,7 +110,7 @@ def initBareRepo(parentFolder, packageName):
         subprocess.check_call(["zenity", "--error", "--title", "Error", "--text", "Git master repo for package " + packageName + " already exists at " + gitMasterRepo])
         raise Exception("Git master repo already exists at " + gitMasterRepo)
     print "Initializing a bare repo in", parentFolder, "for package", packageName
-    subprocess.check_call(["git", "init", "--bare", gitMasterRepo])
+    subprocess.check_call(["git", "init", "--bare", "--template=%s/templates" % DEF_GIT_MODULES, gitMasterRepo])
     if not os.path.exists(gitMasterRepo):
         raise Exception("Git master repo does not seem to exist at " + gitMasterRepo)
     return gitMasterRepo
