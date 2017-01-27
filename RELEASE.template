@@ -5,9 +5,13 @@
 -include $(TOP)/configure/RELEASE.local
 
 # Check for valid macro definitions for module release directories
-$$LOOP(MODULE_DEPENDENCY)
-ifeq ($(wildcard $($$(PREFIX))),)
-$(error Invalid $$(PREFIX): $($$(PREFIX)))
-endif
-$$ENDLOOP(MODULE_DEPENDENCY)
+# You can add tests here to make sure RELEASE.local defined valid
+# macros for all the module dependencies
+#ifeq ($(wildcard $(EPICS_BASE)/include),)
+#$(error Invalid EPICS_BASE: $(EPICS_BASE))
+#endif
+#ifeq ($(wildcard $(ASYN)/include),)
+#$(error Invalid ASYN: $(ASYN))
+#endif
+#...
 

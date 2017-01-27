@@ -271,9 +271,11 @@ def gitGetWorkingBranch( debug = False, verbose = False ):
                 repo_url = tokens[1]
                 break
 
+        # See if HEAD corresponds to any tags
         statusInfo = subprocess.check_output( [ 'git', 'name-rev', '--name-only', '--tags', 'HEAD' ], stderr=subprocess.STDOUT )
         statusLines = statusInfo.splitlines()
         if len(statusLines) > 0:
+            # Just grab the first tag that matches
             repo_tag = statusLines[0].split('^')[0]
 
     except OSError, e:

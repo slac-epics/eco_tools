@@ -19,9 +19,6 @@
 # Don't set your version to anything such as "test" that
 # could match a directory name.
 # ==========================================================
-#$$LOOP(MODULE_DEPENDENCY)
-#$$(PREFIX)_MODULE_VERSION	= $$(VERSION)
-#$$ENDLOOP(MODULE_DEPENDENCY)
 
 # ==========================================================
 # Define module paths using pattern
@@ -29,9 +26,6 @@
 #  or
 # FOO = /Full/Path/To/Development/Version 
 # ==========================================================
-#$$LOOP(MODULE_DEPENDENCY)
-#$$(PREFIX)		= $(EPICS_MODULES)/$$(DIRNAME)/$($$(PREFIX)_MODULE_VERSION)
-#$$ENDLOOP(MODULE_DEPENDENCY)
 
 
 # Set EPICS_BASE last so it appears last in the DB, DBD, INCLUDE, and LIB search paths

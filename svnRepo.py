@@ -57,7 +57,7 @@ class svnRepo( Repo.Repo ):
 
         if verbose:
             print "svn_url:", svn_url
-            print "_url:", _url
+            print "self._url:", self._url
 
         branchHead	= svn_url
         defStub1	= os.path.join( self._svnRepo, self._svnStub1 )
@@ -85,8 +85,8 @@ class svnRepo( Repo.Repo ):
                 defaultPackage = ""
         if verbose:
             print "defaultPackage:", defaultPackage
-            print "_branch:", _branch
-            print "_url:", _url
+            print "self._branch:", self._branch
+            print "self._url:", self._url
         return defaultPackage
 
     def CheckoutRelease( self, buildDir, verbose=False, dryRun=False ):
