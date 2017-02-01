@@ -114,6 +114,16 @@ edm extension:
 	pcds-trunk:
 	-p github-debian-master -d pcds-trunk -s svn-history -m 0772824:784ea1d
 
+streamdevice:
+    lcls-trunk:
+    -p github-master -d lcls-trunk -s cvs-history -m 0d8dd44b74:stream_2_2 -m 45057c8ca1:stream_2_3 -m 77cd74b930:stream_2_4_0 -m dd5112bccf:stream_2_5_0 -m 2693e5b3ba:stream_2_6_1
+
+    pcds-trunk:
+    -p github-master -d pcds-trunk -s svn-history -m 17fde4a2d8:stream_2_3 -m 8661eb53bf:stream_2_4_0 -m f7e085eb58:stream_2_5_0 -m a541b96762:stream_2_6_1
+
+    old-pcds-trunk:
+    -p github-master -d old-pcds-trunk  -s R2.5-0.1.3 -m bf9fd01:stream_2_3
+
 diagTimer: Just from svn, so svn trunk became master.  Move to github?
 
 Still needed for ioc/common/gigECam:
