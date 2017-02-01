@@ -50,6 +50,9 @@ class Repo(object):
         print "\nPlease override Repo.CheckoutRelease() via a version control specific subclass."
         os.sys.exit()
 
+    def GetTag( self ):
+        return self._tag
+
     def RemoveTag( self ):
         print "\nPlease override Repo.RemoveTag() via a version control specific subclass."
         os.sys.exit()

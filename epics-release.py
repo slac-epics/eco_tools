@@ -11,6 +11,7 @@ import os
 import subprocess
 from git_utils import *
 from svn_utils import *
+from version_utils import *
 from gitRepo  import *
 from svnRepo  import *
 from Releaser import *
@@ -61,6 +62,8 @@ DEF_LCLS_GROUP_OWNER= "lcls"
 DEF_PCDS_GROUP_OWNER= "ps-pcds"
 debugScript			= False
 
+# HACK - Push this to Repo or Releaser class
+repo_installDir		= None
 
 # TODO: Cleanup this function
 # We need to push most of these tests to the sub-classes of repo
@@ -141,8 +144,8 @@ def ValidateArgs( repo, package, release=None, message=None, verbose=False, batc
             raise ValidateError, "No release package specified"
         if os.path.split( package[0] )[0] == 'modules':
             # TODO: Get BASE_MODULE_VERSION or EPICS_BASE_VER from env
-            epics_base = "base-rev-unknown"
-            repo_installDir = os.path.join(	defaultEpicsSiteTop, epics_base,
+            epics_base_ver = determine_epics_base_ver()
+            repo_installDir = os.path.join(	defaultEpicsSiteTop, epics_base_ver,
                                             package[0], release	)
         else:
             repo_installDir = os.path.join(	defaultEpicsSiteTop, package[0], release )
@@ -185,9 +188,7 @@ def ValidateArgs( repo, package, release=None, message=None, verbose=False, batc
 # Entry point of the script. This is main()
 try:
     # Make sure we have a valid EPICS_SITE_TOP
-    defaultEpicsSiteTop = DEF_EPICS_TOP_LCLS 
-    if not os.path.isdir( defaultEpicsSiteTop ):
-        defaultEpicsSiteTop = DEF_EPICS_TOP_AFS
+    defaultEpicsSiteTop = determine_epics_site_top()
     if not os.path.isdir( defaultEpicsSiteTop ):
         raise ValidateError, ( "Can't find EPICS_SITE_TOP at %s" % defaultEpicsSiteTop )
 
@@ -225,8 +226,10 @@ try:
                         help="display more info for debugging script" )
     parser.add_option(	"", "--dryRun", dest="dryRun", action="store_true",
                         help="Do test build but no tag or install" )
-    parser.add_option(	"", "--noTestBuild", dest="noTestBuild", action="store_true",
+    parser.add_option(	"", "--noTestBuild", dest="noTestBuild", action="store_true", default=True,
                         help="Skip test build" )
+    parser.add_option(	"", "--testBuild", dest="noTestBuild", action="store_false",
+                        help="Do a test build" )
     parser.add_option(	"", "--rmBuild", dest="rmBuild", action="store_true",
                         help="Remove release build.  "
                             "Does not do a new release." )
@@ -258,6 +261,8 @@ try:
             print "git_tag:    %s" % git_tag
         # Create a git release handler
         repo = gitRepo.gitRepo( git_url, git_branch, git_tag )
+        if git_tag:
+            opt.noTag	= True
 
     else:
         # See if this is an svn working dir
@@ -275,7 +280,7 @@ try:
     if repo is None:
         raise ValidateError, ( "Can't establish a repo branch" )
 
-    packageName = args
+    packageName = args[0]
     rel = Releaser( repo, packageName, verbose=opt.verbose )
 
     # If removing old release, don't build or tag
@@ -287,12 +292,12 @@ try:
     if	opt.rmBuild or opt.rmTag:
         # Removing stuff, no need to TestBuild or Tag
         opt.noTestbuild	= True
-        opt.noTag			= True
+        opt.noTag		= True
 
     # Will we tag?
     if	opt.noTag:
         # Not tagging, no need for msg or TestBuild
-        opt.noMsg			= True
+        opt.noMsg		= True
         opt.noTestBuild	= True
 
     # Check for valid arguments
@@ -348,6 +353,7 @@ try:
         rel.TagRelease( )
 
     # Install package
+    # rel.InstallPackage( repo_installDir	)
     rel.InstallPackage( )
 
     # All done!

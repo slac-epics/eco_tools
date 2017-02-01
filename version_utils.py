@@ -1,5 +1,7 @@
 #!/usr/bin/python
+import os
 import re
+from repo_defaults import *
 #
 # Purpose:
 #
@@ -43,4 +45,56 @@ def isReleaseCandidate(release):
     match = releaseRegExp.search( release )
     if match:
         return True
+
+def getEnv( envVar ):
+    result = os.getenv( envVar )
+    if not result:
+        result = '?'
+    return result
+
+def determine_epics_base_ver():
+    # First look for EPICS_BASE_VER in the environment
+    epics_base_ver = getEnv('EPICS_BASE_VER')
+    # Then EPICS_VER
+    if epics_base_ver == '?':
+        epics_base_ver = getEnv('EPICS_VER')
+    # Then BASE_MODULE_VERSION
+    if epics_base_ver == '?':
+        epics_base_ver = getEnv('BASE_MODULE_VERSION')
+    if epics_base_ver == '?':
+        # If we have EPICS_BASE, work back from there
+        epics_base = getEnv('EPICS_BASE')
+        if epics_base == '?':
+            epics_base_ver = 'unknown'
+        else:
+            epics_base_ver = os.path.basename( epics_base )
+    return epics_base_ver
+
+def determine_epics_site_top():
+    # First look for EPICS_TOP in the environment
+    epics_site_top = getEnv('EPICS_TOP')
+    # Then EPICS_SITE_TOP
+    if epics_site_top == '?':
+        epics_site_top = getEnv('EPICS_SITE_TOP')
+    if epics_site_top == '?':
+        # If we have EPICS_BASE, work back from there
+        epics_base = getEnv('EPICS_BASE')
+        if epics_base != '?':
+            epics_base_top = os.path.dirname( epics_base )
+            epics_site_top = os.path.dirname( epics_base_top )
+            if epics_base.startswith( 'base-' ):
+                epics_ver = epics_base.replace( 'base-', '' )
+                epics_site_top = os.path.join( epics_site_top, epics_ver )
+            if epics_base.startswith( 'R3.14.12-' ):
+                epics_site_top = os.path.join( epics_site_top, '3.14' )
+    if epics_site_top == '?':
+        if os.path.isdir(    DEF_EPICS_TOP_PCDS ):
+            epics_site_top = DEF_EPICS_TOP_PCDS 
+        elif os.path.isdir(  DEF_EPICS_TOP_LCLS ):
+            epics_site_top = DEF_EPICS_TOP_LCLS
+        elif os.path.isdir(  DEF_EPICS_TOP_AFS ):
+            epics_site_top = DEF_EPICS_TOP_AFS
+    if epics_site_top == '?':
+        epics_site_top = 'unknown'
+    return epics_site_top
 

@@ -12,6 +12,7 @@ import gitRepo
 import svnRepo
 from git_utils import *
 from svn_utils import *
+from version_utils import *
 
 class BuildError( Exception ):
     pass
@@ -64,14 +65,12 @@ class Releaser(object):
                 print "\n--keepTmp flag set. Remove the tmp build directory manually:"
                 print "\t%s" % (self.tmpDir)
         else:
-            if self._verbose:
-                print "Cleaning up temporary files ..."
             try:
                 sys.stdout.flush()
                 sys.stderr.flush()
                 if os.path.exists(self.tmpDir):
                     if self._verbose:
-                        print "rm -rf", self.tmpDir
+                        print "Removing temporary dir %s ..." % self.tmpDir
                     shutil.rmtree( self.tmpDir )
             except:
                 print "failed:\n%s." % (sys.exc_value)
@@ -179,7 +178,7 @@ class Releaser(object):
         except RuntimeError, e:
             print e
             raise BuildError, "BuildRelease: FAILED"
-        except RuntimeError, e:
+        except gitRepo.gitError, e:
             print e
             raise BuildError, "BuildRelease: FAILED"
 
@@ -200,7 +199,7 @@ class Releaser(object):
 
         sys.stdout.flush()
         sys.stderr.flush()
-        self.fixPermissions( self._installDir )
+        self.fixPermissions( buildDir )
 
     def DoTestBuild( self ):
         try:
@@ -223,16 +222,28 @@ class Releaser(object):
 
         if not self._installDir:
             if not installTop:
+                installTop	= determine_epics_site_top()
+            if not installTop:
                 print "InstallPackage Error: Need valid installTop to determine installDir!"
                 return
-            self._installDir = os.path.join( installTop, self._package )
+            if os.path.split( self._package )[0] == 'modules':
+                # TODO: Get BASE_MODULE_VERSION or EPICS_BASE_VER from env
+                epics_base_ver = determine_epics_base_ver()
+                self._installDir = os.path.join( installTop, epics_base_ver,
+                                                self._package, self._repo.GetTag()	)
+            else:
+                self._installDir = os.path.join( installTop, self._package, self._repo.GetTag() )
 
         if self._installDir.startswith( DEF_EPICS_TOP_PCDS ):
             self.grpOwner = DEF_PCDS_GROUP_OWNER
 
-        self.BuildRelease( self._ReleasePath, self._installDir )
-        if self._verbose:
-            print "InstallPackage: %s installed to:\n%s" % ( self._package, os.path.realpath(self._installDir) )
+        try:
+            self.BuildRelease( self._ReleasePath, self._installDir )
+            if self._verbose:
+                print "InstallPackage: %s installed to:\n%s" % ( self._package, os.path.realpath(self._installDir) )
+        except BuildError, e:
+            print e
+            pass
 
 def find_release( package, verbose=False ):
     release = None
@@ -240,7 +251,7 @@ def find_release( package, verbose=False ):
     (git_url, git_tag) = gitFindPackageRelease( package_name, package_release, debug=False, verbose=verbose )
     if git_url is not None:
         repo = gitRepo.gitRepo( git_url, None, git_tag )
-        release = Releaser( repo, package, None, git_tag )
+        release = Releaser( repo, package_name, None, git_tag )
     if release is None:
         (svn_url, svn_branch, svn_tag) = svnFindPackageRelease( package_name, package_release, debug=False, verbose=verbose )
         if svn_url is not None:
@@ -250,4 +261,6 @@ def find_release( package, verbose=False ):
             release = Releaser( repo, package )
     if release is None:
         print "find_release Error: Unable to find package %s in svn or git repos" % package
+    elif verbose:
+        repo.ShowRepo( titleLine="find_release: " + package, prefix=" " )
     return release

@@ -74,9 +74,12 @@ def parseCVSModulesTxt():
 cvs_modules2Location = parseCVSModulesTxt()
 
 def build_modules( options ):
-    releases = find_releases( options )
-    for release in releases:
-        release.InstallPackage( installTop=options.top )
+    try:
+        releases = find_releases( options )
+        for release in releases:
+            release.InstallPackage( installTop=options.top )
+    except:
+        print 'build_modules: Not all packages were installed!'
  
 def find_releases( options ):
     releases = []

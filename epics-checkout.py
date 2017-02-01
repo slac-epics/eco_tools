@@ -102,17 +102,12 @@ import json
 
 from cram_utils import *
 from git_utils import *
+from version_utils import *
 
 
 GIT_REPO_MODULES = '/afs/slac/g/cd/swe/git/repos/package/epics/modules'
 
 __all__ = ['export_release_site_file', 'assemble_release_site_inputs_from_file','assemble_cvs_inputs_from_file', 'assemble_release_site_inputs_from_term', 'assemble_cvs_inputs_from_term']
-
-def getEnv( envVar ):
-    result = os.getenv( envVar )
-    if not result:
-        result = '?'
-    return result
 
 def parseGitModulesTxt():
     '''Parse the GIT modules txt file and return a dict of packageName -> location'''
@@ -210,36 +205,6 @@ def export_release_site_file(inputs):
 
     # change back to level where repo is
     os.chdir('../..')
-    
-def determine_epics_base_ver():
-    epics_base_ver = getEnv('EPICS_BASE_VER')
-    if epics_base_ver == '?':
-        epics_base_ver = getEnv('EPICS_VER')
-    if epics_base_ver == '?':
-        epics_base = getEnv('EPICS_BASE')
-        if epics_base == '?':
-            epics_base_ver = 'unknown'
-        else:
-            epics_base_ver = os.path.basename( epics_base )
-    return epics_base_ver
-
-def determine_epics_site_top():
-    epics_site_top = getEnv('EPICS_TOP')
-    if epics_site_top == '?':
-        epics_site_top = getEnv('EPICS_SITE_TOP')
-    if epics_site_top == '?':
-        epics_base = getEnv('EPICS_BASE')
-        if epics_base == '?':
-            epics_site_top = 'unknown'
-        else:
-            epics_base_top = os.path.dirname( epics_base )
-            epics_site_top = os.path.dirname( epics_base_top )
-            if epics_base.startswith( 'base-' ):
-                epics_ver = epics_base.replace( 'base-', '' )
-                epics_site_top = os.path.join( epics_site_top, epics_ver )
-            if epics_base.startswith( 'R3.14.12-' ):
-                epics_site_top = os.path.join( epics_site_top, '3.14' )
-    return epics_site_top
 
 def assemble_release_site_inputs_from_term( options ):
 

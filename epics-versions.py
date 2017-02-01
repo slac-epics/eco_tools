@@ -79,9 +79,13 @@ def debug_signal_handler(signal, frame):
     pdb.set_trace()
 signal.signal(signal.SIGINT, debug_signal_handler)
 
-def ExpandModulePath( moduleTop, module, opt ):
+def ExpandModulePath( topDir, module, opt ):
+    # See if "modules" is in both parts of the path
+    if "modules" in topDir and "modules" in module:
+        topDir = os.path.dirname( topDir )
+
     # Create the path to module
-    modPath = os.path.join( moduleTop, module )
+    modPath = os.path.join( topDir, module )
 
     # See if it exists
     if not os.path.isdir( modPath ):
@@ -268,28 +272,71 @@ def ReportRelease( moduleTop, module, release, priorModule, opt ):
 
     return module
 
-def ExpandModulesForTop( moduleTop, modules, opt ):
-    moduleTopShown = False
+def ExpandPackageForTopVariants( siteTop, package, opt ):
+    if "modules" in siteTop or "modules" in package:
+        # All modules already checked for
+        return []
+    topVariants = []
+    topVariants += [ os.path.join( siteTop, "extensions" ) ]
+    topVariants += [ os.path.join( siteTop, "iocTop" ) ]
+    topVariants += [ os.path.join( siteTop, "ioc" ) ]
+    topVariants += [ os.path.join( siteTop, "ioc", "common" ) ]
+    topVariants += [ os.path.join( siteTop, "ioc", "amo" ) ]
+    topVariants += [ os.path.join( siteTop, "ioc", "sxr" ) ]
+    topVariants += [ os.path.join( siteTop, "ioc", "xpp" ) ]
+    topVariants += [ os.path.join( siteTop, "ioc", "cxi" ) ]
+    topVariants += [ os.path.join( siteTop, "ioc", "mec" ) ]
+    topVariants += [ os.path.join( siteTop, "ioc", "mfx" ) ]
+    topVariants += [ os.path.join( siteTop, "ioc", "xcs" ) ]
+    topVariants += [ os.path.join( siteTop, "ioc", "xrt" ) ]
+    topVariants += [ os.path.join( siteTop, "ioc", "tst" ) ]
+    topVariants += [ os.path.join( siteTop, "ioc", "fee" ) ]
+    topVariants += [ os.path.join( siteTop, "ioc", "las" ) ]
+    topVariants += [ os.path.join( siteTop, "screens" ) ]
+    topVariants += [ os.path.join( siteTop, "screens", "edm" ) ]
+    releases = []
+    for topDir in topVariants:
+        releases += ExpandModulePath( topDir, package, opt )
+    return releases
+
+def ExpandPackagesForTop( topDir, packages, opt ):
+    '''Look for and report on each package under the specified top directory.'''
+    topDirShown = False
+    releases = []
     numReleasesForTop = 0
-    for module in modules:
-        releases = ExpandModulePath( moduleTop, module, opt )
+    for package in packages:
+        if package != "modules":
+            releases += ExpandModulePath( topDir, package, opt )
+        elif topDir.endswith("modules"):
+            for dirPath, dirs, files in os.walk( topDir, topdown=True ):
+                if len( dirs ) == 0:
+                    continue
+                for dir in dirs[:]:
+                    # Remove from list so we don't search recursively
+                    dirs.remove( dir )
+                    releases += ExpandModulePath( topDir, dir, opt )
 
-        # validate the module specification
-        if not releases or not releases[0]:
+        # validate the package specification
+        if len(releases) == 0 or not os.path.isdir( releases[0] ):
+            releases = ExpandPackageForTopVariants( topDir, package, opt )
+        if len(releases) == 0 or not os.path.isdir( releases[0] ):
             continue
-        if not opt.wide and moduleTopShown == False:
-            print "Releases under %s:" % moduleTop
-            moduleTopShown = True
+        if not opt.wide and topDirShown == False:
+            print "Releases under %s:" % topDir
+            topDirShown = True
 
-        # Report all releases for this module
-        if not ReportReleases( moduleTop, module, releases, opt ):
-            print "%s/%s: No releases found matching specification.\n" % ( moduleTop, module )
+        # Report all releases for this package
+        if not ReportReleases( topDir, package, releases, opt ):
+            print "%s/%s: No releases found matching specification.\n" % ( topDir, package )
         numReleasesForTop += len(releases)
+        # Clear releases before checking next package
+        releases = []
+
     return numReleasesForTop
 
 # Entry point of the script. This is main()
 try:
-    parser = optparse.OptionParser( description = "Report on available module versions and dependencies",
+    parser = optparse.OptionParser( description = "Report on available package versions and dependencies",
                                     usage = "usage: %prog [options] MODULE ...\n"
                                             "\tMODULE can be one or more of:\n"
                                             "\t\tbase\n"
@@ -315,17 +362,17 @@ try:
     parser.add_option(  "-d", "--debug", dest="debug", action="store_true",
                         help="display more info for debugging script" )
 
-    parser.add_option(  "-b", "--base",
+    parser.add_option(  "-b", "--base", dest="base",
                         help="Restrict output to modules for specified base version\n"
                              "ex. --base=R3.14.9-0.3.0" )
 
     parser.add_option(  "-w", "--wide", dest="wide", action="store_true",
                         help="Wide output, all module info on one line\n"   )
 
-    parser.add_option(  "--top", dest="moduleTop", metavar="TOP",
+    parser.add_option(  "--top", dest="epicsTop", metavar="TOP",
                         default=None,
-                        help="Top of EPICS module release area\n"
-                             "ex. --top=/afs/slac/g/pcds/package/epics/R3.14.12.5-0.1.0/modules" )
+                        help="Top of EPICS release area\n"
+                             "ex. --top=/afs/slac/g/pcds/package/epics" )
 
     parser.add_option(  "--allTops", dest="allTops", action="store_true",
                         help="Search all accessible known EPICS module release locations\n" )
@@ -340,66 +387,57 @@ try:
     if not args or not args[0]:
         raise ValidateError, "No valid modules specified."
 
-    # See if we can find EPICS_SITE_TOP
-    epics_site_top = os.environ.get( "EPICS_SITE_TOP" )
-    if not epics_site_top:
-        epics_site_top = os.environ.get( "EPICS_TOP" )
+    # Determine EPICS_SITE_TOP and BASE version
+    epics_site_top = determine_epics_site_top()
+    if opt.base:
+        epics_base_ver = opt.base
+    else:
+        epics_base_ver = determine_epics_base_ver()
 
     releaseCount = 0
     if epics_site_top:
-        # See if we find any matches in the ioc release areas
-        iocTops = []
-        iocTops += [ epics_site_top ]
-        iocTops += [ os.path.join( epics_site_top, "iocTop" ) ]
-        iocTops += [ os.path.join( epics_site_top, "ioc" ) ]
-        iocTops += [ os.path.join( epics_site_top, "ioc", "common" ) ]
-        iocTops += [ os.path.join( epics_site_top, "ioc", "amo" ) ]
-        iocTops += [ os.path.join( epics_site_top, "ioc", "sxr" ) ]
-        iocTops += [ os.path.join( epics_site_top, "ioc", "xpp" ) ]
-        iocTops += [ os.path.join( epics_site_top, "ioc", "cxi" ) ]
-        iocTops += [ os.path.join( epics_site_top, "ioc", "mec" ) ]
-        iocTops += [ os.path.join( epics_site_top, "ioc", "mfx" ) ]
-        iocTops += [ os.path.join( epics_site_top, "ioc", "xcs" ) ]
-        iocTops += [ os.path.join( epics_site_top, "ioc", "xrt" ) ]
-        iocTops += [ os.path.join( epics_site_top, "ioc", "tst" ) ]
-        iocTops += [ os.path.join( epics_site_top, "ioc", "fee" ) ]
-        iocTops += [ os.path.join( epics_site_top, "ioc", "las" ) ]
-        iocTops += [ os.path.join( epics_site_top, "screens" ) ]
-        iocTops += [ os.path.join( epics_site_top, "screens", "edm" ) ]
-        for iocTop in iocTops:
-            releaseCount += ExpandModulesForTop( iocTop, args, opt )
+        # See if we find any matches directly under epics_site_top
+        releaseCount += ExpandPackagesForTop( epics_site_top, args, opt )
 
-    # See which moduleTop to search
-    if not opt.moduleTop:
+    # See which epicsTop to search
+    if not opt.epicsTop:
         # --top not specified, look for EPICS_MODULES_TOP in environment
-        opt.moduleTop = os.environ.get( "EPICS_MODULES_TOP" )
-        if not opt.moduleTop:
-            opt.moduleTop = os.environ.get( "EPICS_MODULES" )
-        if not opt.moduleTop:
+        opt.epicsTop = os.path.join( epics_site_top, epics_base_ver, "modules" )
+        if not opt.epicsTop or not os.path.isdir( opt.epicsTop ):
+            opt.epicsTop = os.environ.get( "EPICS_MODULES_TOP" )
+        if not opt.epicsTop or not os.path.isdir( opt.epicsTop ):
+            opt.epicsTop = os.environ.get( "EPICS_MODULES" )
+        if not opt.epicsTop or not os.path.isdir( opt.epicsTop ):
             if epics_site_top:
-                opt.moduleTop = os.path.join( epics_site_top, 'modules' ) 
-                if not os.path.isdir( opt.moduleTop ):
-                    opt.moduleTop = None
+                opt.epicsTop = os.path.join( epics_site_top, 'modules' ) 
+                if not os.path.isdir( opt.epicsTop ):
+                    opt.epicsTop = None
 
-    if opt.moduleTop:
-        releaseCount += ExpandModulesForTop( opt.moduleTop, args, opt )
+    if opt.epicsTop:
+        releaseCount += ExpandPackagesForTop( opt.epicsTop, args, opt )
 
     # If we haven't found a default or --allTops, try any we can find
-    if opt.allTops or not opt.moduleTop:
+    if opt.allTops or not opt.epicsTop:
         for site_top in [ DEF_EPICS_TOP_LCLS, DEF_EPICS_TOP_MCC, DEF_EPICS_TOP_PCDS, DEF_EPICS_TOP_AFS ]:
+            # if site_top == epics_site_top:
+                # Already shown
+            # 	continue
+            #releaseCount += ExpandPackagesForTop( site_top, args, opt )
+            #continue
+            # Move to ExpandModulePath()?
             for dirPath, dirs, files in os.walk( site_top, topdown=True ):
                 if len( dirs ) == 0:
                     continue
                 for dir in dirs[:]:
                     # Remove from list so we don't search recursively
                     dirs.remove( dir )
-                    moduleTop = os.path.join( site_top, dir, 'modules' ) 
-                    if not os.path.isdir( moduleTop ):
+                    epicsTop = os.path.join( site_top, dir, 'modules' ) 
+                    if not os.path.isdir( epicsTop ):
                         continue
-                    if opt.moduleTop and moduleTop == opt.moduleTop:
+                    if opt.epicsTop and epicsTop == opt.epicsTop:
                         # Already done this one
                         continue
-                    releaseCount += ExpandModulesForTop( moduleTop, args, opt )
+                    releaseCount += ExpandPackagesForTop( epicsTop, args, opt )
 
     if releaseCount == 0:
         errorMsg = "Unable to find any releases for these modules:"
