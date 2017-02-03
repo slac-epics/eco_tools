@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import os
 import re
+import dircache
 from repo_defaults import *
 #
 # Purpose:
@@ -45,6 +46,35 @@ def isReleaseCandidate(release):
     match = releaseRegExp.search( release )
     if match:
         return True
+
+def isBaseTop(path):
+    '''isBaseTop does a simple check for startup/EpicsHostArch.
+    More tests can be added if needed.'''
+    if os.path.isfile( os.path.join( path, 'startup', 'EpicsHostArch' ) ):
+        return True
+    return False
+
+def isEpicsPackage(path):
+    '''isEpicsPackage does a simple check for configure/RELEASE.
+    More tests can be added if needed.'''
+    if os.path.isfile( os.path.join( path, 'configure', 'RELEASE' ) ):
+        return True
+    return False
+
+def isPCDSPath(path):
+    '''isPCDSPackage does a simple startswith /reg or /afs/slac/g/pcds check
+    More tests can be added if needed.'''
+    if path.startswith( '/reg' ) or path.startswith( '/afs/slac/g/pcds' ):
+        return True
+    return False
+
+def get_base_versions( epics_site_top ):
+    base_versions	= []
+    base_candidates	= dircache.listdir( os.path.join( epics_site_top, 'base' ) )
+    for base_candidate in base_candidates:
+        if isBaseTop( os.path.join( epics_site_top, 'base', base_candidate ) ):
+            base_versions.append( base_candidate )
+    return base_versions
 
 def getEnv( envVar ):
     result = os.getenv( envVar )
