@@ -161,7 +161,7 @@ def parseCVSModulesTxt():
 git_package2Location = parseGitModulesTxt()
 cvs_modules2Location = parseCVSModulesTxt()
 
-def export_release_site_file(inputs):
+def export_release_site_file( inputs, debug=False):
     """
     Use the contents of a dictionary of top level dirs to create a 
     RELEASE_SITE dir in a specified dir
@@ -180,21 +180,21 @@ def export_release_site_file(inputs):
     print >> out_file, '# RELEASE_SITE Location of EPICS_SITE_TOP, EPICS_MODULES, and BASE_MODULE_VERSION'
     print >> out_file, '# Run "gnumake clean uninstall install" in the application'
     print >> out_file, '# top directory each time this file is changed.'
-    print >> out_file, ''
-    print >> out_file, '#=============================================================================='
-    print >> out_file, '# Define the top of the EPICS tree for your site.'
-    print >> out_file, '# We will build some tools/scripts that allow us to'
-    print >> out_file, '# change this easily when relocating software.'
     print >> out_file, '#=============================================================================='
     print >> out_file, 'BASE_MODULE_VERSION=%s'%inputs['EPICS_BASE_VER']
+    # TODO: Substitute $(BASE_MODULE_VERSION) for any substrings below that match the base version
+    # That way users can easily change the base version in one place
     print >> out_file, 'EPICS_SITE_TOP=%s'    % inputs['EPICS_SITE_TOP'] 
     print >> out_file, 'BASE_SITE_TOP=%s'     % inputs['BASE_SITE_TOP']
-    print >> out_file, 'MODULES_SITE_TOP=%s'  % inputs['EPICS_MODULES']
+    if VersionToRelNumber(inputs['EPICS_BASE_VER'], debug=debug) < 3.141205:
+        print >> out_file, 'MODULES_SITE_TOP=%s'  % inputs['EPICS_MODULES']
     print >> out_file, 'EPICS_MODULES=%s'     % inputs['EPICS_MODULES']
-    print >> out_file, 'PACKAGE_SITE_TOP=%s'  % inputs['PACKAGE_SITE_TOP']
-    print >> out_file, 'PSPKG_ROOT=%s'        % inputs['PSPKG_ROOT']
     if 'IOC_SITE_TOP' in inputs:
         print >> out_file, 'IOC_SITE_TOP=%s'      % inputs['IOC_SITE_TOP']
+    if VersionToRelNumber(inputs['EPICS_BASE_VER'], debug=debug) < 3.141205:
+        print >> out_file, 'EPICS_BASE_VER=%s' %inputs['EPICS_BASE_VER']
+    print >> out_file, 'PACKAGE_SITE_TOP=%s'  % inputs['PACKAGE_SITE_TOP']
+    print >> out_file, 'PSPKG_ROOT=%s'        % inputs['PSPKG_ROOT']
     if 'TOOLS_SITE_TOP' in inputs:
         print >> out_file, 'TOOLS_SITE_TOP=%s'    % inputs['TOOLS_SITE_TOP']
     if 'ALARM_CONFIGS_TOP' in inputs:
@@ -214,6 +214,7 @@ def assemble_release_site_inputs_from_term( options ):
     epics_site_top = determine_epics_site_top()
 
     if epics_base_ver == '?':
+        # base_versions = get_base_versions( epics_site_top )
         print 'TODO: Provide list of available epics_base_ver options to choose from'
     input_dict['EPICS_BASE_VER'] = epics_base_ver
     if not options.batch:
@@ -237,9 +238,15 @@ def assemble_release_site_inputs_from_term( options ):
     epics_ver = input_dict['EPICS_BASE_VER']
     if epics_ver.startswith( 'base-' ):
         epics_ver = epics_ver.replace( 'base-', '' )
-    input_dict['EPICS_MODULES'] = os.path.join( input_dict['EPICS_SITE_TOP'], epics_ver, 'modules' )
-    if not os.path.isdir( input_dict['EPICS_MODULES'] ):
-        input_dict['EPICS_MODULES'] = os.path.join( input_dict['EPICS_SITE_TOP'], 'modules' )
+
+    epics_modules = getEnv('EPICS_MODULES_TOP')
+    if os.path.isdir( epics_modules ):
+        input_dict['EPICS_MODULES'] = epics_modules
+    else:
+        epics_modules = os.path.join( epics_site_top, epics_ver, 'modules' )
+        if not os.path.isdir( epics_modules ):
+            epics_modules = os.path.join( epics_site_top, 'modules' )
+        input_dict['EPICS_MODULES'] = epics_modules
     print 'Using EPICS_MODULES: ' + input_dict['EPICS_MODULES']
 
     ioc_site_top = os.path.join( input_dict['EPICS_SITE_TOP'], 'iocTop' )
@@ -264,12 +271,15 @@ def assemble_release_site_inputs_from_term( options ):
             input_dict['PACKAGE_SITE_TOP'] = user_input
     print 'Using PACKAGE_SITE_TOP: ' + input_dict['PACKAGE_SITE_TOP']
 
-    input_dict['PSPKG_ROOT'] = getEnv('PSPKG_ROOT')
-    if not os.path.isdir( input_dict['PSPKG_ROOT'] ):
-        input_dict['PSPKG_ROOT'] = '/reg/g/pcds/pkg_mgr'
-    if not os.path.isdir( input_dict['PSPKG_ROOT'] ):
-        input_dict['PSPKG_ROOT'] = '/afs/slac/g/pcds/pkg_mgr'
-    print 'Using PSPKG_ROOT: ' + input_dict['PSPKG_ROOT']
+    pspkg_root = getEnv('PSPKG_ROOT')
+    if not os.path.isdir( pspkg_root ):
+        pspkg_root = '/reg/g/pcds/pkg_mgr'
+    if not os.path.isdir( pspkg_root ):
+        pspkg_root = '/afs/slac/g/lcls/pkg_mgr'
+    if not os.path.isdir( pspkg_root ):
+        pspkg_root = '/afs/slac/g/pcds/pkg_mgr'
+    print 'Using PSPKG_ROOT:', pspkg_root
+    input_dict['PSPKG_ROOT'] = pspkg_root
 
     input_dict['TOOLS_SITE_TOP'] = ''
     input_dict['ALARM_CONFIGS_TOP'] = ''
@@ -354,6 +364,8 @@ def assemble_release_site_inputs_from_env():
 
     return input_dict
 
+# TODO: 1. Breakout packageName completer code into it's own function
+# TODO: 2. Combine assemble_cvs_inputs_from_term and assemble_cvs_inputs_from_file into one function w/ a from_file boolean
 # Determine the package and tag to checkout
 def assemble_cvs_inputs_from_term(options):
     cvs_dict = {}
@@ -453,13 +465,8 @@ def assemble_cvs_inputs_from_term(options):
             destinationPath = os.path.join( packageName, dirName )
 
     curDir = os.getcwd()
-    checkOutModule( packageName, tagName, destinationPath, batch=options.batch )
-
-    # See if we need to create a RELEASE_SITE file
-    if  (   not os.path.isfile( 'RELEASE_SITE' )
-        and not os.path.isfile( os.path.join( '..', '..', 'RELEASE_SITE' ) ) ):
-        inputs = assemble_release_site_inputs_from_term(options)
-        export_release_site_file(inputs)
+    checkOutModule( packageName, tagName, destinationPath, options )
+    # TODO: checkOutModule changes cwd to curDir/destinationPath.  Do we want functions to change current dir and not restore?
     # os.chdir(curDir)
 
 # Determine the package and tag to checkout
@@ -482,16 +489,11 @@ def assemble_cvs_inputs_from_file(repo, rel, options):
         destinationPath = os.path.join( packageName, tagName )
 
     curDir = os.getcwd()
-    checkOutModule( packageName, tagName, destinationPath, batch=options.batch )
-
-    # See if we need to create a RELEASE_SITE file
-    if  (   not os.path.isfile( 'RELEASE_SITE' )
-        and not os.path.isfile( os.path.join( '..', '..', 'RELEASE_SITE' ) ) ):
-        inputs = assemble_release_site_inputs_from_file()
-        export_release_site_file(inputs)
+    checkOutModule( packageName, tagName, destinationPath, options, from_file=True )
+    # TODO: checkOutModule changes cwd to curDir/destinationPath.  Do we want functions to change current dir and not restore?
     # os.chdir(curDir)
  
-def checkOutModule(packageName, tag, destinationPath, batch=False ):
+def checkOutModule(packageName, tag, destinationPath, options, from_file=False ):
     '''Checkout the module from GIT/CVS. 
     We first check to see if GIT has the module; if so, we clone the repo from git and do a headless checkout for the selected tag.
     Otherwise, we issue a command to CVS.
@@ -501,12 +503,13 @@ def checkOutModule(packageName, tag, destinationPath, batch=False ):
         print "Checkout %s to sandbox directory %s" % ( packageName, destinationPath )
     else:
         print "Checkout %s, tag %s, to directory %s" % ( packageName, tag, destinationPath )
-    if not batch:
+    if not options.batch:
         confirmResp = raw_input( 'Proceed (Y/n)?' )
         if len(confirmResp) != 0 and confirmResp != "Y" and confirmResp != "y":
             print "Aborting....."
             sys.exit(0)
 
+    # TODO: Can we update existing dir using repo?
     if os.path.exists(destinationPath):
         print 'Directory already exists!  Aborting.....'
         sys.exit(0)
@@ -514,6 +517,11 @@ def checkOutModule(packageName, tag, destinationPath, batch=False ):
     parent_dir = os.path.dirname( destinationPath )
     if len(parent_dir) > 0 and parent_dir != '.' and not os.path.exists(parent_dir):
         os.makedirs(parent_dir)
+
+    #
+    # TODO: Move this git vs svn vs cvs stuff to the Repo class and it's subclasses
+    # Share common logic w/ epics-build and epics-release
+    #
 
     # See if we can find it in with the git repos
     pathToGitRepo = determinePathToGitRepo(packageName)
@@ -557,7 +565,30 @@ def checkOutModule(packageName, tag, destinationPath, batch=False ):
             cmd='cvs checkout -P -r '+ tag +' -d '+ destinationPath +' ' + packageName    
             print cmd
         os.system(cmd)
-        os.chdir(destinationPath)
+
+    # Remember current dir and cd to destinationPath
+    curDir = os.getcwd()
+    os.chdir(destinationPath)
+
+    # See if we need to create or update a RELEASE_SITE file
+    # Not needed if this is an EPICS base package
+    # If the package has a configure/RELEASE file, make sure we either have
+    # a valid RELEASE_SITE in TOP/../..
+    # or provide and/or update TOP/RELEASE_SITE as needed
+    if	(		not isBaseTop(		os.path.join( curDir, destinationPath ) )
+            and		isEpicsPackage( os.path.join( curDir, destinationPath ) )
+            and not os.path.isfile( os.path.join( curDir, destinationPath, '..', '..', 'RELEASE_SITE' ) )
+            # Step on a RELEASE_SITE pulled from the repo? No for PCDS, Yes for LCLS
+            and	(	not isPCDSPath( curDir )
+                or	not os.path.isfile( curDir, destinationPath, 'RELEASE_SITE'	)	) ):
+        if from_file:
+            inputs = assemble_release_site_inputs_from_file()
+        else:
+            inputs = assemble_release_site_inputs_from_term( options )
+        export_release_site_file( inputs, debug=options.debug )
+
+    # TODO: checkOutModule changes cwd to curDir/destinationPath.  Do we want functions to change current dir and not restore?
+    # os.chdir(curDir)
 
 def determinePathToGitRepo(packageName):
     '''If the specified package is stored in GIT, then return the URL to the GIT repo. Otherwise, return None'''
@@ -710,6 +741,7 @@ def process_options(argv):
     parser.add_option('-m', '--module',  action='callback', dest='module', help='Module to checkout, optionally add the tag to use', type='string', callback=module_callback)
     parser.add_option('-d', '--destination',  action='store', dest='destination', help='Checkout the package to this folder. Uses cvs -d. For example, eco -d CATER_12345 on MAIN_TRUNK checks out MAIN_TRUNK into a folder called CATER_12345. This option is ignored in batch mode.', type='string')
     # parser.add_option('-t', '--tag',  action='store', dest='tag', help='CVS tag to checkout - defaults to MAIN_TRUNK', type='string', default='MAIN_TRUNK')
+    parser.add_option( '--debug', action='store_true', dest='debug', help='print debugging output')
 
     parser.set_defaults(verbose=False,
         db_file=None)
