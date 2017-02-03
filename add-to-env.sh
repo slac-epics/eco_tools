@@ -1,17 +1,24 @@
 #!/bin/bash
 # source this script from your bash or sh shell to add this eco_tools
 # directory to your PATH.
+# You'll need to do this from your shell to do development of these
+# scripts, or to use the module conversion and migration tools it provides.
+#
+# NOTE: Don't run this in your shell startup if you prefer some other python installation.
+#
 if [ ! -z "`echo $0 | fgrep add-to-env.sh`" ]; then
 	echo "Usage: source path/to/eco_tools/add-to-env.sh"
 	exit 1
 fi
 
 # Make sure we have a canonical path to eco_tools
-eco_tools_dir=`dirname $BASH_ARGV`
-pushd $eco_tools_dir > /dev/null
-eco_tools_dir=`pwd -P`
-popd > /dev/null
-#echo eco_tools_dir=$eco_tools_dir
+eco_tools_dir=`readlink -f $(dirname $BASH_ARGV)`
+
+# Add the git-utils-0.2.0 pkg_mgr release to front of env paths
+# for a python installation supporting python/2.7.5, GitPython/2.0.8,
+# gitdb/0.6.4, and cvs2svn/2.4.0 along w/ ipython 
+export PSPKG_RELEASE=git-utils-0.2.0
+source $PSPKG_ROOT/etc/add_env_pkg.sh
 
 # Make sure we have a pathmunge function defined
 if [ -z "`declare -f pathmunge`" ]; then
