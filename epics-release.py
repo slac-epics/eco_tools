@@ -62,8 +62,6 @@ DEF_LCLS_GROUP_OWNER= "lcls"
 DEF_PCDS_GROUP_OWNER= "ps-pcds"
 debugScript			= False
 
-# HACK - Push this to Repo or Releaser class
-repo_installDir		= None
 
 # TODO: Cleanup this function
 # We need to push most of these tests to the sub-classes of repo
@@ -74,21 +72,21 @@ def ValidateArgs( repo, package, release=None, message=None, verbose=False, batc
     defaultPackage	= None
     ( repo_url, repo_branch, repo_tag ) = repo.GetWorkingBranch()
     if repo_url:
-        if verbose:
-            print "epics-release ValidateArgs: repo_url    =", repo_url
-            print "epics-release ValidateArgs: repo_branch =", repo_branch
-            print "epics-release ValidateArgs: repo_tag    =", repo_tag
-            print "epics-release ValidateArgs: package     =", package
         defaultPackage = repo.GetDefaultPackage( package )
-
-    if verbose:
-        print "defaultPackage:", defaultPackage
 
     # If we have a defaultPackage from the working directory,
     # Check it against the other options
     if defaultPackage:
         if not package or not package[0]:
             package = [ defaultPackage ]
+
+    if verbose:
+        print "epics-release ValidateArgs: repo_url       =", repo_url
+        print "epics-release ValidateArgs: repo_branch    =", repo_branch
+        print "epics-release ValidateArgs: repo_tag       =", repo_tag
+        print "epics-release ValidateArgs: package        =", package
+        print "epics-release ValidateArgs: defaultPackage =", defaultPackage
+        print "epics-release ValidateArgs: release        =", release
 
     # Determine the release package URL
     if not repo_branch:
@@ -99,7 +97,7 @@ def ValidateArgs( repo, package, release=None, message=None, verbose=False, batc
         if repo_url:
             repo_branch = repo_url
         else:
-            # FIXME
+            # FIXME: Is this needed or just leftover from svn variant?
             repo_branch = os.path.join(	repo._url, repo_gitStub2,
                                                 package[0], "current"	)
             #if not gitPathExists( repo_branch, repo_tag ):
@@ -135,21 +133,6 @@ def ValidateArgs( repo, package, release=None, message=None, verbose=False, batc
 #		else:
 #			raise ValidateError, "SVN release tag already exists: %s" % ( repo_ReleasePath )
 
-    # validate release directory
-    #if not os.path.exists(repo_prefix):
-    #	raise ValidateError, "Invalid release directory %s" % ( repo_prefix )
-    repo_installDir = None
-    if not repo_installDir:
-        if not package or not package[0]:
-            raise ValidateError, "No release package specified"
-        if os.path.split( package[0] )[0] == 'modules':
-            # TODO: Get BASE_MODULE_VERSION or EPICS_BASE_VER from env
-            epics_base_ver = determine_epics_base_ver()
-            repo_installDir = os.path.join(	defaultEpicsSiteTop, epics_base_ver,
-                                            package[0], release	)
-        else:
-            repo_installDir = os.path.join(	defaultEpicsSiteTop, package[0], release )
-
     # validate release message
     if not message:
         print "Please enter a release comment (end w/ ctrl-d on blank line):"
@@ -182,7 +165,6 @@ def ValidateArgs( repo, package, release=None, message=None, verbose=False, batc
         print "  branch:      %s" % repo_branch
         print "  tag:         %s" % release
         #print "  releasePath: %s" % repo_ReleasePath
-        print "  installDir:  %s" % repo_installDir
         print "  message:     %s" % message
 
 # Entry point of the script. This is main()
@@ -250,37 +232,49 @@ try:
     # Parse the command line arguments
     ( opt, args ) = parser.parse_args()
 
-    # See if this is a git working dir
-    ( git_url, git_branch, git_tag ) = gitGetWorkingBranch()
-
-    repo = None
-    if git_url:
-        if opt.verbose:
-            print "git_url:    %s" % git_url
-            print "git_branch: %s" % git_branch
-            print "git_tag:    %s" % git_tag
-        # Create a git release handler
-        repo = gitRepo.gitRepo( git_url, git_branch, git_tag )
-        if git_tag:
-            opt.noTag	= True
-
+    if len(args) > 0:
+        packageName = args[0]
     else:
-        # See if this is an svn working dir
-        ( svn_url, svn_branch, svn_tag ) = svnGetWorkingBranch()
+        packageMatch = None
+        # See if this is a git working dir
+        ( git_url, git_branch, git_tag ) = gitGetWorkingBranch()
 
-        if svn_url:
-            if opt.debug:
-                print "svn_url:    %s" % svn_url
-                print "svn_branch: %s" % svn_branch
-                print "svn_tag:    %s" % svn_tag
-            # Create an svn release handler
-            repo = svnRepo.svnRepo( svn_url, svn_branch, svn_tag )
+        packageName = None
+        repo = None
+        if git_url:
+            if opt.verbose:
+                print "git_url:    %s" % git_url
+                print "git_branch: %s" % git_branch
+            # Create a git release handler
+            repo = gitRepo.gitRepo( git_url, git_branch, opt.release )
+            if git_tag == opt.release:
+                opt.noTag	= True
+            packageMatch = re.match( r"\S+(epics/)(\S+).git", git_url )
+            if packageMatch:
+                packageName = packageMatch.group(2)
+        else:
+            # See if this is an svn working dir
+            ( svn_url, svn_branch, svn_tag ) = svnGetWorkingBranch()
+
+            if svn_url:
+                if opt.verbose:
+                    print "svn_url:    %s" % svn_url
+                    print "svn_branch: %s" % svn_branch
+                # Create an svn release handler
+                repo = svnRepo.svnRepo( svn_url, svn_branch, opt.release )
+            packageMatch = re.match( r"\S+(epics/|epics/trunk)(\S+)/current", svn_url )
+            if packageMatch:
+                packageName = packageMatch.group(2)
+
+    if not packageName:
+        raise ValidateError, ( "No package specified and unable to determine it from current dir" )
+    elif opt.verbose:
+        print "package:    %s" % packageName
 
     # Have to have a repo to do a release
     if repo is None:
         raise ValidateError, ( "Can't establish a repo branch" )
 
-    packageName = args[0]
     rel = Releaser( repo, packageName, verbose=opt.verbose )
 
     # If removing old release, don't build or tag
@@ -303,15 +297,30 @@ try:
     # Check for valid arguments
     ValidateArgs( repo, packageName, release=opt.release, message=opt.message, batch=opt.batch, verbose=opt.verbose )
 
+    if not opt.installDir:
+        if not packageName:
+            raise ValidateError, "No release package specified"
+        if os.path.split( packageName )[0] == 'modules':
+            # TODO: Get BASE_MODULE_VERSION or EPICS_BASE_VER from env
+            epics_base_ver = determine_epics_base_ver()
+            if not epics_base_ver:
+                raise ValidateError, "Unable to determine EPICS base version"
+            opt.installDir = os.path.join(	defaultEpicsSiteTop, epics_base_ver,
+                                            packageName, opt.release	)
+        else:
+            opt.installDir = os.path.join(	defaultEpicsSiteTop, packageName, opt.release )
+
+    print "repo_url:    %s" % repo.GetUrl()
+    print "tag:         %s" % opt.release
+    if opt.rmBuild:
+        print "rm buildDir: %s"	% opt.installDir
+    else:
+        print "installDir:  %s"	% opt.installDir
+    if opt.rmTag:
+        print "rm tag:  %s" % ( rel._ReleaseTag )
+
     # Confirm buildDir, installDir, and tag
     if not opt.batch and not opt.dryRun:
-        print "branch:       %s"	% opt.branch
-        if opt.rmBuild:
-            print "rm buildDir: %s"	% opt.installDir
-        else:
-            print "installDir:  %s"	% opt.installDir
-        if opt.rmTag:
-            print "rm tag:  %s" % ( rel._ReleaseTag )
         confirmResp = raw_input( 'Proceed (Y/n)?' )
         if len(confirmResp) != 0 and confirmResp != "Y" and confirmResp != "y":
             sys.exit(0)
