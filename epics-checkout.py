@@ -518,6 +518,9 @@ def checkOutModule(packageName, tag, destinationPath, options, from_file=False )
     if len(parent_dir) > 0 and parent_dir != '.' and not os.path.exists(parent_dir):
         os.makedirs(parent_dir)
 
+    # Remember current dir
+    curDir = os.getcwd()
+
     #
     # TODO: Move this git vs svn vs cvs stuff to the Repo class and it's subclasses
     # Share common logic w/ epics-build and epics-release
@@ -542,6 +545,7 @@ def checkOutModule(packageName, tag, destinationPath, options, from_file=False )
                 print "The folder", os.path.abspath(destinationPath), "already exists. If you intended to update the checkout, please do a git pull to pull in the latest changes."
                 print "Aborting....."
                 sys.exit(1)
+            # TODO: Verify the tag exists before we clone the repo for better user error msg and to avoid broken release dirs
             cmd=['git', 'clone', '--recursive', pathToGitRepo, destinationPath]
             print cmd
             subprocess.check_call(cmd)
@@ -565,10 +569,7 @@ def checkOutModule(packageName, tag, destinationPath, options, from_file=False )
             cmd='cvs checkout -P -r '+ tag +' -d '+ destinationPath +' ' + packageName    
             print cmd
         os.system(cmd)
-
-    # Remember current dir and cd to destinationPath
-    curDir = os.getcwd()
-    os.chdir(destinationPath)
+        os.chdir(destinationPath)
 
     # See if we need to create or update a RELEASE_SITE file
     # Not needed if this is an EPICS base package
