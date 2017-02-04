@@ -50,8 +50,15 @@ class Repo(object):
         print "\nPlease override Repo.CheckoutRelease() via a version control specific subclass."
         os.sys.exit()
 
+    def GetDefaultPackage( self, package, verbose=False ):
+        print "\nPlease override Repo.GetDefaultPackage() via a version control specific subclass."
+        os.sys.exit()
+
     def GetTag( self ):
         return self._tag
+
+    def GetUrl( self ):
+        return self._url
 
     def RemoveTag( self ):
         print "\nPlease override Repo.RemoveTag() via a version control specific subclass."

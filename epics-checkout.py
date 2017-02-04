@@ -213,7 +213,7 @@ def assemble_release_site_inputs_from_term( options ):
     epics_base_ver = determine_epics_base_ver()
     epics_site_top = determine_epics_site_top()
 
-    if epics_base_ver == '?':
+    if not epics_base_ver:
         # base_versions = get_base_versions( epics_site_top )
         print 'TODO: Provide list of available epics_base_ver options to choose from'
     input_dict['EPICS_BASE_VER'] = epics_base_ver
@@ -309,7 +309,12 @@ def assemble_release_site_inputs_from_term( options ):
 def assemble_release_site_inputs_from_env():
     input_dict = {}
 
-    input_dict['EPICS_BASE_VER'] = determine_epics_base_ver()
+    epics_base_ver = determine_epics_base_ver()
+    if not epics_base_ver:
+        print 'Error: Unable to determine EPICS base version.'
+        return input_dict
+
+    input_dict['EPICS_BASE_VER'] = epics_base_ver 
     print 'Using EPICS_BASE_VER: ' + input_dict['EPICS_BASE_VER']
 
     epics_site_top = determine_epics_site_top()

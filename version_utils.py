@@ -95,7 +95,7 @@ def determine_epics_base_ver():
         # If we have EPICS_BASE, work back from there
         epics_base = getEnv('EPICS_BASE')
         if epics_base == '?':
-            epics_base_ver = 'unknown'
+            epics_base_ver = None
         else:
             epics_base_ver = os.path.basename( epics_base )
     return epics_base_ver

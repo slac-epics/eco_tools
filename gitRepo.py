@@ -20,13 +20,6 @@ class gitError( Exception ):
 class gitRepo( Repo.Repo ):
     def __init__( self, url, branch=None, tag=None ):
         super(gitRepo, self).__init__( url, branch, tag )
-        #self.grpowner	= DEF_PCDS_GROUP_OWNER
-        #self._version	= ""
-        #self._retcode	= 0
-        #self._url       = url
-        #self._branch    = branch
-        #self._tag       = tag
-        #self._gitRepo	= determineGitRoot()
 
 #	def __repr__( self ):
 #		return "gitRepo"
@@ -40,7 +33,7 @@ class gitRepo( Repo.Repo ):
     def GetWorkingBranch( self ):
         return gitGetWorkingBranch()
 
-    def GetDefaultPackage( self, package ):
+    def GetDefaultPackage( self, package, verbose=False ):
         return package
 
     def GetTag( self ):

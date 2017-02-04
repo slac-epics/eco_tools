@@ -393,6 +393,8 @@ try:
         epics_base_ver = opt.base
     else:
         epics_base_ver = determine_epics_base_ver()
+        if not epics_base_ver:
+            epics_base_ver = 'unknown-base-ver'
 
     releaseCount = 0
     if epics_site_top:

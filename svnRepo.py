@@ -47,17 +47,16 @@ class svnRepo( Repo.Repo ):
         print "FindPackageRelease STUBBED: Need to find packagePath=%s, packageName=%s\n" % (packagePath, packageName)
         return (repo_url, repo_tag)
 
-    def GetDefaultPackage( self, package, verbose=True ):
+    def GetDefaultPackage( self, package, verbose=False ):
+        # TODO: Is this function necessary any more?
+        # Can we just return package?
+
         # See if we're in a package directory
         defaultPackage	= None
         ( svn_url, svn_branch, svn_tag ) = svnGetWorkingBranch()
         if not svn_url:
             print "Current directory is not an svn working dir!"
             return None
-
-        if verbose:
-            print "svn_url:", svn_url
-            print "self._url:", self._url
 
         branchHead	= svn_url
         defStub1	= os.path.join( self._svnRepo, self._svnStub1 )
@@ -84,9 +83,11 @@ class svnRepo( Repo.Repo ):
             if branchHead == "":
                 defaultPackage = ""
         if verbose:
-            print "defaultPackage:", defaultPackage
-            print "self._branch:", self._branch
-            print "self._url:", self._url
+            print "package:        ", package
+            print "defaultPackage: ", defaultPackage
+            print "self._branch:   ", self._branch
+            print "self._url:      ", self._url
+            print "svn_url:        ", svn_url
         return defaultPackage
 
     def CheckoutRelease( self, buildDir, verbose=False, dryRun=False ):
