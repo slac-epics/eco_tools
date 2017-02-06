@@ -124,6 +124,14 @@ streamdevice:
     old-pcds-trunk:
     -p github-master -d old-pcds-trunk  -s R2.5-0.1.3 -m bf9fd01:stream_2_3
 
+caPutLog:
+    lcls-trunk:
+    gitRecommitBranch.py -p github-master -d lcls-trunk -s cvs-history -m 894a322f3eb5:R3-1 -m 565e7aed7ece:R3-3 -m 848669804985:R3-4
+
+    pcds-trunk:
+    gitRecommitBranch.py -p github-master -d pcds-trunk -s svn-history -m e1d47d476f5d:R3-1 -m bbb10032d290:R3-3-1 -m 19264b25d734:R3-4
+
+
 diagTimer: Just from svn, so svn trunk became master.  Move to github?
 
 Still needed for ioc/common/gigECam:
