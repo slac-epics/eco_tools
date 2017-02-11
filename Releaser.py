@@ -135,20 +135,26 @@ class Releaser(object):
             if re.search( groups, self.grpOwner ):
                 groupId = grp.getgrname(self.grpOwner).gr_gid 
 
-        fileMode = stat.S_IWUSR | stat.S_IWGRP \
-                 | stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH
-        dirMode  = stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH | fileMode
+        # Make sure directories are able to be read and traversed
+        # and leave them writable so we can build on a new host
+        # without having to fix permissions for directories that
+        # might be owned by someone else who created the initial release.
+        dirModeAllow = stat.S_IWUSR | stat.S_IWGRP | \
+                       stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH	| \
+                       stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
+        # Deny write access to files
+        fileModeDeny = stat.S_IWUSR | stat.S_IWGRP
         for dirPath, dirs, files in os.walk(dir):
             pathStatus = os.stat( dirPath )
             if userId == pathStatus.st_uid:
-                os.chmod( dirPath, pathStatus.st_mode | dirMode )
+                os.chmod( dirPath, pathStatus.st_mode | dirModeAllow )
                 if groupId >= 0 and groupId != pathStatus.st_gid:
                     os.chown( dirPath, -1, groupId )
             for fileName in files:
                 filePath   = os.path.join( dirPath, fileName )
                 pathStatus = os.stat( filePath )
                 if userId == pathStatus.st_uid:
-                    os.chmod( filePath, pathStatus.st_mode | fileMode )
+                    os.chmod( filePath, pathStatus.st_mode & ~fileModeDeny )
                     if groupId >= 0 and groupId != pathStatus.st_gid:
                         os.chown( filePath, -1, groupId )
 
@@ -221,18 +227,21 @@ class Releaser(object):
             #print "InstallPackage: _version:   %s" % self._version
 
         if not self._installDir:
-            if not installTop:
-                installTop	= determine_epics_site_top()
-            if not installTop:
+            epics_site_top	= determine_epics_site_top()
+            if not installTop and not epics_site_top:
                 print "InstallPackage Error: Need valid installTop to determine installDir!"
                 return
-            if os.path.split( self._package )[0] == 'modules':
-                # TODO: Get BASE_MODULE_VERSION or EPICS_BASE_VER from env
-                epics_base_ver = determine_epics_base_ver()
-                self._installDir = os.path.join( installTop, epics_base_ver,
-                                                self._package, self._repo.GetTag()	)
-            else:
-                self._installDir = os.path.join( installTop, self._package, self._repo.GetTag() )
+            if not installTop:
+                if		os.path.split( self._package )[0] == 'modules' \
+                     or	self._repo.GetUrl().find('modules') >= 0:
+                    # TODO: Get BASE_MODULE_VERSION or EPICS_BASE_VER from env
+                    epics_base_ver = determine_epics_base_ver()
+                    installTop = os.path.join( epics_site_top, epics_base_ver, 'modules' )
+
+            if not installTop:
+                print "InstallPackage Error: Unable to determine installTop!"
+                return
+            self._installDir = os.path.join( installTop, self._package, self._repo.GetTag() )
 
         if self._installDir.startswith( DEF_EPICS_TOP_PCDS ):
             self.grpOwner = DEF_PCDS_GROUP_OWNER
