@@ -1,5 +1,41 @@
+R1.3	2017-02-06 Bruce Hill
+	Lots of cleanup to epics-release so it can pull package
+		name from working dir for both svn and git.
+	epics-release now works from svn and git working dirs w/ just -r and -m options.
 
-R1.0.0	?/?/2017, bhill
+R1.2	2017-02-02 Bruce Hill
+	Added conditional tests for creation/update of RELEASE_SITE
+		1.  Not if its an EPICS base package, or not an EPICS package at all
+		2. Step on a RELEASE_SITE pulled from the repo?
+			No for PCDS dest paths, 	Yes for LCLS
+	Reorganized a bit to consolidate some cookie cutter code blocks to one function.
+	Tweaked output order of macro definitions to more closely match prior eco
+		and added some TODO comments re future features
+	Added new epics path functions: isBaseTop, isEpicsPackage, isPCDSPath, and get_base_versions.
+	Use readlink -f instead of pwd -P for canonical paths.
+	Add git-utils-0.2.0 release to env in add_env_pkg.sh so developers and module
+		mergers can run the module conversion scripts.
+
+R1.1	2017-02-02 Bruce Hill
+	New routines in version_utils.py to determine epics_site_top and epics_base from env variables.
+	Fixed various options for epics-build, epics-versions, epics-checkout, and epics-release.
+	Made epics-release link invoke epics-release.py directly as all it needs is
+		a python 2.7 version. That allows us to avoid issues w/ escaping quotes
+		in epics-release.sh for --message parameters.
+	Enhanced control over trunk branch for svnModuleToGit.py and made git_utils
+		use our git repo template when creating new bare repos.
+
+R1.0	2017-01-14 Bruce Hill
+	Took EPICS_BASE_VER out of RELEASE_SITE as R3.15 doesn't like to see two different
+		macros w/ the same value like BASE_MODULE_VERSION and EPICS_BASE_VER
+	Fixed some issues re when to create vs delete a local build branch created from the tag.
+	Reworked the fixPermissions code to use python modules instead of shell commands
+		and cleaned up some status and diagnostic messages for a better user experience.
+	Added a nifty git script, git-branch-status, I found that makes it easy to keep track
+		of whether your branches are ahead or behind their upstream branch.
+	Fixed shell setup scripts for epics-build, epics-checkout, etc to run the version
+		in the setup script directory instead of always going to TOOLS_SITE_TOP/eco_tools.
+		Allows development to be done by simply sourcing the add-to-env,sh script.
 	Updates to eco:
 		Now it's a soft link to bash script that runs epics-checkout.py.
 		There's also a soft link called epics-checkout to the same launch script.
