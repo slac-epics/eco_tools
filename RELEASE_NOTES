@@ -1,3 +1,12 @@
+R1.4	2017-02-10 Bruce Hill
+	Fixed code in Releaser.py to set release files read-only and dirs writable.
+	Also added some code in epics-build.py to derive installTop for EPICS modules when not supplied by cmd line param
+	Made epics-checkout default for EPICS_MODULES use new EPICS_SITE_TOP if user changed it.
+		Also suppress unneeded PSPKG_ROOT for pre 3.14.12.5 releases as none of them need it.
+	Adding RELEASE_NOTES for R1.0, R1.1, R1.2, and R1.3
+	Made add-to-env.sh use git-utils-0.3.0 so we can use qgit
+	Added Kernel Module option to cvsModuleToGit.py
+
 R1.3	2017-02-06 Bruce Hill
 	Lots of cleanup to epics-release so it can pull package
 		name from working dir for both svn and git.
