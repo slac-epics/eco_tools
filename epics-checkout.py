@@ -182,8 +182,6 @@ def export_release_site_file( inputs, debug=False):
     print >> out_file, '# top directory each time this file is changed.'
     print >> out_file, '#=============================================================================='
     print >> out_file, 'BASE_MODULE_VERSION=%s'%inputs['EPICS_BASE_VER']
-    # TODO: Substitute $(BASE_MODULE_VERSION) for any substrings below that match the base version
-    # That way users can easily change the base version in one place
     print >> out_file, 'EPICS_SITE_TOP=%s'    % inputs['EPICS_SITE_TOP'] 
     print >> out_file, 'BASE_SITE_TOP=%s'     % inputs['BASE_SITE_TOP']
     if VersionToRelNumber(inputs['EPICS_BASE_VER'], debug=debug) < 3.141205:
@@ -216,6 +214,7 @@ def assemble_release_site_inputs_from_term( options ):
     if not epics_base_ver:
         # base_versions = get_base_versions( epics_site_top )
         print 'TODO: Provide list of available epics_base_ver options to choose from'
+        epics_base_ver = 'unknown-base-ver'
     input_dict['EPICS_BASE_VER'] = epics_base_ver
     if not options.batch:
         prompt5 = 'Enter EPICS_BASE_VER or [RETURN] to use "' + epics_base_ver + '">'
@@ -223,6 +222,10 @@ def assemble_release_site_inputs_from_term( options ):
         if user_input:
             input_dict['EPICS_BASE_VER'] = user_input
     print 'Using EPICS_BASE_VER: ' + input_dict['EPICS_BASE_VER']
+
+    # TODO: Substitute input_dict['EPICS_BASE_VER'] for any substrings below that match
+    # the default epics_base_ver we got from the environment before prompting the user.
+    # That way users can easily change the base version in one place
 
     input_dict['EPICS_SITE_TOP'] = epics_site_top
     if not options.batch:
@@ -243,7 +246,7 @@ def assemble_release_site_inputs_from_term( options ):
     if os.path.isdir( epics_modules ):
         input_dict['EPICS_MODULES'] = epics_modules
     else:
-        epics_modules = os.path.join( epics_site_top, epics_ver, 'modules' )
+        epics_modules = os.path.join( input_dict['BASE_SITE_TOP'], epics_ver, 'modules' )
         if not os.path.isdir( epics_modules ):
             epics_modules = os.path.join( epics_site_top, 'modules' )
         input_dict['EPICS_MODULES'] = epics_modules
@@ -271,15 +274,16 @@ def assemble_release_site_inputs_from_term( options ):
             input_dict['PACKAGE_SITE_TOP'] = user_input
     print 'Using PACKAGE_SITE_TOP: ' + input_dict['PACKAGE_SITE_TOP']
 
-    pspkg_root = getEnv('PSPKG_ROOT')
-    if not os.path.isdir( pspkg_root ):
-        pspkg_root = '/reg/g/pcds/pkg_mgr'
-    if not os.path.isdir( pspkg_root ):
-        pspkg_root = '/afs/slac/g/lcls/pkg_mgr'
-    if not os.path.isdir( pspkg_root ):
-        pspkg_root = '/afs/slac/g/pcds/pkg_mgr'
-    print 'Using PSPKG_ROOT:', pspkg_root
-    input_dict['PSPKG_ROOT'] = pspkg_root
+    if VersionToRelNumber(inputs['EPICS_BASE_VER'], debug=debug) >= 3.141205:
+        pspkg_root = getEnv('PSPKG_ROOT')
+        if not os.path.isdir( pspkg_root ):
+            pspkg_root = '/reg/g/pcds/pkg_mgr'
+        if not os.path.isdir( pspkg_root ):
+            pspkg_root = '/afs/slac/g/lcls/pkg_mgr'
+        if not os.path.isdir( pspkg_root ):
+            pspkg_root = '/afs/slac/g/pcds/pkg_mgr'
+        print 'Using PSPKG_ROOT:', pspkg_root
+        input_dict['PSPKG_ROOT'] = pspkg_root
 
     input_dict['TOOLS_SITE_TOP'] = ''
     input_dict['ALARM_CONFIGS_TOP'] = ''
@@ -585,6 +589,7 @@ def checkOutModule(packageName, tag, destinationPath, options, from_file=False )
             and		isEpicsPackage( os.path.join( curDir, destinationPath ) )
             and not os.path.isfile( os.path.join( curDir, destinationPath, '..', '..', 'RELEASE_SITE' ) )
             # Step on a RELEASE_SITE pulled from the repo? No for PCDS, Yes for LCLS
+            # TODO: Add a user prompt here w/ appropriate default
             and	(	not isPCDSPath( curDir )
                 or	not os.path.isfile( curDir, destinationPath, 'RELEASE_SITE'	)	) ):
         if from_file:
