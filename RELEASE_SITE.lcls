@@ -3,7 +3,7 @@ EPICS_SITE_TOP      = /afs/slac/g/lcls/epics
 EPICS_MODULES       = $(EPICS_SITE_TOP)/$(BASE_MODULE_VERSION)/modules
 EPICS_HOST_ARCH     = $(shell $(EPICS_SITE_TOP)/base/$(BASE_MODULE_VERSION)/startup/EpicsHostArch)
 PACKAGE_SITE_TOP    = /afs/slac/g/lcls/package
-PSPKG_ROOT          = /afs/slac/g/lcls/package/pkg_mgr
+PSPKG_ROOT          = /afs/slac/g/lcls/pkg_mgr
 
 $(info Setting BASE_MODULE_VERSION=$(BASE_MODULE_VERSION) from $(lastword $(MAKEFILE_LIST)))
 
