@@ -1,3 +1,12 @@
+R1.5	2017-02-15 Bruce Hill
+	Fixed some discrepancies between assemble_release_site_inputs_from_term() and
+		assemble_release_site_inputs_from_file() by combining them into one function,
+		assemble_release_site_inputs() with a batch parameter which is set to True
+		for the old from_file() variant or if the --batch option is used on the cmd line.
+	Added git-clone-github.sh script from GIT_TOP/package/epics/modules/git-clone-github.sh
+	Added a variant called git-bare-repo.sh to facilitate creating bare repos w/ SLAC template
+	Adding Kernel Module option to cvsModuleToGit.py
+
 R1.4	2017-02-10 Bruce Hill
 	Fixed code in Releaser.py to set release files read-only and dirs writable.
 	Also added some code in epics-build.py to derive installTop for EPICS modules when not supplied by cmd line param
