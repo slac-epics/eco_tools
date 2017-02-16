@@ -4,11 +4,11 @@
 # SLAC EPICS module development
 #
 
-GIT_DIR=$1
-if [ -z "$GIT_DIR" ]; then
-	echo "Usage: ./git-bare-repo.sh /path/to/bare/repo/git-repo-name.git"
+if [ -z "$1" -o "$1" == "-h" -o "$1" == "--help" ]; then
+	echo "Usage: ./git-bare-repo.sh /path/to/your_repo/repo_name.git"
 	exit 1
 fi
+GIT_DIR=$1
 
 # Make bash exit if any of the following cmds fail
 set -e
