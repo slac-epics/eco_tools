@@ -107,7 +107,7 @@ from version_utils import *
 
 GIT_REPO_MODULES = '/afs/slac/g/cd/swe/git/repos/package/epics/modules'
 
-__all__ = ['export_release_site_file', 'assemble_release_site_inputs_from_file','assemble_cvs_inputs_from_file', 'assemble_release_site_inputs_from_term', 'assemble_cvs_inputs_from_term']
+__all__ = ['export_release_site_file', 'assemble_release_site_inputs','assemble_cvs_inputs_from_file', 'assemble_cvs_inputs_from_term']
 
 def parseGitModulesTxt():
     '''Parse the GIT modules txt file and return a dict of packageName -> location'''
@@ -183,7 +183,8 @@ def export_release_site_file( inputs, debug=False):
     print >> out_file, '#=============================================================================='
     print >> out_file, 'BASE_MODULE_VERSION=%s'%inputs['EPICS_BASE_VER']
     print >> out_file, 'EPICS_SITE_TOP=%s'    % inputs['EPICS_SITE_TOP'] 
-    print >> out_file, 'BASE_SITE_TOP=%s'     % inputs['BASE_SITE_TOP']
+    if 'BASE_SITE_TOP' in inputs:
+        print >> out_file, 'BASE_SITE_TOP=%s'     % inputs['BASE_SITE_TOP']
     if VersionToRelNumber(inputs['EPICS_BASE_VER'], debug=debug) < 3.141205:
         print >> out_file, 'MODULES_SITE_TOP=%s'  % inputs['EPICS_MODULES']
     print >> out_file, 'EPICS_MODULES=%s'     % inputs['EPICS_MODULES']
@@ -192,7 +193,8 @@ def export_release_site_file( inputs, debug=False):
     if VersionToRelNumber(inputs['EPICS_BASE_VER'], debug=debug) < 3.141205:
         print >> out_file, 'EPICS_BASE_VER=%s' %inputs['EPICS_BASE_VER']
     print >> out_file, 'PACKAGE_SITE_TOP=%s'  % inputs['PACKAGE_SITE_TOP']
-    print >> out_file, 'PSPKG_ROOT=%s'        % inputs['PSPKG_ROOT']
+    if 'PSPKG_ROOT' in inputs:
+        print >> out_file, 'PSPKG_ROOT=%s'        % inputs['PSPKG_ROOT']
     if 'TOOLS_SITE_TOP' in inputs:
         print >> out_file, 'TOOLS_SITE_TOP=%s'    % inputs['TOOLS_SITE_TOP']
     if 'ALARM_CONFIGS_TOP' in inputs:
@@ -204,7 +206,7 @@ def export_release_site_file( inputs, debug=False):
     # change back to level where repo is
     os.chdir('../..')
 
-def assemble_release_site_inputs_from_term( options ):
+def assemble_release_site_inputs( batch=False ):
 
     input_dict = {}
 
@@ -216,7 +218,7 @@ def assemble_release_site_inputs_from_term( options ):
         print 'TODO: Provide list of available epics_base_ver options to choose from'
         epics_base_ver = 'unknown-base-ver'
     input_dict['EPICS_BASE_VER'] = epics_base_ver
-    if not options.batch:
+    if not batch:
         prompt5 = 'Enter EPICS_BASE_VER or [RETURN] to use "' + epics_base_ver + '">'
         user_input = raw_input(prompt5).strip()
         if user_input:
@@ -228,7 +230,7 @@ def assemble_release_site_inputs_from_term( options ):
     # That way users can easily change the base version in one place
 
     input_dict['EPICS_SITE_TOP'] = epics_site_top
-    if not options.batch:
+    if not batch:
         prompt1 = 'Enter full path for EPICS_SITE_TOP or [RETURN] to use "' + epics_site_top + '">'
         user_input = raw_input(prompt1).strip()
         if user_input:
@@ -238,18 +240,23 @@ def assemble_release_site_inputs_from_term( options ):
     input_dict['BASE_SITE_TOP'] = os.path.join( input_dict['EPICS_SITE_TOP'], 'base' )
     print 'Using BASE_SITE_TOP: ' + input_dict['BASE_SITE_TOP']
 
-    epics_ver = input_dict['EPICS_BASE_VER']
-    if epics_ver.startswith( 'base-' ):
-        epics_ver = epics_ver.replace( 'base-', '' )
+    epics_modules_ver = input_dict['EPICS_BASE_VER']
+    if epics_modules_ver.startswith( 'base-' ):
+        epics_modules_ver = epics_modules_ver.replace( 'base-', '' )
 
     epics_modules = getEnv('EPICS_MODULES_TOP')
     if os.path.isdir( epics_modules ):
         input_dict['EPICS_MODULES'] = epics_modules
     else:
-        epics_modules = os.path.join( input_dict['BASE_SITE_TOP'], epics_ver, 'modules' )
+        epics_modules = os.path.join( input_dict['EPICS_SITE_TOP'], epics_modules_ver, 'modules' )
         if not os.path.isdir( epics_modules ):
             epics_modules = os.path.join( epics_site_top, 'modules' )
         input_dict['EPICS_MODULES'] = epics_modules
+    if not batch:
+        prompt5 = 'Enter full path for EPICS_MODULES or [RETURN] to use "' + input_dict['EPICS_MODULES'] + '">'
+        user_input = raw_input(prompt5).strip()
+        if user_input:
+            input_dict['EPICS_MODULES'] = user_input
     print 'Using EPICS_MODULES: ' + input_dict['EPICS_MODULES']
 
     ioc_site_top = os.path.join( input_dict['EPICS_SITE_TOP'], 'iocTop' )
@@ -267,14 +274,14 @@ def assemble_release_site_inputs_from_term( options ):
     if not os.path.isdir( package_site_top ):
         package_site_top = '/afs/slac/g/pcds/package'
     input_dict['PACKAGE_SITE_TOP'] = package_site_top
-    if not options.batch:
+    if not batch:
         prompt6 = 'Enter full path for PACKAGE_SITE_TOP or [RETURN] to use "' + package_site_top + '">'
         user_input = raw_input(prompt6).strip()
         if user_input:
             input_dict['PACKAGE_SITE_TOP'] = user_input
     print 'Using PACKAGE_SITE_TOP: ' + input_dict['PACKAGE_SITE_TOP']
 
-    if VersionToRelNumber(inputs['EPICS_BASE_VER'], debug=debug) >= 3.141205:
+    if VersionToRelNumber(input_dict['EPICS_BASE_VER']) >= 3.141205:
         pspkg_root = getEnv('PSPKG_ROOT')
         if not os.path.isdir( pspkg_root ):
             pspkg_root = '/reg/g/pcds/pkg_mgr'
@@ -290,88 +297,26 @@ def assemble_release_site_inputs_from_term( options ):
     tools_site_top = getEnv('TOOLS')
     if os.path.isdir(tools_site_top):
         input_dict['TOOLS_SITE_TOP'] = tools_site_top
-        prompt6 = 'Enter full path for TOOLS_SITE_TOP or [RETURN] to use "' + tools_site_top + '">'
-        if not options.batch:
+        if not batch:
+            prompt6 = 'Enter full path for TOOLS_SITE_TOP or [RETURN] to use "' + tools_site_top + '">'
             user_input = raw_input(prompt6).strip()
             if user_input:
                 input_dict['TOOLS_SITE_TOP'] = user_input
         if os.path.isdir( input_dict['TOOLS_SITE_TOP'] ):
             print 'Using TOOLS_SITE_TOP: ' + input_dict['TOOLS_SITE_TOP']
 
-        alarm_configs_top = os.path.join(tools_site_top, 'AlarmConfigsTop')
-        prompt6 = 'Enter full path for ALARM_CONFIGS_TOP or [RETURN] to use "' + alarm_configs_top + '">'
-        input_dict['ALARM_CONFIGS_TOP'] = alarm_configs_top
-        if not options.batch:
-            user_input = raw_input(prompt6).strip()
-            if user_input:
-                input_dict['ALARM_CONFIGS_TOP'] = user_input
-        if os.path.isdir( input_dict['ALARM_CONFIGS_TOP'] ):
-            print 'Using ALARM_CONFIGS_TOP: ' + input_dict['ALARM_CONFIGS_TOP']
+            alarm_configs_top = os.path.join( input_dict['TOOLS_SITE_TOP'], 'AlarmConfigsTop' )
+            input_dict['ALARM_CONFIGS_TOP'] = alarm_configs_top
+            if not batch:
+                prompt6 = 'Enter full path for ALARM_CONFIGS_TOP or [RETURN] to use "' + alarm_configs_top + '">'
+                user_input = raw_input(prompt6).strip()
+                if user_input:
+                    input_dict['ALARM_CONFIGS_TOP'] = user_input
+            if os.path.isdir( input_dict['ALARM_CONFIGS_TOP'] ):
+                print 'Using ALARM_CONFIGS_TOP: ' + input_dict['ALARM_CONFIGS_TOP']
 
     return input_dict
 
-def assemble_release_site_inputs_from_env():
-    input_dict = {}
-
-    epics_base_ver = determine_epics_base_ver()
-    if not epics_base_ver:
-        print 'Error: Unable to determine EPICS base version.'
-        return input_dict
-
-    input_dict['EPICS_BASE_VER'] = epics_base_ver 
-    print 'Using EPICS_BASE_VER: ' + input_dict['EPICS_BASE_VER']
-
-    epics_site_top = determine_epics_site_top()
-    input_dict['EPICS_SITE_TOP'] = epics_site_top
-    print 'Using EPICS_SITE_TOP: ' + input_dict['EPICS_SITE_TOP']
-
-    input_dict['BASE_SITE_TOP'] = os.path.join( input_dict['EPICS_SITE_TOP'], 'base' )
-    print 'Using BASE_SITE_TOP: ' + input_dict['BASE_SITE_TOP']
-
-    epics_ver = input_dict['EPICS_BASE_VER']
-    if epics_ver.startswith( 'base-' ):
-        epics_ver = epics_ver.replace( 'base-', '' )
-    input_dict['EPICS_MODULES'] = os.path.join( input_dict['EPICS_SITE_TOP'], 'modules', epics_ver  )
-    print 'Using EPICS_MODULES: ' + input_dict['EPICS_MODULES']
-
-    ioc_site_top = os.path.join( input_dict['EPICS_SITE_TOP'], 'iocTop' )
-    if os.path.isdir( ioc_site_top ):
-        input_dict['IOC_SITE_TOP'] = ioc_site_top
-        print 'Using IOC_SITE_TOP: ' + input_dict['IOC_SITE_TOP']
-
-    input_dict['PACKAGE_SITE_TOP'] = getEnv('PACKAGE_TOP')
-    if not os.path.isdir( input_dict['PACKAGE_SITE_TOP'] ):
-        if epics_site_top.startswith( '/reg/g/pcds' ):
-            input_dict['PACKAGE_SITE_TOP'] = '/reg/g/pcds/package'
-    if not os.path.isdir( input_dict['PACKAGE_SITE_TOP'] ):
-        if epics_site_top.startswith( '/afs/slac/g/lcls' ):
-            input_dict['PACKAGE_SITE_TOP'] = '/afs/slac/g/lcls/package'
-    if not os.path.isdir( input_dict['PACKAGE_SITE_TOP'] ):
-        if epics_site_top.startswith( '/afs/slac/g/pcds' ):
-            input_dict['PACKAGE_SITE_TOP'] = '/afs/slac/g/pcds/package'
-    print 'Using PACKAGE_SITE_TOP: ' + input_dict['PACKAGE_SITE_TOP']
-
-    input_dict['PSPKG_ROOT'] = getEnv('PSPKG_ROOT')
-    if not os.path.isdir( input_dict['PSPKG_ROOT'] ):
-        if epics_site_top.startswith( '/reg/g/pcds' ):
-            input_dict['PSPKG_ROOT'] = '/reg/g/pcds/package'
-    if not os.path.isdir( input_dict['PSPKG_ROOT'] ):
-        if epics_site_top.startswith( '/afs/slac/g/lcls' ):
-            input_dict['PSPKG_ROOT'] = '/afs/slac/g/lcls/package'
-    if not os.path.isdir( input_dict['PSPKG_ROOT'] ):
-        if epics_site_top.startswith( '/afs/slac/g/pcds' ):
-            input_dict['PSPKG_ROOT'] = '/afs/slac/g/pcds/package'
-    print 'Using PSPKG_ROOT: ' + input_dict['PSPKG_ROOT']
-
-    input_dict['TOOLS_SITE_TOP'] = getEnv('TOOLS')
-    if os.path.isdir( input_dict['TOOLS_SITE_TOP'] ):
-        print 'Using TOOLS_SITE_TOP: ' + input_dict['TOOLS_SITE_TOP']
-
-    input_dict['ALARM_CONFIGS_TOP'] = os.path.join(getEnv('TOOLS'), 'AlarmConfigsTop')
-    if os.path.isdir( input_dict['ALARM_CONFIGS_TOP'] ):
-        print 'Using ALARM_CONFIGS_TOP: ' + input_dict['ALARM_CONFIGS_TOP']
-
-    return input_dict
 
 # TODO: 1. Breakout packageName completer code into it's own function
 # TODO: 2. Combine assemble_cvs_inputs_from_term and assemble_cvs_inputs_from_file into one function w/ a from_file boolean
@@ -593,9 +538,9 @@ def checkOutModule(packageName, tag, destinationPath, options, from_file=False )
             and	(	not isPCDSPath( curDir )
                 or	not os.path.isfile( curDir, destinationPath, 'RELEASE_SITE'	)	) ):
         if from_file:
-            inputs = assemble_release_site_inputs_from_file()
+            inputs = assemble_release_site_inputs( batch=True )
         else:
-            inputs = assemble_release_site_inputs_from_term( options )
+            inputs = assemble_release_site_inputs( batch=options.batch )
         export_release_site_file( inputs, debug=options.debug )
 
     # TODO: checkOutModule changes cwd to curDir/destinationPath.  Do we want functions to change current dir and not restore?
