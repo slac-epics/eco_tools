@@ -130,33 +130,8 @@ for path in paths:
     if(path not in buildorder):
         raise Exception('Path ' + path + ' is not in the final build order')
 
-
-def writeReleaseSite(path):
-# Generate a correct RELEASE_SITE using my environment variables.
-    releaseSite = open(os.path.join(path, 'RELEASE_SITE'), 'w')
-    releaseSite.write('#==============================================================================\n')
-    releaseSite.write('#RELEASE Location of external products\n')
-    releaseSite.write('# Run "gnumake clean uninstall install" in the application\n')
-    releaseSite.write('# top directory each time this file is changed.\n')
-    releaseSite.write('\n')
-    releaseSite.write('#==============================================================================\n')
-    releaseSite.write('# Define the top of the EPICS tree for your site.\n')
-    releaseSite.write('# We will build some tools/scripts that allow us to\n')
-    releaseSite.write('# change this easily when relocating software.\n')
-    releaseSite.write('#==============================================================================\n')
-    releaseSite.write('EPICS_SITE_TOP=' + os.environ['EPICS_SITE_TOP'] + '\n')
-    releaseSite.write('BASE_SITE_TOP=' + os.environ['BASE_SITE_TOP'] + '\n')
-    releaseSite.write('MODULES_SITE_TOP=' + os.environ['MODULES_SITE_TOP'] + '\n')
-    releaseSite.write('IOC_SITE_TOP=' + os.environ['IOC_SITE_TOP'] + '\n')
-    releaseSite.write('BASE_MODULE_VERSION=' + os.environ['EPICS_BASE_VER'] + '\n')
-    releaseSite.write('WWW_DIR=' + os.environ['WWW_DIR'] + '\n')
-    releaseSite.write('#==============================================================================\n')
-    releaseSite.close()
-
 # Now we can run make in each of the paths in the sequence identified by the buildorder
 for path in buildorder:
-#    Per Ernest, we should not be touching the RELEASE_SITE file. Only eco should.
-#    writeReleaseSite(path)
     cmd = 'make'
     arguments = sys.argv[1:]
     print
@@ -165,8 +140,4 @@ for path in buildorder:
     args = [cmd] + arguments
     print args
     subprocess.check_call(args, shell=False, cwd=path);
-
-
-
-
 
