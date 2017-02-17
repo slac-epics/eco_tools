@@ -80,7 +80,7 @@ class gitRepo( Repo.Repo ):
 
         try:
             # Fetch the tag
-            cmdList = [ "git", "fetch", "origin", self._tag ]
+            cmdList = [ "git", "fetch", "origin", "refs/tags/" + self._tag ]
             subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
 
             # Get the tagSha
