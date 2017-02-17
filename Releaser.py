@@ -130,7 +130,7 @@ class Releaser(object):
         sys.stdout.flush()
         userId  = os.geteuid()
         groupId = -1
-        groups  = subprocess.check_output( [ "id" ] ).splitlines()
+        groups  = subprocess.check_output( [ "id" ] )
         if self.grpOwner is not None:
             if re.search( groups, self.grpOwner ):
                 groupId = grp.getgrname(self.grpOwner).gr_gid 
@@ -173,10 +173,12 @@ class Releaser(object):
                 raise BuildError, "Cannot create build dir: %s" % ( buildDir )
 
         # Make sure we can write to the build directory
-        try:
-            self.execute( "chmod -R u+w %s" % ( buildDir ) )
-        except OSError:
-            raise BuildError, "Cannot make build dir writeable: %s" % ( buildDir )
+        # Shouldn't have to do this now that we leave directories writable
+        # Won't work unless userid matches so need to check before trying
+        #try:
+        #	self.execute( "chmod -R u+w %s" % ( buildDir ) )
+        #except OSError:
+        #	raise BuildError, "Cannot make build dir writeable: %s" % ( buildDir )
 
         try:
             # Checkout release to build dir
@@ -209,7 +211,7 @@ class Releaser(object):
 
     def DoTestBuild( self ):
         try:
-            self.BuildRelease( self._branch, self.tmpDir )
+            self.BuildRelease( self._ReleasePath, self.tmpDir )
             self.DoCleanup()
         except BuildError:
             self.DoCleanup()
@@ -241,7 +243,8 @@ class Releaser(object):
             if not installTop:
                 print "InstallPackage Error: Unable to determine installTop!"
                 return
-            self._installDir = os.path.join( installTop, self._package, self._repo.GetTag() )
+            moduleName = os.path.split( self._package )[-1]
+            self._installDir = os.path.join( installTop, moduleName, self._repo.GetTag() )
 
         if self._installDir.startswith( DEF_EPICS_TOP_PCDS ):
             self.grpOwner = DEF_PCDS_GROUP_OWNER
