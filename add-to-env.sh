@@ -12,7 +12,8 @@ if [ ! -z "`echo $0 | fgrep add-to-env.sh`" ]; then
 fi
 
 # Make sure we have a canonical path to eco_tools
-eco_tools_dir=`readlink -f $(dirname $BASH_ARGV)`
+this_script=`readlink -f $BASH_ARGV`
+eco_tools_dir=`readlink -f $(dirname $this_script)`
 
 # Add the git-utils-0.3.0 pkg_mgr release to front of env paths
 # for a python installation supporting python/2.7.5, GitPython/2.0.8,

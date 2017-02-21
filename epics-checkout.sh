@@ -10,5 +10,6 @@ fi
 export PSPKG_RELEASE=git-utils-0.2.0
 source $PSPKG_ROOT/etc/set_env.sh
 
-eco_tools_dir=`readlink -f $(dirname $0)`
+this_script=`readlink -f $0`
+eco_tools_dir=`readlink -f $(dirname $this_script)`
 $eco_tools_dir/epics-checkout.py $*

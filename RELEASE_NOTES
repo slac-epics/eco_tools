@@ -1,3 +1,7 @@
+R1.?	2017-?
+	Use separate readlink to get canonical path for script vs the directory it's in.
+		Fixes error finding eco_tools dir on double soft links.
+
 R1.5	2017-02-15 Bruce Hill
 	Fixed some discrepancies between assemble_release_site_inputs_from_term() and
 		assemble_release_site_inputs_from_file() by combining them into one function,
