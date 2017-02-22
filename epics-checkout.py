@@ -536,7 +536,7 @@ def checkOutModule(packageName, tag, destinationPath, options, from_file=False )
             # Step on a RELEASE_SITE pulled from the repo? No for PCDS, Yes for LCLS
             # TODO: Add a user prompt here w/ appropriate default
             and	(	not isPCDSPath( curDir )
-                or	not os.path.isfile( curDir, destinationPath, 'RELEASE_SITE'	)	) ):
+                or	not os.path.isfile( os.path.join(curDir, destinationPath, 'RELEASE_SITE') )	) ):
         if from_file:
             inputs = assemble_release_site_inputs( batch=True )
         else:
