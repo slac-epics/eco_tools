@@ -1,6 +1,10 @@
-R1.?	2017-?
+R1.6	2017-02-27 Bruce Hill
 	Use separate readlink to get canonical path for script vs the directory it's in.
 		Fixes error finding eco_tools dir on double soft links.
+	Fixed check for existing RELEASE_SITE file in epics-checkout.py
+	Fixed some epic-release script issues when not specifying --noTag
+	Use "git fetch origin refs/tags/tag_name" in gitRepo.py for fetching tags as it works w/ older and newer git versions
+	Added -h and --help options to git-bare-repo.sh along s/ a soft link git-bare-repo for easier cmd line invocation.
 
 R1.5	2017-02-15 Bruce Hill
 	Fixed some discrepancies between assemble_release_site_inputs_from_term() and
