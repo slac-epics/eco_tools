@@ -1,3 +1,9 @@
+R1.7	2017-03-02 Bruce Hill
+	Tweaked RELEASE_SITE generation to make it identical w/ V_0_0_8 eco for pre R3.14.12.5 releases
+	Moved export_release_site_file() from epics-checkout.py to version_utils.py
+	Added cks for valid installTop dir and make it an absolute path.
+	Improved test in checkoutModule() for whether or not desired tag is already checked out.
+
 R1.6	2017-02-27 Bruce Hill
 	Use separate readlink to get canonical path for script vs the directory it's in.
 		Fixes error finding eco_tools dir on double soft links.
