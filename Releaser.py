@@ -200,10 +200,10 @@ class Releaser(object):
             print "Building Release in %s ..." % ( buildDir )
             buildOutput = self.execute( "make -C %s" % buildDir, outputPipe )
             if self._debug:
-                print "BuildRelease: SUCCESS"
+                print "BuildRelease %s: SUCCESS" % ( buildDir )
         except RuntimeError, e:
             print e
-            raise BuildError, "BuildRelease: FAILED"
+            raise BuildError, "BuildRelease %s: FAILED" % ( buildDir )
 
         sys.stdout.flush()
         sys.stderr.flush()
@@ -243,6 +243,14 @@ class Releaser(object):
             if not installTop:
                 print "InstallPackage Error: Unable to determine installTop!"
                 return
+            cmdList = [ "readlink", "-e", installTop ]
+            gitOutput = subprocess.check_output( cmdList ).splitlines()
+            if len(gitOutput) == 1:
+                installTop = gitOutput[0]
+            if not os.path.isdir( installTop ):
+                print "InstallPackage Error: Invalid installTop:", installTop
+                return
+
             moduleName = os.path.split( self._package )[-1]
             self._installDir = os.path.join( installTop, moduleName, self._repo.GetTag() )
 
