@@ -53,6 +53,16 @@ class gitRepo( Repo.Repo ):
         curDir = os.getcwd()
         if os.path.isdir( os.path.join( buildDir, '.git' ) ):
             os.chdir( buildDir )
+
+            # See if the tag is already checked out
+            curTag = None
+            cmdList = [ "git", "describe", '--tags' ]
+            gitOutput = subprocess.check_output( cmdList ).splitlines()
+            if len(gitOutput) == 1:
+                curTag = gitOutput[0]
+                if curTag == self._tag:
+                    os.chdir( curDir )
+                    return
         else:
             try:
                 # Clone the repo
