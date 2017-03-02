@@ -161,51 +161,6 @@ def parseCVSModulesTxt():
 git_package2Location = parseGitModulesTxt()
 cvs_modules2Location = parseCVSModulesTxt()
 
-def export_release_site_file( inputs, debug=False):
-    """
-    Use the contents of a dictionary of top level dirs to create a 
-    RELEASE_SITE dir in a specified dir
-    """
-
-    #out_file = sys.stdout for testing 
-
-    output_file_and_path = './RELEASE_SITE'
-    try:
-        out_file = open(output_file_and_path, 'w')
-    except IOError, e:
-        sys.stderr.write('Could not open "%s": %s\n' % (output_file_and_path, e.strerror))
-        return None
-
-    print >> out_file, '#=============================================================================='
-    print >> out_file, '# RELEASE_SITE Location of EPICS_SITE_TOP, EPICS_MODULES, and BASE_MODULE_VERSION'
-    print >> out_file, '# Run "gnumake clean uninstall install" in the application'
-    print >> out_file, '# top directory each time this file is changed.'
-    print >> out_file, '#=============================================================================='
-    print >> out_file, 'BASE_MODULE_VERSION=%s'%inputs['EPICS_BASE_VER']
-    print >> out_file, 'EPICS_SITE_TOP=%s'    % inputs['EPICS_SITE_TOP'] 
-    if 'BASE_SITE_TOP' in inputs:
-        print >> out_file, 'BASE_SITE_TOP=%s'     % inputs['BASE_SITE_TOP']
-    if VersionToRelNumber(inputs['EPICS_BASE_VER'], debug=debug) < 3.141205:
-        print >> out_file, 'MODULES_SITE_TOP=%s'  % inputs['EPICS_MODULES']
-    print >> out_file, 'EPICS_MODULES=%s'     % inputs['EPICS_MODULES']
-    if 'IOC_SITE_TOP' in inputs:
-        print >> out_file, 'IOC_SITE_TOP=%s'      % inputs['IOC_SITE_TOP']
-    if VersionToRelNumber(inputs['EPICS_BASE_VER'], debug=debug) < 3.141205:
-        print >> out_file, 'EPICS_BASE_VER=%s' %inputs['EPICS_BASE_VER']
-    print >> out_file, 'PACKAGE_SITE_TOP=%s'  % inputs['PACKAGE_SITE_TOP']
-    if 'PSPKG_ROOT' in inputs:
-        print >> out_file, 'PSPKG_ROOT=%s'        % inputs['PSPKG_ROOT']
-    if 'TOOLS_SITE_TOP' in inputs:
-        print >> out_file, 'TOOLS_SITE_TOP=%s'    % inputs['TOOLS_SITE_TOP']
-    if 'ALARM_CONFIGS_TOP' in inputs:
-        print >> out_file, 'ALARM_CONFIGS_TOP=%s' % inputs['ALARM_CONFIGS_TOP']
-    print >> out_file, '#=============================================================================='
-    if out_file != sys.stdout:
-        out_file.close()
-
-    # change back to level where repo is
-    os.chdir('../..')
-
 def assemble_release_site_inputs( batch=False ):
 
     input_dict = {}
@@ -544,7 +499,7 @@ def checkOutModule(packageName, tag, destinationPath, options, from_file=False )
         export_release_site_file( inputs, debug=options.debug )
 
     # TODO: checkOutModule changes cwd to curDir/destinationPath.  Do we want functions to change current dir and not restore?
-    # os.chdir(curDir)
+    os.chdir(curDir)
 
 def determinePathToGitRepo(packageName):
     '''If the specified package is stored in GIT, then return the URL to the GIT repo. Otherwise, return None'''
