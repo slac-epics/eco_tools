@@ -15,6 +15,17 @@ fi
 this_script=`readlink -f $BASH_ARGV`
 eco_tools_dir=`readlink -f $(dirname $this_script)`
 
+# Make sure we have PSPKG_ROOT and SETUP_SITE_TOP
+if [ -z "$PSPKG_ROOT" -o -z "$SETUP_SITE_TOP" ]; then
+	if [    -f /reg/g/pcds/pyps/config/common_dirs.sh       ]; then
+		source /reg/g/pcds/pyps/config/common_dirs.sh
+	elif [  -f /afs/slac/g/lcls/epics/config/common_dirs.sh ]; then
+		source /afs/slac/g/lcls/epics/config/common_dirs.sh
+	elif [  -f /afs/slac/g/pcds/config/common_dirs.sh       ]; then
+		source /afs/slac/g/pcds/config/common_dirs.sh
+	fi
+fi
+
 # Add the git-utils-0.3.0 pkg_mgr release to front of env paths
 # for a python installation supporting python/2.7.5, GitPython/2.0.8,
 # gitdb/0.6.4, and cvs2svn/2.4.0 along w/ ipython 
