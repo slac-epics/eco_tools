@@ -129,6 +129,19 @@ def determine_epics_site_top():
         epics_site_top = 'unknown'
     return epics_site_top
 
+def determine_epics_host_arch():
+    # First look for EPICS_HOST_ARCH in the environment
+    epics_host_arch = getEnv('EPICS_HOST_ARCH')
+    if epics_host_arch == '?':
+        epicsHostArchPath	= os.path.join(	determine_epics_site_top(), 'base',
+                                            determine_epics_base_ver(), 'startup', 'EpicsHostArch' )
+        epics_host_arch = 'unsupported'
+        if os.path.isfile( epicsHostArchPath ):
+            cmdOutput = subprocess.check_output( [ epicsHostArchPath ] ).splitlines()
+            if len(cmdOutput) == 1:
+                epics_host_arch = cmdOutput[0]
+    return epics_host_arch
+
 def export_release_site_file( inputs, debug=False):
     """
     Use the contents of a dictionary of top level dirs to create a 
