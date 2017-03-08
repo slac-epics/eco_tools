@@ -13,4 +13,4 @@ source $PSPKG_ROOT/etc/set_env.sh
 this_script=`readlink -f $0`
 eco_tools_dir=`readlink -f $(dirname $this_script)`
 
-$eco_tools_dir/epics-build.py $*
+$eco_tools_dir/epics-build.py $* 2>&1 | tee build.log
