@@ -6,6 +6,8 @@
 
 if [ -z "$1" -o "$1" == "-h" -o "$1" == "--help" ]; then
 	echo "Usage: ./git-bare-repo.sh /path/to/your_repo/repo_name.git"
+	echo "For new EPICS modules, you can just use relative pathname module_name.git"
+	echo "For all other repos, please specify an absolute repo pathname."
 	exit 1
 fi
 GIT_DIR=$1
@@ -18,7 +20,7 @@ if [ -z "$GIT_TOP" ]; then
 	GIT_TOP=/afs/slac/g/cd/swe/git/repos
 fi
 PARENT_DIR=$GIT_TOP/package/epics/modules
-TEMPLATES=$PARENT_DIR/templates
+TEMPLATES=$GIT_TOP/package/epics/epics-git-templates-git/templates
 cd $PARENT_DIR
 
 # Create a bare it repo using our local templates directory
