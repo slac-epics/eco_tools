@@ -46,6 +46,7 @@ class Releaser(object):
         self._keepTmp	= keepTmp
         self._noTag		= noTag
         self._ReleasePath= None
+        self._EpicsHostArch = determine_epics_host_arch()
         self._retcode	= 0
         # Create a directory where files will be checked-out
         self.tmpDir		= tempfile.mktemp("-epics-release")
@@ -158,6 +159,9 @@ class Releaser(object):
                     if groupId >= 0 and groupId != pathStatus.st_gid:
                         os.chown( filePath, -1, groupId )
 
+    def built_cookie_path( self ):
+        return os.path.join( self._ReleasePath, "configure", "O." + self._EpicsHostArch, ".is_built" )
+
     def BuildRelease( self, buildBranch, buildDir, outputPipe = subprocess.PIPE ):
         if not buildDir:
             raise BuildError, "Build dir not defined!"
@@ -180,6 +184,9 @@ class Releaser(object):
         #except OSError:
         #	raise BuildError, "Cannot make build dir writeable: %s" % ( buildDir )
 
+        if	self._ReleasePath != buildDir:
+            self._ReleasePath =  buildDir
+
         try:
             # Checkout release to build dir
             self._repo.CheckoutRelease( buildDir, verbose=self._verbose, dryRun=self._dryRun )
@@ -190,6 +197,13 @@ class Releaser(object):
             print e
             raise BuildError, "BuildRelease: FAILED"
 
+        if self._verbose:
+            print "BuildRelease: Checking built cookie %s" % ( self.built_cookie_path() )
+        if os.path.isfile( self.built_cookie_path() ):
+            if self._verbose:
+                print "BuildRelease %s: Already built!" % ( buildDir )
+            return
+
         # Build release
         outputPipe = None
         if self._quiet:
@@ -199,7 +213,8 @@ class Releaser(object):
             sys.stderr.flush()
             print "Building Release in %s ..." % ( buildDir )
             buildOutput = self.execute( "make -C %s" % buildDir, outputPipe )
-            if self._debug:
+            self.execute( "touch %s" % self.built_cookie_path() )
+            if self._verbose:
                 print "BuildRelease %s: SUCCESS" % ( buildDir )
         except RuntimeError, e:
             print e
@@ -218,15 +233,10 @@ class Releaser(object):
             raise
 
     def InstallPackage( self, installTop=None ):
-        '''Use InstallPackage to automatically dertermine the buildDir from installTop and the repo specs.
+        '''Use InstallPackage to automatically determine the buildDir from installTop and the repo specs.
         If you already know where to build you can just call BuildRelease() directly.'''
         if self._verbose:
             self._repo.ShowRepo( titleLine="InstallPackage: " + self._package, prefix="	" )
-            #print self._repo
-            #print "\nInstallPackage: installTop: %s" % installTop
-            #print "InstallPackage: _branch:    %s" % self._branch
-            #print "InstallPackage: _package:   %s" % self._package
-            #print "InstallPackage: _version:   %s" % self._version
 
         if not self._installDir:
             epics_site_top	= determine_epics_site_top()
@@ -244,9 +254,9 @@ class Releaser(object):
                 print "InstallPackage Error: Unable to determine installTop!"
                 return
             cmdList = [ "readlink", "-e", installTop ]
-            gitOutput = subprocess.check_output( cmdList ).splitlines()
-            if len(gitOutput) == 1:
-                installTop = gitOutput[0]
+            cmdOutput = subprocess.check_output( cmdList ).splitlines()
+            if len(cmdOutput) == 1:
+                installTop = cmdOutput[0]
             if not os.path.isdir( installTop ):
                 print "InstallPackage Error: Invalid installTop:", installTop
                 return
