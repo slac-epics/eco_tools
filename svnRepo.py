@@ -103,7 +103,7 @@ class svnRepo( Repo.Repo ):
             cmdList = [ "svn", "co", self._url, buildDir ]
             subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
         except RuntimeError:
-            raise Releaser.BuildError, "BuildRelease: svn co failed for %s %s" % ( self._url, buildDir )
+            raise Releaser.BuildError, "CheckoutRelease: svn co failed for %s %s" % ( self._url, buildDir )
 
     def svnMakeDir( self, svnDir, dryRun=True ):
         try:

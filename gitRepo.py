@@ -72,11 +72,11 @@ class gitRepo( Repo.Repo ):
             except RuntimeError, e:
                 print e
                 os.chdir(curDir)
-                raise gitError, "BuildRelease RuntimeError: Failed to clone %s to %s" % ( self._url, buildDir )
+                raise gitError, "CheckoutRelease RuntimeError: Failed to clone %s to %s" % ( self._url, buildDir )
             except subprocess.CalledProcessError, e:
                 print e
                 os.chdir(curDir)
-                raise gitError, "BuildRelease CalledProcessError: Failed to clone %s in %s" % ( self._url, buildDir )
+                raise gitError, "CheckoutRelease CalledProcessError: Failed to clone %s in %s" % ( self._url, buildDir )
 
         # See if we've already created a branch for this tag
         branchSha = None
@@ -123,11 +123,11 @@ class gitRepo( Repo.Repo ):
         except RuntimeError, e:
             print e
             os.chdir(curDir)
-            raise gitError, "BuildRelease RuntimeError: Failed to checkout %s in %s" % ( self._tag, buildDir )
+            raise gitError, "CheckoutRelease RuntimeError: Failed to checkout %s in %s" % ( self._tag, buildDir )
         except subprocess.CalledProcessError, e:
             print e
             os.chdir(curDir)
-            raise gitError, "BuildRelease CalledProcessError: Failed to checkout %s in %s" % ( self._tag, buildDir )
+            raise gitError, "CheckoutRelease CalledProcessError: Failed to checkout %s in %s" % ( self._tag, buildDir )
         os.chdir(curDir)
 
     def RemoveTag( self, package, release, verbose=True, dryRun=True ):
