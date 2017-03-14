@@ -504,7 +504,7 @@ def initGitBareRepo():
     createGitIgnore()
     createCramPackageInfo(packageName, apptype)
         
-    commitAndPush()
+    gitCommitAndPush( 'Initial commit/import from eco. Added a default .gitignore and other defaults.' )
 
     os.chdir(curDir)
     shutil.rmtree(tpath)
@@ -549,7 +549,7 @@ def importFromCVS():
     createGitIgnore()
     # We expect .cram/packageinfo to be there already
     
-    commitAndPush()
+    gitCommitAndPush( 'Initial commit/import from eco. Added a default .gitignore and other defaults.' )
 
     os.chdir(curDir)
 

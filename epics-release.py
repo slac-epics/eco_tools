@@ -199,8 +199,6 @@ try:
                         help="do not include a release message"	)
     parser.add_option(	"-n", "--noTag", dest="noTag", action="store_true",
                         help="do not tag, just rebuild an existing release"	)
-    parser.add_option(	"", "--notag", dest="noTag", action="store_true",
-                        help="do not tag, just rebuild an existing release"	)
     parser.add_option(	"-b", "--branch", dest="branch",
                         help="branch to release, "
                             "ex. $REPO/epics/branch/bugFix/ioc/cam/R0.2.1" )

@@ -128,10 +128,11 @@ def createGitIgnore():
         f.write("\n".join(gitIgnoreLines))
     subprocess.check_call(['git', 'add', '.gitignore'])
 
-def commitAndPush():
+def gitCommitAndPush( message ):
     '''Call git commit and git push'''
-    subprocess.check_call(['git', 'commit', '-m', 'Initial commit/import from eco. Added a default .gitignore and other defaults.'])
-    subprocess.check_call(['git', 'push', 'origin', 'master'])
+    subprocess.check_call(['git', 'commit', '-m', message ])
+    message = 'Initial commit/import from eco. Added a default .gitignore and other defaults.'
+    subprocess.check_call(['git', 'push' ])
 
 def addPackageToEcoModuleList(packageName, gitMasterRepo):
     '''Add the package with the given master repo to eco's modulelist'''
@@ -145,7 +146,7 @@ def addPackageToEcoModuleList(packageName, gitMasterRepo):
     subprocess.check_call(['git', 'add', 'modulelist.txt'])
     subprocess.check_call(['git', 'commit', '-m', 'eco added package ' + packageName + ' located at ' + gitMasterRepo])
     subprocess.check_call(['git', 'pull', '--rebase'])
-    subprocess.check_call(['git', 'push', 'origin', 'master'])
+    subprocess.check_call(['git', 'push' ])
     os.chdir(curDir)
 
 def importHistoryFromCVS(tpath, gitRepoPath, CVSpackageLocation, gitFolder=None, module=None):

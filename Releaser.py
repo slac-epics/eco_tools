@@ -162,6 +162,17 @@ class Releaser(object):
     def built_cookie_path( self ):
         return os.path.join( self._ReleasePath, "configure", "O." + self._EpicsHostArch, ".is_built" )
 
+    def hasBuilt( self ):
+        '''Returns True if module has built for any architecture.'''
+        hasBuilt = False
+        try:
+            findOutput = subprocess.check_output( [ "find", self._ReleasePath, "-name", ".is_built" ] ).splitlines()
+            if len(findOutput) > 0:
+                hasBuilt = True
+        except:
+            pass
+        return hasBuilt
+
     def BuildRelease( self, buildBranch, buildDir, outputPipe = subprocess.PIPE ):
         if not buildDir:
             raise BuildError, "Build dir not defined!"
@@ -204,6 +215,9 @@ class Releaser(object):
                 print "BuildRelease %s: Already built!" % ( buildDir )
             return
 
+        # See if it's built for any architecture
+        hasBuilt = self.hasBuilt()
+
         # Build release
         outputPipe = None
         if self._quiet:
@@ -218,7 +232,10 @@ class Releaser(object):
                 print "BuildRelease %s: SUCCESS" % ( buildDir )
         except RuntimeError, e:
             print e
-            raise BuildError, "BuildRelease %s: FAILED" % ( buildDir )
+            if hasBuilt == False:
+                self.execute( "mv %s %s-FAILED" % ( buildDir, buildDir ) )
+                buildDir += "-FAILED"
+            raise BuildError, "BuildRelease FAILED in %s" % ( buildDir )
 
         sys.stdout.flush()
         sys.stderr.flush()
@@ -229,8 +246,13 @@ class Releaser(object):
             self.BuildRelease( self._ReleasePath, self.tmpDir )
             self.DoCleanup()
         except BuildError:
+            print "DoTestBuild: %s Build error from BuildRelease in %s" % ( self._package, self.tmpDir )
             self.DoCleanup()
             raise
+        except subprocess.CalledProcessError, e:
+            print "DoTestBuild: %s CalledProcessError from BuildRelease in %s" % ( self._package, self.tmpDir )
+            print e
+            pass
 
     def InstallPackage( self, installTop=None ):
         '''Use InstallPackage to automatically determine the buildDir from installTop and the repo specs.
@@ -272,6 +294,11 @@ class Releaser(object):
             if self._verbose:
                 print "InstallPackage: %s installed to:\n%s" % ( self._package, os.path.realpath(self._installDir) )
         except BuildError, e:
+            print "InstallPackage: %s Build error from BuildRelease in %s" % ( self._package, os.path.realpath(self._installDir) )
+            print e
+            pass
+        except subprocess.CalledProcessError, e:
+            print "InstallPackage: %s CalledProcessError from BuildRelease in %s" % ( self._package, os.path.realpath(self._installDir) )
             print e
             pass
 
