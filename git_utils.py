@@ -109,7 +109,7 @@ def initBareRepo(parentFolder, packageName):
     if os.path.exists(gitMasterRepo):
         subprocess.check_call(["zenity", "--error", "--title", "Error", "--text", "Git master repo for package " + packageName + " already exists at " + gitMasterRepo])
         raise Exception("Git master repo already exists at " + gitMasterRepo)
-    print "Initializing a bare repo in", parentFolder, "for package", packageName
+    print "Creating a new bare repo in", parentFolder, "for package", packageName
     subprocess.check_call(["git", "init", "--bare", "--template=%s/templates" % DEF_GIT_MODULES, gitMasterRepo])
     if not os.path.exists(gitMasterRepo):
         raise Exception("Git master repo does not seem to exist at " + gitMasterRepo)
@@ -148,7 +148,7 @@ def addPackageToEcoModuleList(packageName, gitMasterRepo):
     subprocess.check_call(['git', 'push', 'origin', 'master'])
     os.chdir(curDir)
 
-def importHistoryFromCVS(tpath, gitRepoPath, CVSpackageLocation, modulesDir=None, module=None):
+def importHistoryFromCVS(tpath, gitRepoPath, CVSpackageLocation, gitFolder=None, module=None):
     '''Import history into a git repo using cvs2git. tpath is a precreated temporary folder.''' 
     curDir = os.getcwd()
     os.chdir(tpath)
@@ -201,9 +201,9 @@ def importHistoryFromCVS(tpath, gitRepoPath, CVSpackageLocation, modulesDir=None
 
     # If a gitRepoPath wasn't provided, create a new bare repo
     if gitRepoPath is None:
-        gitRepoPath = os.path.join( modulesDir, module+".git")
+        gitRepoPath = os.path.join( gitFolder, module+".git")
     if not os.path.exists(gitRepoPath):
-        gitRepoPath = initBareRepo( modulesDir, module )
+        gitRepoPath = initBareRepo( gitFolder, module )
     os.chdir(gitRepoPath)
 
     # Use Python Pipes to import CVS dump into GIT
@@ -212,7 +212,14 @@ def importHistoryFromCVS(tpath, gitRepoPath, CVSpackageLocation, modulesDir=None
     p1.stdout.close()  # Allow p1 to receive a SIGPIPE if p2 exits.
     p2.communicate()[0]
     print "Done importing CVS dump into git master repo"
-    subprocess.call(['git', 'branch', '-D', 'TAG.FIXUP'])
+
+    # If cvs2git created a TAG.FIXUP branch, delete it
+    cmdOutput = subprocess.check_output( [ 'git', 'branch', '-l' ] ).splitlines()
+    for line in cmdOutput:
+        if 'TAG.FIXUP' in line:
+            subprocess.call(['git', 'branch', '-D', 'TAG.FIXUP'])
+            break
+
     subprocess.check_call(['git', 'gc', '--prune=now'])
     os.chdir(curDir)
 
@@ -309,4 +316,25 @@ def gitFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
         else:
             print "gitFindPackageRelease Error: Cannot find %s/%s" % (packageSpec, tag)
     return (repo_url, repo_tag)
+
+def parseGitModulesTxt():
+    '''Parse the GIT modules txt file and return a dict of packageName -> location'''
+    package2Location = {}
+    gitModulesTxtFile = os.path.join(os.environ['TOOLS'], 'eco_modulelist', 'modulelist.txt')
+    with open(gitModulesTxtFile, 'r') as f:
+        lines = f.readlines()
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        if line.startswith('#'):
+            continue
+        parts = line.split()
+        if(len(parts) < 2):
+            print "Error parsing ", gitModulesTxtFile, "Cannot break", line, "into columns with enough fields using spaces/tabs"
+            continue
+        packageName = parts[0]
+        packageLocation = parts[1]
+        package2Location[packageName] = packageLocation
+    return package2Location
 

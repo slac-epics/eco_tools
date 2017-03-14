@@ -101,6 +101,7 @@ import tempfile
 import json
 
 from cram_utils import *
+from cvs_utils import *
 from git_utils import *
 from version_utils import *
 
@@ -108,55 +109,6 @@ from version_utils import *
 GIT_REPO_MODULES = '/afs/slac/g/cd/swe/git/repos/package/epics/modules'
 
 __all__ = ['export_release_site_file', 'assemble_release_site_inputs','assemble_cvs_inputs_from_file', 'assemble_cvs_inputs_from_term']
-
-def parseGitModulesTxt():
-    '''Parse the GIT modules txt file and return a dict of packageName -> location'''
-    package2Location = {}
-    gitModulesTxtFile = os.path.join(os.environ['TOOLS'], 'eco_modulelist', 'modulelist.txt')
-    with open(gitModulesTxtFile, 'r') as f:
-        lines = f.readlines()
-    for line in lines:
-        line = line.strip()
-        if not line:
-            continue
-        if line.startswith('#'):
-            continue
-        parts = line.split()
-        if(len(parts) < 2):
-            print "Error parsing ", gitModulesTxtFile, "Cannot break", line, "into columns with enough fields using spaces/tabs"
-            continue
-        packageName = parts[0]
-        packageLocation = parts[1]
-        package2Location[packageName] = packageLocation
-    return package2Location
-        
-def parseCVSModulesTxt():
-    '''Parse the CVS modules file and return a dict of packageName -> location'''
-    package2Location = {}
-    cvsModulesTxtFile = os.path.join(os.environ['CVSROOT'], 'CVSROOT', 'modules')
-    if not os.path.exists(cvsModulesTxtFile):
-        print "Cannot determine CVS modules from modules file."
-        return package2Location
-    
-    with open(cvsModulesTxtFile, 'r') as f:
-        lines = f.readlines()
-    for line in lines:
-        line = line.strip()
-        if not line:
-            continue
-        if line.startswith('#'):
-            continue
-        parts = line.split()
-        if(len(parts) < 2):
-            print "Error parsing ", cvsModulesTxtFile, "Cannot break", line, "into columns with enough fields using spaces/tabs"
-            continue
-        packageName = parts[0]
-        packageLocation = parts[1]
-        package2Location[packageName] = packageLocation
-    return package2Location
-        
-
-
 
 git_package2Location = parseGitModulesTxt()
 cvs_modules2Location = parseCVSModulesTxt()

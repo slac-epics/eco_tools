@@ -5,9 +5,13 @@ import argparse
 import os.path
 import shutil
 import tempfile
+from cvs_utils import *
 from git_utils import *
 
 gitDefaultDirFormat = "/afs/slac/g/cd/swe/git/repos/package/{}/from-cvs"
+cvsRoot = "/afs/slac/g/lcls/cvs"
+cvs_modules2Location = parseCVSModulesTxt( cvsRoot )
+git_modules2Location = parseGitModulesTxt()
 
 # Dictionary to store the cvs path and git path for each kind of import
 # To add a new type add the entry in here with the proper paths and add
@@ -18,23 +22,32 @@ moduleTypePaths = {
 }
 
 
-def importModule( module, module_type ):
+def importModule( module, module_type, gitFolder=None, repoPath=None ):
     tp = moduleTypePaths[module_type]
-
-    CVSpackageLocation = os.path.join( os.environ['CVSROOT'], tp['cvs'], module )
-    print "Importing CVS module %s from %s" % ( module, CVSpackageLocation )
+    if repoPath is None:
+        if module in cvs_modules2Location:
+            repoPath = os.path.join( cvsRoot, cvs_modules2Location[module] )
+        else:
+            repoPath = os.path.join( cvsRoot, tp['cvs'], module )
+    if gitFolder is None:
+        if module in git_modules2Location:
+            gitFolder = git_modules2Location[module]
+        else:
+            gitFolder = gitDefaultDirFormat.format(tp['git'])
+    print "Importing CVS module %s from %s\n   to %s" % ( module, repoPath, gitFolder )
  
     # Import the CVS history using a tmp folder
     tpath = tempfile.mkdtemp()
-    modulesDir = gitDefaultDirFormat.format(tp['git'])
-    importHistoryFromCVS(tpath, None, CVSpackageLocation, modulesDir=modulesDir, module=module )
+    importHistoryFromCVS(tpath, None, repoPath, gitFolder=gitFolder, module=module )
     shutil.rmtree(tpath)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser( description='''This script creates a git repo for each specified CVS module....
 ''')
-    parser.add_argument( '-m', '--module', action='append', required=True, help='CVS module name to import.' )
+    parser.add_argument( '-m', '--module', action='append', required=True, help='Module name to import.' )
     parser.add_argument( '-k', '--kernel', action='store_true', default=False, required=False, help='Indicates if this is a Kernel Module.' )
+    parser.add_argument( '--repoPath',  action='store', default=None, help='CVS repo path to import.' )
+    parser.add_argument( '--gitFolder', action='store', default=None, help='Folder to create git repo in.' )
 
     args = parser.parse_args( )
 
@@ -48,7 +61,7 @@ if __name__ == '__main__':
         moduleType = 'kernel_module'
 
     for m in args.module:
-        importModule( m , moduleType )
+        importModule( m, moduleType, repoPath=args.repoPath, gitFolder=args.gitFolder )
 
     print "Done."
 

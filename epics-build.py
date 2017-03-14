@@ -46,32 +46,6 @@ def getEnv( envVar ):
         result = '?'
     return result
 
-def parseCVSModulesTxt():
-    '''Parse the CVS modules file and return a dict of packageName -> location'''
-    package2Location = {}
-    cvsModulesTxtFile = os.path.join(os.environ['CVSROOT'], 'CVSROOT', 'modules')
-    if not os.path.exists(cvsModulesTxtFile):
-        print "Cannot determine CVS modules from modules file."
-        return package2Location
-    
-    with open(cvsModulesTxtFile, 'r') as f:
-        lines = f.readlines()
-    for line in lines:
-        line = line.strip()
-        if not line:
-            continue
-        if line.startswith('#'):
-            continue
-        parts = line.split()
-        if(len(parts) < 2):
-            print "Error parsing ", cvsModulesTxtFile, "Cannot break", line, "into columns with enough fields using spaces/tabs"
-            continue
-        packageName = parts[0]
-        packageLocation = parts[1]
-        package2Location[packageName] = packageLocation
-    return package2Location
-        
-cvs_modules2Location = parseCVSModulesTxt()
 
 def build_modules( options ):
     try:
