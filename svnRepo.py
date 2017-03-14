@@ -133,7 +133,7 @@ class svnRepo( Repo.Repo ):
         subprocess.check_call( cmdList )
         print "Successfully removed %s release tag %s." % ( self._branch, self._tag )
 
-    def TagRelease( self, verbose=True, message="TODO: Set message for TagRelease", dryRun=True ):
+    def TagRelease( self, verbose=True, message="TODO: Set message for TagRelease", dryRun=False ):
         if verbose:
             print "Tagging release %s %s ..." % ( self._branch, self._tag )
         if dryRun:

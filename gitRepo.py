@@ -117,8 +117,8 @@ class gitRepo( Repo.Repo ):
 
                 # Create a branch from the tag for easier status checks if it doesn't already exist
                 # or if the old one didn't match the tag
-                cmdList = [ "git", "checkout", '-b', self._tag ]
-                subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
+                #cmdList = [ "git", "checkout", '-b', self._tag ]
+                #subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
 
         except RuntimeError, e:
             print e
@@ -130,7 +130,7 @@ class gitRepo( Repo.Repo ):
             raise gitError, "CheckoutRelease CalledProcessError: Failed to checkout %s in %s" % ( self._tag, buildDir )
         os.chdir(curDir)
 
-    def RemoveTag( self, package, release, verbose=True, dryRun=True ):
+    def RemoveTag( self, package, release, verbose=True, dryRun=False ):
         if verbose:
             print "\nRemoving %s release tag %s ..." % ( package, release )
         if dryRun:
@@ -141,13 +141,15 @@ class gitRepo( Repo.Repo ):
         subprocess.check_call( cmdList )
         print "Successfully removed %s release tag %s." % ( package, release )
 
-    def TagRelease( self, package, release, branch=None, message="", verbose=True, dryRun=True ):
+    def TagRelease( self, package, release, branch=None, message="", verbose=True, dryRun=False ):
         if verbose:
-            print "Tagging release %s %s ..." % ( self._branch, self._tag )
+            print "Tagging release %s %s ..." % ( self._branch, release )
         if dryRun:
             print "TagRelease: --dryRun--"
             return
         comment = "Release %s/%s: %s" % ( package, release, message )
         cmdList = [ "git", "tag", release, "-m", comment ]
         subprocess.check_call( cmdList )
+        subprocess.check_call( [ 'git', 'push', '-u', 'origin' ] )
+        subprocess.check_call( [ 'git', 'push', 'origin', release ] )
 
