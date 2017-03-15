@@ -46,6 +46,7 @@ class Releaser(object):
         self._keepTmp	= keepTmp
         self._noTag		= noTag
         self._ReleasePath= None
+        # TODO: Derive _EpicsHostArch from the module's RELEASE_SITE file instead of env
         self._EpicsHostArch = determine_epics_host_arch()
         self._retcode	= 0
         # Create a directory where files will be checked-out
@@ -160,6 +161,7 @@ class Releaser(object):
                         os.chown( filePath, -1, groupId )
 
     def built_cookie_path( self ):
+        # TODO: Derive _EpicsHostArch from the module's RELEASE_SITE file instead of env
         return os.path.join( self._ReleasePath, "configure", "O." + self._EpicsHostArch, ".is_built" )
 
     def hasBuilt( self ):
