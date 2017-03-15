@@ -119,7 +119,7 @@ def cloneMasterRepo(gitMasterRepo, tpath, packageName):
     '''Create a clone of the master repo given a destination folder'''
     print "Cloning the master repo at", gitMasterRepo, "into", tpath
     clonedFolder = os.path.join(tpath, packageName)
-    subprocess.check_call(['git', 'clone', gitMasterRepo, clonedFolder])
+    subprocess.check_call(['git', 'clone', '--recursive', gitMasterRepo, clonedFolder])
     return clonedFolder
 
 def createGitIgnore():
