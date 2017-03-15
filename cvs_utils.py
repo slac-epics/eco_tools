@@ -2,6 +2,7 @@
 Utilities for cvs repos'''
 
 import os
+import re
 import sys
 import subprocess
 import fileinput
@@ -73,6 +74,7 @@ def cvsFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
             print "cvsFindPackageRelease Error: Cannot find %s/%s" % (packageSpec, tag)
     return (repo_url, repo_path, repo_tag)
 
+
 def parseCVSModulesTxt( cvsRepoRoot=None ):
     '''Parse the CVS modules file and return a dict of packageName -> location'''
     package2Location = {}
@@ -91,11 +93,7 @@ def parseCVSModulesTxt( cvsRepoRoot=None ):
             continue
         if line.startswith('#'):
             continue
-        parts = line.split()
-        if(len(parts) < 2):
-            print "Error parsing ", cvsModulesTxtFile, "Cannot break", line, "into columns with enough fields using spaces/tabs"
-            continue
-        # TODO: Support other CVS module features
+
         # Spear CVS repo uses these CVS module features
         # Example: If CVSROOT/modules contains
         # foo   path/to/foo &bar
@@ -106,11 +104,35 @@ def parseCVSModulesTxt( cvsRepoRoot=None ):
         # % cvs co path/to/foo MAIN_TRUNK
         # % cd MAIN_TRUNK
         # % cvs co path/to/bar subDir/bar
-        # We could change function to return a triple
-        # return ( package2Location, dirName, submodules )
-        
+
+        # See if a directory path is specified
+        dirPath = "."
+        dirPathRegExp = re.compile( r"-d (\S+)" )
+        dirPathMatch  = dirPathRegExp.search( line )
+        if dirPathMatch:
+            dirPath = dirPathMatch.group(1)
+            line = line.replace( dirPathMatch.group(0), "" )
+
+        # See if any submodules are specified
+        subModules = []
+        subModuleRegExp = re.compile( r"&(\S+)" )
+        while True:
+            subModuleMatch  = subModuleRegExp.search( line )
+            if not subModuleMatch:
+                break
+            subModules.append( subModuleMatch.group(1) )
+            line = line.replace( subModuleMatch.group(0), "" )
+
+        # We should have at most 2 whitespace separated parts left: packageName packageLocation
+        parts = line.split()
+        if(len(parts) != 2):
+            print "Error parsing ", cvsModulesTxtFile, "Cannot break", line, "into columns with enough fields using spaces/tabs"
+            continue
+
         packageName = parts[0]
         packageLocation = parts[1]
         package2Location[packageName] = packageLocation
+
+    # Note: could return ( package2Location, dirPath, subModules ) if we intended to do something w/ dirPath or subModules
     return package2Location
 
