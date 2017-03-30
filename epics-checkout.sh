@@ -7,7 +7,7 @@ if [ -z "$PSPKG_ROOT" -o -z "$TOOLS_SITE_TOP" ]; then
     fi
 fi
 
-export PSPKG_RELEASE=git-utils-0.2.0
+export PSPKG_RELEASE=git-utils-0.3.0
 source $PSPKG_ROOT/etc/set_env.sh
 
 this_script=`readlink -f $0`
