@@ -75,7 +75,7 @@ def cvsFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
     return (repo_url, repo_path, repo_tag)
 
 
-def parseCVSModulesTxt( cvsRepoRoot=None ):
+def parseCVSModulesTxt( cvsRepoRoot=None, verbose=False ):
     '''Parse the CVS modules file and return a dict of packageName -> location'''
     package2Location = {}
     if  cvsRepoRoot is None:
@@ -125,8 +125,9 @@ def parseCVSModulesTxt( cvsRepoRoot=None ):
 
         # We should have at most 2 whitespace separated parts left: packageName packageLocation
         parts = line.split()
-        if(len(parts) != 2):
-            print "Error parsing ", cvsModulesTxtFile, "Cannot break", line, "into columns with enough fields using spaces/tabs"
+        if(len(parts) < 2):
+            if verbose:
+                print "Error parsing ", cvsModulesTxtFile, "Cannot break", line, "into columns with enough fields using spaces/tabs"
             continue
 
         packageName = parts[0]
