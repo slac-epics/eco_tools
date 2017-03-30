@@ -44,6 +44,8 @@ def VersionToRelNumber( version, debug=False ):
     return relNumber
 
 def isReleaseCandidate(release):
+    if release.endswith( "FAILED" ):
+        return False
     match = releaseRegExp.search( release )
     if match:
         return True
