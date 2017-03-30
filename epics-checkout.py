@@ -269,13 +269,23 @@ def assemble_cvs_inputs_from_term(options):
             if not os.path.exists( pathToGitRepo ):
                 pathToGitRepo = None
         if pathToGitRepo:
-            dirName = '%s-git' % packageName
-            if os.path.exists(os.path.join(pathToGitRepo, "refs", "tags")):
-                # Determine the list of tags..
-                tags = os.listdir(os.path.join(pathToGitRepo, "refs", "tags"))
+            if "svn" in pathToGitRepo:
+                pathToSvnRepo = pathToGitRepo
+                dirName = "current"
+                tagsPath = pathToSvnRepo.replace( "trunk", "tags" )
+                tagsPath = tagsPath.replace( "/current", "" )
+                try:
+                    tags = subprocess.check_output(["svn", "ls", tagsPath ] ).splitlines()
+                    tags = [ tag.replace("/","") for tag in tags ]
+                except:
+                    tags = []
             else:
-                print "Git repo at", pathToGitRepo, "does not seem to have any tags"
-    
+                dirName = '%s-git' % packageName
+                if os.path.exists(os.path.join(pathToGitRepo, "refs", "tags")):
+                    # Determine the list of tags..
+                    tags = os.listdir(os.path.join(pathToGitRepo, "refs", "tags"))
+                else:
+                    print "Git repo at", pathToGitRepo, "does not seem to have any tags"
         else:
             dirName = 'MAIN_TRUNK'
             p1 = subprocess.Popen(['cvs', '-Q', 'rlog', '-h', cvs_dict['REPOSITORY']], stdout=subprocess.PIPE)
@@ -306,13 +316,16 @@ def assemble_cvs_inputs_from_term(options):
         if not options.batch:
             prompt1 = 'Enter name of tag or [RETURN] to create a sandbox named %s>' % dirName
             tagName = raw_input(prompt1).strip()
-        if  tagName == "" and dirName == 'MAIN_TRUNK':
-            tagName = 'MAIN_TRUNK'
 
         readline.set_completer()
         readline.parse_and_bind('tab: self-insert')
 
-    if tagName != "":
+    if  tagName == "":
+        if  dirName == 'current':
+            tagName = dirName
+        if  dirName == 'MAIN_TRUNK':
+            tagName = dirName
+    else:
         dirName = tagName
     cvs_dict['RELEASE'] = dirName
 
@@ -391,12 +404,16 @@ def checkOutModule(packageName, tag, destinationPath, options, from_file=False )
     pathToGitRepo = determinePathToGitRepo(packageName)
 
     if pathToGitRepo:
-        if pathToGitRepo.startswith("svn:///"):
-            pathToSVNRepo =  pathToGitRepo.replace("svn:///", "file:///")
+        pathToSvnRepo = None
+        if  pathToGitRepo.startswith("file:///"):
+            pathToSvnRepo = pathToGitRepo
+        if  pathToGitRepo.startswith("svn:///"):
+            pathToSvnRepo = pathToGitRepo.replace("svn:///", "file:///")
+        if  pathToSvnRepo:
             if ( tag == 'MAIN_TRUNK' or tag == 'current' ):
-                cmd=[ 'svn', 'checkout', pathToSVNRepo, destinationPath ]
+                cmd=[ 'svn', 'checkout', pathToSvnRepo, destinationPath ]
             else:
-                cmd=[ 'svn', 'checkout', '--revision', tag, pathToSVNRepo, destinationPath ]
+                cmd=[ 'svn', 'checkout', '--revision', tag, pathToSvnRepo, destinationPath ]
             print cmd
             subprocess.check_call(cmd)
             os.chdir(destinationPath)
@@ -566,7 +583,7 @@ def importFromCVS():
 def module_callback(option, opt_str, value, parser):
     print 'Processing MODULE option; Setting ', option.dest, ' to ', value
     setattr(parser.values, option.dest, value)
-    if len(parser.rargs) > 0:
+    if len(parser.rargs) > 0 and not parser.rargs[0].startswith("-"):
         print 'Setting tag to ' + parser.rargs[0]
         setattr(parser.values, 'tag', parser.rargs[0])
         parser.rargs.pop(0)
