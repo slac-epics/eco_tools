@@ -31,7 +31,7 @@ class Releaser(object):
     These were grandfathered in as part of refactoring a prior version and may be
     more appropriately made into function parameters or in some cases may not be needed at all. 
     '''
-    def __init__( self, repo, package, installDir=None, branch=None, noTag=True, debug=False, verbose=True, keepTmp=False, message=None, dryRun=False, quiet=False, batch=False ):
+    def __init__( self, repo, package, installDir=None, branch=None, noTag=True, debug=False, verbose=False, keepTmp=False, message=None, dryRun=False, quiet=False, batch=False ):
         self._installDir= installDir
         self._repo		= repo
         self._branch	= branch
@@ -200,6 +200,13 @@ class Releaser(object):
         if	self._ReleasePath != buildDir:
             self._ReleasePath =  buildDir
 
+        if self._verbose:
+            print "BuildRelease: Checking built cookie %s" % ( self.built_cookie_path() )
+        if os.path.isfile( self.built_cookie_path() ):
+            #if self._verbose:
+            print "BuildRelease %s: Already built!" % ( buildDir )
+            return
+
         try:
             # Checkout release to build dir
             self._repo.CheckoutRelease( buildDir, verbose=self._verbose, dryRun=self._dryRun )
@@ -210,13 +217,6 @@ class Releaser(object):
             print e
             raise BuildError, "BuildRelease: FAILED"
 
-        if self._verbose:
-            print "BuildRelease: Checking built cookie %s" % ( self.built_cookie_path() )
-        if os.path.isfile( self.built_cookie_path() ):
-            if self._verbose:
-                print "BuildRelease %s: Already built!" % ( buildDir )
-            return
-
         # See if it's built for any architecture
         hasBuilt = self.hasBuilt()
 
@@ -225,9 +225,9 @@ class Releaser(object):
         if self._quiet:
             outputPipe = subprocess.PIPE
         try:
+            print "\nBuilding Release in %s ..." % ( buildDir )
             sys.stdout.flush()
             sys.stderr.flush()
-            print "Building Release in %s ..." % ( buildDir )
             buildOutput = self.execute( "make -C %s" % buildDir, outputPipe )
             self.execute( "touch %s" % self.built_cookie_path() )
             if self._verbose:
@@ -235,7 +235,10 @@ class Releaser(object):
         except RuntimeError, e:
             print e
             if hasBuilt == False:
-                self.execute( "mv %s %s-FAILED" % ( buildDir, buildDir ) )
+                cmdList = [ "rm", "-rf",    buildDir + "-FAILED" ]
+                subprocess.call( cmdList )
+                cmdList = [ "mv", buildDir, buildDir + "-FAILED" ]
+                subprocess.call( cmdList )
                 buildDir += "-FAILED"
             raise BuildError, "BuildRelease FAILED in %s" % ( buildDir )
 
