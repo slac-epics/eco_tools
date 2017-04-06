@@ -48,6 +48,8 @@ class Releaser(object):
         self._ReleasePath= None
         # TODO: Derive _EpicsHostArch from the module's RELEASE_SITE file instead of env
         self._EpicsHostArch = determine_epics_host_arch()
+        if  self._EpicsHostArch is None:
+            self._EpicsHostArch = 'unknown-host-arch'
         self._retcode	= 0
         # Create a directory where files will be checked-out
         self.tmpDir		= tempfile.mktemp("-epics-release")
@@ -275,6 +277,10 @@ class Releaser(object):
                      or	self._repo.GetUrl().find('modules') >= 0:
                     # TODO: Get BASE_MODULE_VERSION or EPICS_BASE_VER from env
                     epics_base_ver = determine_epics_base_ver()
+                    if not epics_base_ver:
+                        print "InstallPackage Error: Unable to determine EPICS BASE version!"
+                        print "Need EPICS BASE version to determine appropriate installTop for modules."
+                        return
                     installTop = os.path.join( epics_site_top, epics_base_ver, 'modules' )
 
             if not installTop:

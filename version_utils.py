@@ -86,6 +86,7 @@ def getEnv( envVar ):
     return result
 
 def determine_epics_base_ver():
+    '''Returns EPICS base version string, or None if unable to derive.'''
     # First look for EPICS_BASE_VER in the environment
     epics_base_ver = getEnv('EPICS_BASE_VER')
     # Then EPICS_VER
@@ -97,13 +98,15 @@ def determine_epics_base_ver():
     if epics_base_ver == '?':
         # If we have EPICS_BASE, work back from there
         epics_base = getEnv('EPICS_BASE')
-        if epics_base == '?':
-            epics_base_ver = None
-        else:
+        if epics_base != '?':
             epics_base_ver = os.path.basename( epics_base )
+        else:
+            # Returns None if not found
+            epics_base_ver = None
     return epics_base_ver
 
 def determine_epics_site_top():
+    '''Returns string w/ a directory name for EPICS site top, or None if unable to derive.'''
     # First look for EPICS_TOP in the environment
     epics_site_top = getEnv('EPICS_TOP')
     # Then EPICS_SITE_TOP
@@ -127,21 +130,26 @@ def determine_epics_site_top():
             epics_site_top = DEF_EPICS_TOP_LCLS
         elif os.path.isdir(  DEF_EPICS_TOP_AFS ):
             epics_site_top = DEF_EPICS_TOP_AFS
-    if epics_site_top == '?':
-        epics_site_top = 'unknown'
+    if  epics_site_top == '?':
+        epics_site_top = None
     return epics_site_top
 
 def determine_epics_host_arch():
+    '''Returns string w/ EPICS host arch, or None if unable to derive.'''
     # First look for EPICS_HOST_ARCH in the environment
     epics_host_arch = getEnv('EPICS_HOST_ARCH')
     if epics_host_arch == '?':
-        epicsHostArchPath	= os.path.join(	determine_epics_site_top(), 'base',
-                                            determine_epics_base_ver(), 'startup', 'EpicsHostArch' )
-        epics_host_arch = 'unsupported'
-        if os.path.isfile( epicsHostArchPath ):
-            cmdOutput = subprocess.check_output( [ epicsHostArchPath ] ).splitlines()
-            if len(cmdOutput) == 1:
-                epics_host_arch = cmdOutput[0]
+        epics_site_top = determine_epics_site_top()
+        epics_base_ver = determine_epics_base_ver()
+        if epics_site_top is not None and epics_base_ver is not None:
+            epicsHostArchPath	= os.path.join(	epics_site_top, 'base',
+                                                epics_base_ver, 'startup', 'EpicsHostArch' )
+            if os.path.isfile( epicsHostArchPath ):
+                cmdOutput = subprocess.check_output( [ epicsHostArchPath ] ).splitlines()
+                if len(cmdOutput) == 1:
+                    epics_host_arch = cmdOutput[0]
+    if  epics_host_arch == '?':
+        epics_host_arch = None
     return epics_host_arch
 
 def export_release_site_file( inputs, debug=False):

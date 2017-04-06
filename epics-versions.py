@@ -402,7 +402,7 @@ try:
         releaseCount += ExpandPackagesForTop( epics_site_top, args, opt )
 
     # See which epicsTop to search
-    if not opt.epicsTop:
+    if not opt.epicsTop and epics_site_top:
         # --top not specified, look for EPICS_MODULES_TOP in environment
         opt.epicsTop = os.path.join( epics_site_top, epics_base_ver, "modules" )
         if not opt.epicsTop or not os.path.isdir( opt.epicsTop ):

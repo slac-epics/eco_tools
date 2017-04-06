@@ -136,6 +136,8 @@ def assemble_release_site_inputs( batch=False ):
     # the default epics_base_ver we got from the environment before prompting the user.
     # That way users can easily change the base version in one place
 
+    if not epics_site_top:
+        epics_site_top = 'unknown-epics-site-top'
     input_dict['EPICS_SITE_TOP'] = epics_site_top
     if not batch:
         prompt1 = 'Enter full path for EPICS_SITE_TOP or [RETURN] to use "' + epics_site_top + '">'

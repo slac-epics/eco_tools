@@ -174,7 +174,7 @@ def ValidateArgs( repo, package, opt ):
 try:
     # Make sure we have a valid EPICS_SITE_TOP
     defaultEpicsSiteTop = determine_epics_site_top()
-    if not os.path.isdir( defaultEpicsSiteTop ):
+    if not defaultEpicsSiteTop or not os.path.isdir( defaultEpicsSiteTop ):
         raise ValidateError, ( "Can't find EPICS_SITE_TOP at %s" % defaultEpicsSiteTop )
 
     parser = optparse.OptionParser( usage="usage: %prog [options] [ <module> ] -r <release> -m \"My release comments\"\n\tEx: %prog ioc/xpp/vacuum -r R0.1.0 -m \"Adding baratron gauge\"\n\tFor help: %prog --help" )
@@ -303,7 +303,6 @@ try:
         if not packageName:
             raise ValidateError, "No release package specified"
         if os.path.split( packageName )[0] == 'modules':
-            # TODO: Get BASE_MODULE_VERSION or EPICS_BASE_VER from env
             epics_base_ver = determine_epics_base_ver()
             if not epics_base_ver:
                 raise ValidateError, "Unable to determine EPICS base version"
