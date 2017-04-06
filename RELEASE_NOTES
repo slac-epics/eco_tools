@@ -1,3 +1,23 @@
+R1.8	2017-04-06 Bruce Hill
+	Added support for setting a TOP/configure/O.EPICS_HOST_ARCH/.is_built cookie to speed
+		up epics-build for already built packages.
+	Added tee to build.log in epics-build.sh
+	Updated TEMPLATES path and expanded comments for absolute vs relative repo paths.
+	Made BuildRelease failures rename build dir to R1.2-FAILED, but only
+		if no target arch has previously built successfully.
+	Exclude releases that end w/ FAILED from version report.
+	Updated front-end launchers to all use git-utils-0.3.0
+	Updated cvsParseModules function to handle -d dirPath, aliases and &subModule notation in CVSROOT/modules file.
+	Fixed some svn checkout issues.
+	Fixed argument processing in epics-checkout when a flag follows the module name.
+		i.e. Now this works: eco -m asyn --batch
+	Use --recursive option when cloning in case there are submodules.
+	Fixed epics-release function TagRelease and made it push current branch and tag to origin.
+	Commented out code that created a branch w/ the tag name as git describe --tags is a better way to verify the tag.
+	Moved the module parse functions from epics-checkout.py to cvs_utils.py and git_utils.py.
+	Added --repoPath and --gitFolder options to cvsModuleToGit and cvsSpearModuleToGit and updated
+		them to check the parsed module 2 location dictionaries for repoPath and gitFolder.
+
 R1.7	2017-03-02 Bruce Hill
 	Tweaked RELEASE_SITE generation to make it identical w/ V_0_0_8 eco for pre R3.14.12.5 releases
 	Moved export_release_site_file() from epics-checkout.py to version_utils.py
