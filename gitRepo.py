@@ -25,8 +25,7 @@ class gitRepo( Repo.Repo ):
 #		return "gitRepo"
 
     def __str__( self ):
-        strRep =  super(svnRepo, self).__str__()
-        strRep += "%s prefix: %s" % ( self.__class__.__name__, self._prefix if self._prefix else 'None' )
+        strRep =  super(gitRepo, self).__str__()
         #print __repr__(), "_gitRepo: ", _gitRepo
         return strRep
 
@@ -89,9 +88,10 @@ class gitRepo( Repo.Repo ):
             pass
 
         try:
-            # Fetch the tag
-            cmdList = [ "git", "fetch", "origin", "refs/tags/" + self._tag ]
+            # Refresh the tags
+            cmdList = [ "git", "fetch", "origin", "--tags" ]
             subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
+
 
             # Get the tagSha
             tagSha = None
