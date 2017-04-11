@@ -22,19 +22,19 @@ class svnRepo( Repo.Repo ):
         self._svnRepo	= DEF_SVN_REPO
         self._svnTags	= DEF_SVN_TAGS
         # Make sure we have a valid EPICS_SITE_TOP
-        defaultEpicsSiteTop = DEF_EPICS_TOP_LCLS 
-        if not os.path.isdir( defaultEpicsSiteTop ):
-            defaultEpicsSiteTop = DEF_EPICS_TOP_AFS
-        if not os.path.isdir( defaultEpicsSiteTop ):
-            raise Releaser.ValidateError, ( "Can't find EPICS_SITE_TOP at %s" % defaultEpicsSiteTop )
-        self._prefix	= defaultEpicsSiteTop
+        #defaultEpicsSiteTop = DEF_EPICS_TOP_LCLS 
+        #if not os.path.isdir( defaultEpicsSiteTop ):
+        #	defaultEpicsSiteTop = DEF_EPICS_TOP_AFS
+        #if not os.path.isdir( defaultEpicsSiteTop ):
+        #	raise Releaser.ValidateError, ( "Can't find EPICS_SITE_TOP at %s" % defaultEpicsSiteTop )
+        #self._prefix	= determine_epics_site_top()
 
 #	def __repr__( self ):
 #		return "svnRepo"
 
     def __str__( self ):
         strRep =  super(svnRepo, self).__str__()
-        strRep += "%s prefix: %s" % ( self.__class__.__name__, self._prefix if self._prefix else 'None' )
+        #strRep += "%s prefix: %s" % ( self.__class__.__name__, self._prefix if self._prefix else 'None' )
         return strRep
 
     def GetWorkingBranch( self ):
@@ -99,11 +99,26 @@ class svnRepo( Repo.Repo ):
         if dryRun:
             print "CheckoutRelease: --dryRun--"
             return
-        try:
-            cmdList = [ "svn", "co", self._url, buildDir ]
-            subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
-        except RuntimeError:
-            raise Releaser.BuildError, "CheckoutRelease: svn co failed for %s %s" % ( self._url, buildDir )
+
+        curDir = os.getcwd()
+        if os.path.isdir( os.path.join( buildDir, '.svn' ) ):
+            os.chdir( buildDir )
+
+            # See if the tag is already checked out
+            curTag = None
+            cmdList = [ "svn", "info", "." ]
+            gitOutput = subprocess.check_output( cmdList ).splitlines()
+            if len(gitOutput) == 1:
+                curUrl = gitOutput[0]
+                if curUrl == self._url:
+                    os.chdir( curDir )
+                    return
+        else:
+            try:
+                cmdList = [ "svn", "co", self._url, buildDir ]
+                subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
+            except RuntimeError:
+                raise Releaser.BuildError, "CheckoutRelease: svn co failed for %s %s" % ( self._url, buildDir )
 
     def svnMakeDir( self, svnDir, dryRun=True ):
         try:

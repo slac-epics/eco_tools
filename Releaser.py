@@ -294,7 +294,7 @@ class Releaser(object):
                 print "InstallPackage Error: Invalid installTop:", installTop
                 return
 
-            moduleName = os.path.split( self._package )[-1]
+            moduleName = os.path.split( self._package )[0]
             self._installDir = os.path.join( installTop, moduleName, self._repo.GetTag() )
 
         if self._installDir.startswith( DEF_EPICS_TOP_PCDS ):
@@ -319,14 +319,14 @@ def find_release( package, verbose=False ):
     (git_url, git_tag) = gitFindPackageRelease( package_name, package_release, debug=False, verbose=verbose )
     if git_url is not None:
         repo = gitRepo.gitRepo( git_url, None, git_tag )
-        release = Releaser( repo, package_name, None, git_tag )
+        release = Releaser( repo, package, None, git_tag, verbose=verbose )
     if release is None:
         (svn_url, svn_branch, svn_tag) = svnFindPackageRelease( package_name, package_release, debug=False, verbose=verbose )
         if svn_url is not None:
             if verbose:
                 print "find_release: Found svn_url=%s, svn_path=%s, svn_tag=%s" % ( svn_url, svn_branch, svn_tag )
             repo = svnRepo.svnRepo( svn_url, svn_branch, svn_tag )
-            release = Releaser( repo, package )
+            release = Releaser( repo, package, verbose=verbose )
     if release is None:
         print "find_release Error: Unable to find package %s in svn or git repos" % package
     elif verbose:
