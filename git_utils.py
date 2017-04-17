@@ -250,7 +250,7 @@ def removeModuleFromCVS(tpath, packageName, CVSpackageLocation):
 
 def createBranchFromTag( tag, branchName ):
     '''Checkout the tag and create a branch using the tag as a starting point.'''
-    subprocess.check_call(['git', 'checkout', tag])
+    subprocess.check_call(['git', 'checkout', '-q', tag])
     subprocess.check_call(['git', 'checkout', '-b', branchName])
 
 def gitGetWorkingBranch( debug = False, verbose = False ):

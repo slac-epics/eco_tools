@@ -106,7 +106,7 @@ class gitRepo( Repo.Repo ):
                 subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
 
             # Checkout the tag
-            cmdList = [ "git", "checkout", 'refs/tags/%s' % self._tag ]
+            cmdList = [ "git", "checkout", '-q', 'refs/tags/%s' % self._tag ]
             subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
 
             if branchSha != tagSha:
