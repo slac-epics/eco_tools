@@ -1,3 +1,7 @@
+R1.9	2017-04-17 Marcio Donadio
+	- Now, if ../../RELEASE_SITE exists but is not included in a
+	configuration file, $TOP/RELEASE_SITE is created
+
 R1.8	2017-04-06 Bruce Hill
 	Added support for setting a TOP/configure/O.EPICS_HOST_ARCH/.is_built cookie to speed
 		up epics-build for already built packages.
