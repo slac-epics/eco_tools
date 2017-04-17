@@ -99,6 +99,7 @@ import readline
 import shutil
 import tempfile
 import json
+import re
 
 from cram_utils import *
 from cvs_utils import *
@@ -368,6 +369,21 @@ def assemble_cvs_inputs_from_file(repo, rel, options):
     checkOutModule( packageName, tagName, destinationPath, options, from_file=True )
     # TODO: checkOutModule changes cwd to curDir/destinationPath.  Do we want functions to change current dir and not restore?
     # os.chdir(curDir)
+
+# Check if any file inside configure/ has included a ../../RELEASE_SITE file
+def hasIncludeDotDotReleaseSite():
+    configPath = os.path.join('.', 'configure')
+    # Ignore directories
+    onlyFiles = [f for f in os.listdir(configPath)
+                 if os.path.isfile(os.path.join(configPath, f))]
+    for filename in onlyFiles:
+        configFile = open(os.path.join(configPath, filename), 'r')
+        for line in configFile:
+            # Check included ../../RELEASE_SITE file unless it is commented
+            if re.search('^[^\#]include(.*)/../../RELEASE_SITE', line):
+                return True
+    return False
+
  
 def checkOutModule(packageName, tag, destinationPath, options, from_file=False ):
     '''Checkout the module from GIT/CVS. 
@@ -456,9 +472,16 @@ def checkOutModule(packageName, tag, destinationPath, options, from_file=False )
     # If the package has a configure/RELEASE file, make sure we either have
     # a valid RELEASE_SITE in TOP/../..
     # or provide and/or update TOP/RELEASE_SITE as needed
+
+    # Check if any configuration file has included ../../RELEASE_SITE and if
+    # ../../RELEASE_SITE exists.
+    hasDotDotRelease = (hasIncludeDotDotReleaseSite() and
+                       os.path.isfile( os.path.join( curDir, destinationPath, 
+                                                  '..', '..', 'RELEASE_SITE' )))
+
     if	(		not isBaseTop(		os.path.join( curDir, destinationPath ) )
             and		isEpicsPackage( os.path.join( curDir, destinationPath ) )
-            and not os.path.isfile( os.path.join( curDir, destinationPath, '..', '..', 'RELEASE_SITE' ) )
+            and not hasDotDotRelease
             # Step on a RELEASE_SITE pulled from the repo? No for PCDS, Yes for LCLS
             # TODO: Add a user prompt here w/ appropriate default
             and	(	not isPCDSPath( curDir )
