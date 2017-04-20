@@ -1,6 +1,12 @@
 R1.9	2017-04-17 Marcio Donadio
 	- Now, if ../../RELEASE_SITE exists but is not included in a
 	configuration file, $TOP/RELEASE_SITE is created
+	Updated help and usage text w/ more examples and info
+	Made templated ioc parent output only for -v and made it compatible with --wide output mode.
+	Fixed typos in RELEASE_SITE.check
+	Add -q option when checking out a tagged release to avoid confusing output for user.
+	Fixed discrepancy between git and svn repos re how package is passed to Repo.BuildRelease().
+	Added check in svnRepo:CheckoutRelease() to see if package has already been checked out.
 
 R1.8	2017-04-06 Bruce Hill
 	Added support for setting a TOP/configure/O.EPICS_HOST_ARCH/.is_built cookie to speed

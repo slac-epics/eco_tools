@@ -258,7 +258,7 @@ def ReportRelease( moduleTop, module, release, priorModule, opt ):
     if opt.wide:
         print
 
-    if os.path.isdir( buildPath ):
+    if opt.verbose and os.path.isdir( buildPath ) :
         # Templated IOC
         # Show parent release for each ioc
         configFiles = glob.glob( os.path.join( release, "*.cfg" ) )
@@ -268,7 +268,22 @@ def ReportRelease( moduleTop, module, release, priorModule, opt ):
                 if match:
                     iocName = os.path.basename(configFile).replace( '.cfg', '' )
                     parentRelease = match.group(1)
-                    print "%-4s %-20s %s" % ( '', iocName, parentRelease )
+                    # Grab the last 4 directories
+                    # i.e. ioc/common/gigECam/R1.20.5
+                    parentName    = os.path.dirname( parentRelease )
+                    parentRelease = os.path.basename( parentRelease )
+                    for i in [0,1,2]:
+                        (parentName, parentTail) = os.path.split( parentName )
+                        if not parentName:
+                            break
+                        parentRelease = os.path.join( parentTail, parentRelease ) 
+                    if opt.wide:
+                        # Don't print newline in wide mode 
+                        print " %s=%s" % ( iocName, parentRelease ),
+                    else:
+                        print "%-4s %-20s %s" % ( '', iocName, parentRelease )
+        if opt.wide:
+            print
 
     return module
 
@@ -337,9 +352,10 @@ def ExpandPackagesForTop( topDir, packages, opt ):
 # Entry point of the script. This is main()
 try:
     parser = optparse.OptionParser( description = "Report on available package versions and dependencies",
-                                    usage = "usage: %prog [options] MODULE ...\n"
-                                            "\tMODULE can be one or more of:\n"
+                                    usage = "usage: %prog [options] PKG ...\n"
+                                            "\tPKG can be one or more of:\n"
                                             "\t\tbase\n"
+                                            "\t\t/<MODULE_NAME>\n"
                                             "\t\tmodules\n"
                                             "\t\tmodules/<MODULE_NAME>\n"
                                             "\t\tioc\n"
@@ -347,14 +363,20 @@ try:
                                             "\t\tioc/<hutch>/<IOC_NAME>\n"
                                             "\t\tscreens/edm/<hutch>\n"
                                             "\t\tetc ...\n"
-                                            "\tEx: %prog ioc/xpp\n"
+                                            "\tExamples:\n"
+                                            "\tepics-versions -v ADCore\n"
+                                            "\tepics-versions ADCore ADProsilica asyn busy\n"
+                                            "\tepics-versions Magnet --top /afs/slac/g/lcls/epics/iocTop\n"
+                                            "\tepics-versions IOCManager\n"
+                                            "\tepics-versions -a iocAdmin\n"
+                                            "\tepics-versions ioc/xpp\n"
                                             "\tFor help: %prog --help" )
     parser.set_defaults(    verbose     = False,
                             revision    = "HEAD",
                             debug       = debugScript )
 
     parser.add_option(  "-a", "--all", dest="showAll", action="store_true",
-                        help="display all revisions of each module" )
+                        help="display all revisions of each package" )
 
     parser.add_option(  "-v", "--verbose", dest="verbose", action="store_true",
                         help="show dependent modules" )
@@ -363,19 +385,20 @@ try:
                         help="display more info for debugging script" )
 
     parser.add_option(  "-b", "--base", dest="base",
-                        help="Restrict output to modules for specified base version\n"
+                        help="Restrict output to packages for specified base version\n"
                              "ex. --base=R3.14.9-0.3.0" )
 
     parser.add_option(  "-w", "--wide", dest="wide", action="store_true",
-                        help="Wide output, all module info on one line\n"   )
+                        help="Wide output, all package info on one line\n"   )
 
     parser.add_option(  "--top", dest="epicsTop", metavar="TOP",
                         default=None,
                         help="Top of EPICS release area\n"
-                             "ex. --top=/afs/slac/g/pcds/package/epics" )
+                             "ex. --top=/afs/slac/g/lcls/epics/R3-14-12-4_1-1/modules\n"
+                             "or  --top=/afs/slac/g/lcls/epics/iocTop\n"	)
 
     parser.add_option(  "--allTops", dest="allTops", action="store_true",
-                        help="Search all accessible known EPICS module release locations\n" )
+                        help="Search all accessible known EPICS release locations\n" )
 
     # Future options
     #add_option(    "--prefix", "path to the root of the release area"
@@ -385,7 +408,7 @@ try:
 
     # validate the arglist
     if not args or not args[0]:
-        raise ValidateError, "No valid modules specified."
+        raise ValidateError, "No valid packages specified."
 
     # Determine EPICS_SITE_TOP and BASE version
     epics_site_top = determine_epics_site_top()

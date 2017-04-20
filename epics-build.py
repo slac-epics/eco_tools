@@ -73,12 +73,16 @@ def process_options(argv):
         argv = sys.argv[1:]
     description = 'epics-build builds one or EPICS module releases.\n'
     epilog_fmt = '\nStandard EPICS modules can be specified w/ just the module basename.\n'\
-            + 'Similarly, modules or packages listed in eco_modulelist (%s)\n'\
+            + 'Similarly, modules or packages which are listed in the eco modulelist\n'\
+            + '     %s\n'\
             + 'can be specified w/ just the module or package name.\n'\
-            + 'Longer module repo paths will be checked against GIT_TOP (%s).\n' \
+            + '\nLonger module repo paths will be checked against GIT_TOP (%s).\n' \
             + 'and also against svn tags top (%s).\n' \
             + 'and also cvs root (%s).\n' \
-            + 'i.e. Repo searched for in $TOP/[module-path/]module-name/release-version'
+            + 'i.e. Repo searched for in $TOP/[module-path/]module-name/release-version\n' \
+            + '\nExamples:\n' \
+            + 'epics-build -p history/R2.6.1\n' \
+            + 'epics-build -p asyn/4.31-0.1.0 --top /afs/slac/g/lcls/epics/R3.15.5-1.0/modules\n'
     epilog = epilog_fmt % ( gitModulesTxtFile, DEF_GIT_REPOS, DEF_SVN_REPO, CVS_ROOT_TOP )
     parser = argparse.ArgumentParser( description=description, epilog=epilog )
     parser.add_argument( '-p', '--package',   dest='packages', action='append', \
