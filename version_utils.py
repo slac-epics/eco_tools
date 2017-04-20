@@ -9,7 +9,7 @@ from repo_defaults import *
 #
 #   Utilities for analyzing version and release tags
 #
-# Copyright 2016 Stanford University
+# Copyright 2016,2017 Stanford University
 # Author: Bruce Hill <bhill@slac.stanford.edu>
 #
 # Released under the GPLv2 licence <http://www.gnu.org/licenses/gpl-2.0.html>
@@ -133,6 +133,25 @@ def determine_epics_site_top():
     if  epics_site_top == '?':
         epics_site_top = None
     return epics_site_top
+
+def determine_epics_modules_top():
+    # First look for EPICS_MODULES_TOP in the environment
+    epics_modules_top = getEnv('EPICS_MODULES_TOP')
+    if epics_modules_top == '?':
+        epics_base_ver = determine_epics_base_ver()
+        epics_site_top = determine_epics_site_top()
+        if not epics_base_ver or not epics_site_top:
+            print "determine_epics_modules_top Error: Unable to determine EPICS_MODULES_TOP!"
+            return None
+        if epics_base_ver.startswith( 'base-' ):
+            epics_base_ver = epics_base_ver.replace( 'base-', '' )
+        epics_modules_top = os.path.join( epics_site_top, epics_base_ver, 'modules' )
+        if not os.path.isdir( epics_modules_top ):
+            epics_modules_top = os.path.join( epics_site_top, 'modules' )
+        if not os.path.isdir( epics_modules_top ):
+            print "determine_epics_modules_top Error: Unable to determine valid EPICS_MODULES_TOP!"
+            epics_modules_top = None
+    return epics_modules_top
 
 def determine_epics_host_arch():
     '''Returns string w/ EPICS host arch, or None if unable to derive.'''

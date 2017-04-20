@@ -177,7 +177,7 @@ class Releaser(object):
             pass
         return hasBuilt
 
-    def BuildRelease( self, buildBranch, buildDir, outputPipe = subprocess.PIPE ):
+    def BuildRelease( self, buildBranch, buildDir, force=False, outputPipe = subprocess.PIPE ):
         if not buildDir:
             raise BuildError, "Build dir not defined!"
         if self._verbose:
@@ -205,19 +205,22 @@ class Releaser(object):
         if self._verbose:
             print "BuildRelease: Checking built cookie %s" % ( self.built_cookie_path() )
         if os.path.isfile( self.built_cookie_path() ):
-            #if self._verbose:
-            print "BuildRelease %s: Already built!" % ( buildDir )
-            return
+            if force:
+                self.execute("/bin/rm -f %s" % ( self.built_cookie_path() ))
+            else:
+                #if self._verbose:
+                print "BuildRelease %s: Already built!" % ( buildDir )
+                return
 
         try:
             # Checkout release to build dir
             self._repo.CheckoutRelease( buildDir, verbose=self._verbose, dryRun=self._dryRun )
         except RuntimeError, e:
             print e
-            raise BuildError, "BuildRelease: FAILED"
+            raise BuildError, "BuildRelease %s: FAILED" % buildDir
         except gitRepo.gitError, e:
             print e
-            raise BuildError, "BuildRelease: FAILED"
+            raise BuildError, "BuildRelease %s: FAILED" % buildDir
 
         # See if it's built for any architecture
         hasBuilt = self.hasBuilt()
@@ -261,7 +264,7 @@ class Releaser(object):
             print e
             pass
 
-    def InstallPackage( self, installTop=None ):
+    def InstallPackage( self, installTop=None, force=False ):
         '''Use InstallPackage to automatically determine the buildDir from installTop and the repo specs.
         If you already know where to build you can just call BuildRelease() directly.'''
         if self._verbose:
@@ -275,13 +278,11 @@ class Releaser(object):
             if not installTop:
                 if		os.path.split( self._package )[0] == 'modules' \
                      or	self._repo.GetUrl().find('modules') >= 0:
-                    # TODO: Get BASE_MODULE_VERSION or EPICS_BASE_VER from env
-                    epics_base_ver = determine_epics_base_ver()
-                    if not epics_base_ver:
-                        print "InstallPackage Error: Unable to determine EPICS BASE version!"
-                        print "Need EPICS BASE version to determine appropriate installTop for modules."
+                    epics_modules_top = determine_epics_modules_top()
+                    if not epics_modules_top:
+                        print "InstallPackage Error: Unable to determine EPICS modules installTop!"
                         return
-                    installTop = os.path.join( epics_site_top, epics_base_ver, 'modules' )
+                    installTop = epics_modules_top
 
             if not installTop:
                 print "InstallPackage Error: Unable to determine installTop!"
@@ -301,7 +302,7 @@ class Releaser(object):
             self.grpOwner = DEF_PCDS_GROUP_OWNER
 
         try:
-            self.BuildRelease( self._ReleasePath, self._installDir )
+            self.BuildRelease( self._ReleasePath, self._installDir, force=force )
             if self._verbose:
                 print "InstallPackage: %s installed to:\n%s" % ( self._package, os.path.realpath(self._installDir) )
         except BuildError, e:

@@ -24,6 +24,7 @@ import argparse
 import readline
 import shutil
 import tempfile
+import textwrap
 import json
 import Repo
 import gitRepo
@@ -51,8 +52,9 @@ def build_modules( options ):
     try:
         releases = find_releases( options )
         for release in releases:
-            release.InstallPackage( installTop=options.top )
+            release.InstallPackage( installTop=options.top, force=options.force )
     except:
+        print sys.exc_value
         print 'build_modules: Not all packages were installed!'
  
 def find_releases( options ):
@@ -83,14 +85,15 @@ def process_options(argv):
             + '\nExamples:\n' \
             + 'epics-build -p history/R2.6.1\n' \
             + 'epics-build -p asyn/4.31-0.1.0 --top /afs/slac/g/lcls/epics/R3.15.5-1.0/modules\n'
-    epilog = epilog_fmt % ( gitModulesTxtFile, DEF_GIT_REPOS, DEF_SVN_REPO, CVS_ROOT_TOP )
-    parser = argparse.ArgumentParser( description=description, epilog=epilog )
+    epilog = textwrap.dedent(epilog_fmt % ( gitModulesTxtFile, DEF_GIT_REPOS, DEF_SVN_REPO, CVS_ROOT_TOP ))
+    parser = argparse.ArgumentParser( description=description, formatter_class=argparse.RawDescriptionHelpFormatter, epilog=epilog )
     parser.add_argument( '-p', '--package',   dest='packages', action='append', \
                         help='EPICS module-name/release-version. Ex: asyn/R4.30-1.0.1', default=[] )
 #	parser.add_argument( '-b', '--base',     action='store',  help='Use to set EPICS_BASE in RELEASE_SITE' )
     parser.add_argument( '-f', '--input_file_path', action='store', help='Read list of module releases from this file' )
     parser.add_argument( '-r', '--repo',     action='store',  help='repo url' )
     parser.add_argument( '-t', '--top',      action='store',  help='Top of release area.' )
+    parser.add_argument( '--force',          action='store_true',  help='Force rebuild.' )
     parser.add_argument( '-v', '--verbose',  action="store_true", help='show more verbose output.' )
 
     options = parser.parse_args( )

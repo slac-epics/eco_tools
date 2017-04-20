@@ -233,40 +233,45 @@ try:
     # Parse the command line arguments
     ( opt, args ) = parser.parse_args()
 
-    if len(args) > 0:
-        packageName = args[0]
+    repo         = None
+    packageMatch = None
+    packageName  = None
+
+    # See if this is a git working dir
+    ( git_url, git_branch, git_tag ) = gitGetWorkingBranch()
+
+    if git_url:
+        if opt.verbose:
+            print "git_url:    %s" % git_url
+            print "git_branch: %s" % git_branch
+        # Create a git release handler
+        repo = gitRepo.gitRepo( git_url, git_branch, opt.release )
+        if git_tag == opt.release:
+            opt.noTag = True
+            opt.noTestBuild	= True
+        packageMatch = re.match( r"\S+(epics/)(\S+).git", git_url )
+        if packageMatch:
+            packageName = packageMatch.group(2)
     else:
-        packageMatch = None
-        # See if this is a git working dir
-        ( git_url, git_branch, git_tag ) = gitGetWorkingBranch()
+        # See if this is an svn working dir
+        ( svn_url, svn_branch, svn_tag ) = svnGetWorkingBranch()
 
-        packageName = None
-        repo = None
-        if git_url:
+        if svn_url:
             if opt.verbose:
-                print "git_url:    %s" % git_url
-                print "git_branch: %s" % git_branch
-            # Create a git release handler
-            repo = gitRepo.gitRepo( git_url, git_branch, opt.release )
-            if git_tag == opt.release:
-                opt.noTag = True
-                opt.noTestBuild	= True
-            packageMatch = re.match( r"\S+(epics/)(\S+).git", git_url )
-            if packageMatch:
-                packageName = packageMatch.group(2)
-        else:
-            # See if this is an svn working dir
-            ( svn_url, svn_branch, svn_tag ) = svnGetWorkingBranch()
+                print "svn_url:    %s" % svn_url
+                print "svn_branch: %s" % svn_branch
+            # Create an svn release handler
+            repo = svnRepo.svnRepo( svn_url, svn_branch, opt.release )
+        packageMatch = re.match( r"\S+(epics/|epics/trunk)(\S+)/current", svn_url )
+        if packageMatch:
+            packageName = packageMatch.group(2)
 
-            if svn_url:
-                if opt.verbose:
-                    print "svn_url:    %s" % svn_url
-                    print "svn_branch: %s" % svn_branch
-                # Create an svn release handler
-                repo = svnRepo.svnRepo( svn_url, svn_branch, opt.release )
-            packageMatch = re.match( r"\S+(epics/|epics/trunk)(\S+)/current", svn_url )
-            if packageMatch:
-                packageName = packageMatch.group(2)
+    if len(args) > 0:
+        if not packageName:
+            packageName = args[0]
+        elif packageName != args[0]:
+            packageName = args[0]
+            raise ValidateError, ( "TODO: Need to find repo for manually specified package!" )
 
     if not packageName:
         raise ValidateError, ( "No package specified and unable to determine it from current dir" )
