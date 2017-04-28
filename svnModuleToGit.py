@@ -13,6 +13,7 @@ svnRepoEnvVar		= 'CTRL_REPO'
 svnRepoBranchPath	= 'branches/merge/epics/modules'
 svnRepoTagsPath		= 'epics/tags/modules'
 svnRepoTrunkPath	= 'trunk/pcds/epics/modules'
+gitModuleDir		= "/afs/slac/g/cd/swe/git/repos/package/epics/modules"
 moduleDestDir		= "/afs/slac/g/cd/swe/git/repos/package/epics/modules/from-svn"
 authorsFile			= "/afs/slac/g/cd/swe/git/repos/package/epics/modules/authors.txt"
 svnRepoRoot         = os.environ[svnRepoEnvVar]
@@ -31,6 +32,10 @@ def importTrunk( trunk, name, branches=[], tags=[], verbose=False ):
     # Create a tmp folder to work in
     tpath = tempfile.mkdtemp()
     tmpGitRepoPath = os.path.join( tpath, name )
+    svnGitRepoPath = os.path.join( moduleDestDir, name + '.git' )
+    if os.path.isdir( svnGitRepoPath ):
+        print "svn repo already exists:", svnGitRepoPath
+        return
 
     # Create the git svn clone command
     git_cmd = [	"git","svn","clone",
@@ -69,8 +74,7 @@ def importTrunk( trunk, name, branches=[], tags=[], verbose=False ):
     os.chdir(curDir)
 
     # Create a bare master repo for the new git repository, cloned from our tmp repo
-    newGitRepoPath = os.path.join( moduleDestDir, name + '.git' )
-    subprocess.check_call([	"git", "clone", "--bare", tmpGitRepoPath, newGitRepoPath ])
+    subprocess.check_call([	"git", "clone", "--bare", tmpGitRepoPath, svnGitRepoPath ])
     shutil.rmtree(tpath)
 
 if __name__ == '__main__':
@@ -104,7 +108,7 @@ Additional paths for both branches and tags may be added if desired either way.
         importTrunk( args.trunk, args.name, args.branches[1:], args.tags, args.verbose )
     else:
         parser.print_help()
-        print 'Please provide a module name, or one or more brances to import'
+        print 'Please provide a module name, or one or more branches to import'
         sys.exit() 
 
     print "Done."
