@@ -34,6 +34,9 @@ def importModule( module, module_type, gitFolder=None, repoPath=None ):
             gitFolder = git_modules2Location[module]
         else:
             gitFolder = gitDefaultDirFormat.format(tp['git'])
+    if os.path.isdir( gitFolder ):
+        print "cvs import of repo already exists:", gitFolder
+        return
     print "Importing CVS module %s from %s\n   to %s" % ( module, repoPath, gitFolder )
  
     # Import the CVS history using a tmp folder

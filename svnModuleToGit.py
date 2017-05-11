@@ -34,7 +34,7 @@ def importTrunk( trunk, name, branches=[], tags=[], verbose=False ):
     tmpGitRepoPath = os.path.join( tpath, name )
     svnGitRepoPath = os.path.join( moduleDestDir, name + '.git' )
     if os.path.isdir( svnGitRepoPath ):
-        print "svn repo already exists:", svnGitRepoPath
+        print "svn import of repo already exists:", svnGitRepoPath
         return
 
     # Create the git svn clone command
