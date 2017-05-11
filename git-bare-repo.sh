@@ -4,6 +4,10 @@
 # SLAC EPICS module development
 #
 
+if [ "$1" == "--version" ]; then
+	grep eco_tools_version `dirname $0`/eco_version.py
+	exit 1
+fi
 if [ -z "$1" -o "$1" == "-h" -o "$1" == "--help" ]; then
 	echo "Usage: ./git-bare-repo.sh /path/to/your_repo/repo_name.git"
 	echo "For new EPICS modules, you can just use relative pathname module_name.git"

@@ -11,6 +11,7 @@ import signal
 import traceback
 
 from version_utils import *
+from eco_version import eco_tools_version
 
 #
 # Purpose:
@@ -352,10 +353,11 @@ def ExpandPackagesForTop( topDir, packages, opt ):
 # Entry point of the script. This is main()
 try:
     parser = optparse.OptionParser( description = "Report on available package versions and dependencies",
+                                    version = eco_tools_version,
                                     usage = "usage: %prog [options] PKG ...\n"
                                             "\tPKG can be one or more of:\n"
                                             "\t\tbase\n"
-                                            "\t\t/<MODULE_NAME>\n"
+                                            "\t\t<MODULE_NAME>\n"
                                             "\t\tmodules\n"
                                             "\t\tmodules/<MODULE_NAME>\n"
                                             "\t\tioc\n"

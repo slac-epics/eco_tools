@@ -32,6 +32,7 @@ import svnRepo
 import Releaser 
 from git_utils import *
 from svn_utils import *
+from eco_version import eco_tools_version
 
 # from cram_utils import *
 from repo_defaults import *
@@ -95,6 +96,7 @@ def process_options(argv):
     parser.add_argument( '-t', '--top',      action='store',  help='Top of release area.' )
     parser.add_argument( '--force',          action='store_true',  help='Force rebuild.' )
     parser.add_argument( '-v', '--verbose',  action="store_true", help='show more verbose output.' )
+    parser.add_argument( '--version',  		 action="version", version=eco_tools_version )
 
     options = parser.parse_args( )
 

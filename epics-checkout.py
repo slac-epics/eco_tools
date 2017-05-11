@@ -105,6 +105,7 @@ from cram_utils import *
 from cvs_utils import *
 from git_utils import *
 from version_utils import *
+from eco_version import eco_tools_version
 
 
 GIT_REPO_MODULES = '/afs/slac/g/cd/swe/git/repos/package/epics/modules'
@@ -638,8 +639,7 @@ def process_options(argv):
             + 'It then creates a bare git repo in the location specified; imports the history from CVS and adds a default .gitignore.\n'\
             + 'It comments out the module location in the CVSROOT/modules file; however, it does NOT do a cvs remove of the software from CVS.\n'\
             + '\n'
-    version = '%prog 0.1'
-    parser = optparse.OptionParser(usage=usage, version=version)
+    parser = optparse.OptionParser(usage=usage, version=eco_tools_version)
 
     parser.add_option('-v', '--verbose', action='store_true', dest='verbose', help='print verbose output')
     parser.add_option('-b', '--batch',   action='store_true', dest='batch', help='Run without confirmation prompts')

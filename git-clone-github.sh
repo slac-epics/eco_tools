@@ -3,6 +3,10 @@
 # Simple shell script to clone a github repo and configure it for
 # SLAC EPICS module development
 #
+if [ "$1" == "--version" ]; then
+	grep eco_tools_version `dirname $0`/eco_version.py
+	exit 1
+fi
 
 URL=$1
 GIT_DIR=$2

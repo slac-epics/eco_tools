@@ -12,6 +12,7 @@ import subprocess
 from git_utils import *
 from svn_utils import *
 from version_utils import *
+from eco_version import eco_tools_version
 from gitRepo  import *
 from svnRepo  import *
 from Releaser import *
@@ -177,7 +178,11 @@ try:
     if not defaultEpicsSiteTop or not os.path.isdir( defaultEpicsSiteTop ):
         raise ValidateError, ( "Can't find EPICS_SITE_TOP at %s" % defaultEpicsSiteTop )
 
-    parser = optparse.OptionParser( usage="usage: %prog [options] [ <module> ] -r <release> -m \"My release comments\"\n\tEx: %prog ioc/xpp/vacuum -r R0.1.0 -m \"Adding baratron gauge\"\n\tFor help: %prog --help" )
+    parser = optparse.OptionParser(
+        usage =	"usage: %prog [options] [ <module> ] -r <release> -m \"My release comments\"\n"
+                "\tEx: %prog ioc/xpp/vacuum -r R0.1.0 -m \"Adding baratron gauge\"\n"
+                "\tFor help: %prog --help",
+        version = eco_tools_version )
     parser.set_defaults(	verbose		= False,
                             revision	= "HEAD",
                             batch		= False,
