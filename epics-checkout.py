@@ -374,6 +374,9 @@ def assemble_cvs_inputs_from_file(repo, rel, options):
 # Check if any file inside configure/ has included a ../../RELEASE_SITE file
 def hasIncludeDotDotReleaseSite():
     configPath = os.path.join('.', 'configure')
+    if not os.path.isdir( configPath ):
+        return False
+
     # Ignore directories
     onlyFiles = [f for f in os.listdir(configPath)
                  if os.path.isfile(os.path.join(configPath, f))]
