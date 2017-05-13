@@ -6,10 +6,13 @@ import os
 #import subprocess
 
 class Repo(object):
-    def __init__( self, url, branch=None, tag=None ):
+    def __init__( self, url, branch=None, package=None, tag=None ):
         self._retcode	= 0
         self._url	    = url
         self._branch    = branch
+        self._package   = None
+        if package is str:
+            self._package = os.path.split( package )[1]
         self._tag    	= tag
         # self.grpowner	= None
 
@@ -23,9 +26,10 @@ class Repo(object):
             print "%s exited with return code %d." % (sys.argv[0], retcode)
 
     def __repr__( self ):
-        strRep =  '%s("%s",branch=%s,tag=%s' % ( self.__class__.__name__, self._url, \
-                ( '"%s"' % self._branch if self._branch else 'None' ) \
-                ( '"%s"' % self._tag    if self._tag    else 'None' ) )
+        strRep =  '%s("%s",branch=%s,pkg=%s,tag=%s' % ( self.__class__.__name__, self._url, \
+                ( '"%s"' % self._branch  if self._branch  else 'None' ) \
+                ( '"%s"' % self._package if self._package else 'None' ) \
+                ( '"%s"' % self._tag     if self._tag     else 'None' ) )
         return strRep
 
     def __str__( self ):
@@ -60,12 +64,11 @@ class Repo(object):
     def GetUrl( self ):
         return self._url
 
-    def RemoveTag( self ):
+    def RemoveTag( self, tag=None ):
         print "\nPlease override Repo.RemoveTag() via a version control specific subclass."
         os.sys.exit()
 
-    def TagRelease( self ):
+    def TagRelease( self, packagePath=None, release=None, branch=None, message="", verbose=True, dryRun=False ):
         print "\nPlease override Repo.TagRelease() via a version control specific subclass."
         os.sys.exit()
-
 

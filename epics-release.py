@@ -66,49 +66,44 @@ debugScript			= False
 
 # TODO: Cleanup this function
 # We need to push most of these tests to the sub-classes of repo
-def ValidateArgs( repo, package, opt ):
+def ValidateArgs( repo, packageSpec, opt ):
     # release=None, message=None, verbose=False, batch=False )
     # validate the repo
     if not repo:
-        raise ValidateError, "Repo not found for package %s" % (package)
+        raise ValidateError, "Repo not found for packageSpec %s" % (packageSpec)
     defaultPackage	= None
     ( repo_url, repo_branch, repo_tag ) = repo.GetWorkingBranch()
     if repo_url:
-        defaultPackage = repo.GetDefaultPackage( package )
+        defaultPackage = repo.GetDefaultPackage( packageSpec )
 
     # If we have a defaultPackage from the working directory,
     # Check it against the other options
     if defaultPackage:
-        if not package or not package[0]:
-            package = [ defaultPackage ]
+        if not packageSpec:
+            packageSpec = [ defaultPackage ]
 
     if opt.verbose:
         print "epics-release ValidateArgs: repo_url       =", repo_url
         print "epics-release ValidateArgs: repo_branch    =", repo_branch
         print "epics-release ValidateArgs: repo_tag       =", repo_tag
-        print "epics-release ValidateArgs: package        =", package
+        print "epics-release ValidateArgs: packageSpec    =", packageSpec
         print "epics-release ValidateArgs: defaultPackage =", defaultPackage
         print "epics-release ValidateArgs: release        =", opt.release
 
     # Determine the release package URL
     if not repo_branch:
-        if not package or not package[0]:
+        if not packageSpec:
             raise ValidateError, "No release package specified"
-        if len( package ) > 1:
-            raise ValidateError, "Multiple  release packages specified: %s" % (package)
+        if len( packageSpec ) > 1:
+            raise ValidateError, "Multiple  release packages specified: %s" % (packageSpec)
         if repo_url:
             repo_branch = repo_url
-        else:
-            # FIXME: Is this needed or just leftover from svn variant?
-            repo_branch = os.path.join(	repo._url, repo_gitStub2,
-                                                package[0], "current"	)
-            #if not gitPathExists( repo_branch, repo_tag ):
-            #	repo_branch = os.path.join(repo._repo, repo_gitStub1,
-            #									package[0], "current"	)
 
     # Make sure the release package exists
     #if not gitPathExists( repo_branch, repo_tag ):
     #	raise ValidateError, "Invalid git branch %s tag %s" % ( repo_branch,  repo_tag )
+
+    # TODO: Auto generate release tag
 
     # validate release tag
     if opt.release is None:
@@ -119,21 +114,6 @@ def ValidateArgs( repo, package, opt ):
 
     if not re.match( r"(R\d+(\.\d+)+-\d+\.\d+\.\d+)|(R\d+\.\d+\.\d+)", opt.release ):
         raise ValidateError, "%s is an invalid release tag: Must be R[<orig_release>-]<major>.<minor>.<bugfix>" % opt.release
-    #if not repo_ReleasePath:
-    #	if not package or not package[0]:
-    #		raise ValidateError, "No release package specified"
-    #	repo_ReleasePath = os.path.join(	repo_repo, repo_gitRelDir,
-    #										package[0], opt.release	)
-
-    #if repo_noTag == False and gitPathExists( repo_ReleasePath ):
-    #	raise ValidateError, "GIT release tag already exists: %s" % ( repo_ReleasePath )
-#		try:
-#			if gitPathExists( repo_ReleasePath ):
-#				raise ValidateError, "SVN release tag already exists: %s" % ( repo_ReleasePath )
-#		except:
-#			pass
-#		else:
-#			raise ValidateError, "SVN release tag already exists: %s" % ( repo_ReleasePath )
 
     if not opt.noTag:
         # validate release message
@@ -161,6 +141,10 @@ def ValidateArgs( repo, package, opt ):
                     branchMsg = "Branch mismatch!\n"
                     raise ValidateError, branchMsg
 
+    # TODO: Check git config ecotools.versionfile: has it changed, show the change, prompt to edit
+
+    # TODO: Check RELEASE_NOTES: has it changed, is tag found, show the change, prompt to edit
+    
     # validate repo_grpowner	= DEF_LCLS_GROUP_OWNER
     if opt.verbose:
         print "ValidateArgs: Success"
@@ -179,8 +163,8 @@ try:
         raise ValidateError, ( "Can't find EPICS_SITE_TOP at %s" % defaultEpicsSiteTop )
 
     parser = optparse.OptionParser(
-        usage =	"usage: %prog [options] [ <module> ] -r <release> -m \"My release comments\"\n"
-                "\tEx: %prog ioc/xpp/vacuum -r R0.1.0 -m \"Adding baratron gauge\"\n"
+        usage =	"usage: %prog [options] -r <release> [ <packageSpec> ] [ -m \"My release comments\" ]\n"
+                "\tEx: %prog -r R0.1.0 ioc/xpp/vacuum -m \"Adding baratron gauge\"\n"
                 "\tFor help: %prog --help",
         version = eco_tools_version )
     parser.set_defaults(	verbose		= False,
@@ -241,6 +225,7 @@ try:
     repo         = None
     packageMatch = None
     packageName  = None
+    packagePath  = None
 
     # See if this is a git working dir
     ( git_url, git_branch, git_tag ) = gitGetWorkingBranch()
@@ -250,33 +235,59 @@ try:
             print "git_url:    %s" % git_url
             print "git_branch: %s" % git_branch
         # Create a git release handler
-        repo = gitRepo.gitRepo( git_url, git_branch, opt.release )
         if git_tag == opt.release:
             opt.noTag = True
             opt.noTestBuild	= True
-        packageMatch = re.match( r"\S+(epics/)(\S+).git", git_url )
+        ( urlPath, packageGitDir ) = os.path.split( git_url )
+
+        # Find the packageName
+        packageMatch = re.match( r"(\S+).git", packageGitDir )
         if packageMatch:
-            packageName = packageMatch.group(2)
+            packageName = packageMatch.group(1)
+
+        # Find the packagePath
+        ( packageHead, packageTail ) = os.path.split( urlPath )
+        packagePath = os.path.join( packageTail, packageName )
+        while packageHead:
+            if packageHead.endswith( "epics" ):
+                break
+            if packageHead.endswith( "repos" ):
+                break
+            if packageHead.endswith( ".com" ):
+                break
+            if packageHead.endswith( ".edu" ):
+                break
+            ( packageHead, packageTail ) = os.path.split( packageHead )
+            packagePath = os.path.join( packageTail, packagePath )
+
+        # Create a gitRepo for this url
+        repo = gitRepo.gitRepo( git_url, git_branch, packageName, opt.release )
     else:
         # See if this is an svn working dir
         ( svn_url, svn_branch, svn_tag ) = svnGetWorkingBranch()
 
         if svn_url:
+            packageMatch = re.match( r"\S+(epics/trunk/|trunk/pcds/epics/)(\S+)/current", svn_url )
+            if packageMatch:
+                packagePath = packageMatch.group(2)
+                packageName = os.path.split( packagePath )[1]
+            if opt.noTag:
+                svn_url	= "/".join( [ DEF_SVN_TAGS, packagePath, opt.release ] )
             if opt.verbose:
                 print "svn_url:    %s" % svn_url
                 print "svn_branch: %s" % svn_branch
             # Create an svn release handler
-            repo = svnRepo.svnRepo( svn_url, svn_branch, opt.release )
-        packageMatch = re.match( r"\S+(epics/|epics/trunk)(\S+)/current", svn_url )
-        if packageMatch:
-            packageName = packageMatch.group(2)
+            repo = svnRepo.svnRepo( svn_url, svn_branch, packagePath, opt.release )
 
     if len(args) > 0:
-        if not packageName:
-            packageName = args[0]
-        elif packageName != args[0]:
-            packageName = args[0]
-            raise ValidateError, ( "TODO: Need to find repo for manually specified package!" )
+        packageSpec = args[0]
+        packagePath = packageSpec
+        if opt.release:
+            packageSpec = os.path.join( packageSpec, opt.release )
+        release = find_release( packageSpec, opt.verbose )
+        if release:
+            repo = release._repo
+            packageName = release._packageName
 
     if not packageName:
         raise ValidateError, ( "No package specified and unable to determine it from current dir" )
@@ -287,7 +298,7 @@ try:
     if repo is None:
         raise ValidateError, ( "Can't establish a repo branch" )
 
-    rel = Releaser( repo, packageName, verbose=opt.verbose )
+    pkgReleaser = Releaser( repo, packagePath, verbose=opt.verbose )
 
     # If removing old release, don't build or tag
     if	opt.nukeRelease:
@@ -307,28 +318,31 @@ try:
         opt.noTestBuild	= True
 
     # Check for valid arguments
-    ValidateArgs( repo, packageName, opt )
+    ValidateArgs( repo, packagePath, opt )
 
     if not opt.installDir:
         if not packageName:
             raise ValidateError, "No release package specified"
-        if os.path.split( packageName )[0] == 'modules':
+        if os.path.split( packagePath )[0] == 'modules':
             epics_base_ver = determine_epics_base_ver()
             if not epics_base_ver:
                 raise ValidateError, "Unable to determine EPICS base version"
             opt.installDir = os.path.join(	defaultEpicsSiteTop, epics_base_ver,
-                                            packageName, opt.release	)
+                                            packagePath, opt.release	)
         else:
-            opt.installDir = os.path.join(	defaultEpicsSiteTop, packageName, opt.release )
-
-    print "repo_url:    %s" % repo.GetUrl()
-    print "tag:         %s" % opt.release
+            opt.installDir = os.path.join(	defaultEpicsSiteTop, packagePath, opt.release )
+    pkgReleaser._installDir = opt.installDir
+    print     "repo_url:    %s" % repo.GetUrl()
+    if opt.rmTag:
+        print "rm tag:      %s" % opt.release
+    else:
+        print "tag:         %s" % opt.release 
     if opt.rmBuild:
         print "rm buildDir: %s"	% opt.installDir
     else:
         print "installDir:  %s"	% opt.installDir
-    if opt.rmTag:
-        print "rm tag:  %s" % ( rel._ReleaseTag )
+    if opt.dryRun:
+        print "DryRun:      True"
     if	opt.noTag:
         opt.noTestBuild	= True
 
@@ -340,26 +354,30 @@ try:
 
     # dryRun, just show release info
     if opt.dryRun:
-        print "DryRun:"
-        print "  branch:     %s" % opt.branch
-        print "  installDir: %s" % opt.installDir
-        print "  message:  \n%s" % opt.message
+        print "--dryRun--"
+        if opt.rmTag:
+            print "rm tag:      %s" % opt.release
+        if opt.rmBuild:
+            print "rm buildDir: %s"	% opt.installDir
+        if not opt.rmTag and not opt.rmBuild:
+            print "MakeRelease: %s" % opt.release
+            print "branch:      %s" % repo._branch
+            print "installDir:  %s" % opt.installDir
+            print "message:     %s" % opt.message
+        sys.exit(0)
 
     if opt.rmBuild or opt.rmTag:
         if opt.rmBuild:
             try:
-                rel.RemoveBuild( opt.installDir )
+                pkgReleaser.RemoveBuild( opt.installDir )
             except BuildError, e:
                 print e
                 pass
         if opt.rmTag:
-            rel.RemoveTag()
+            pkgReleaser.RemoveTag( tag=opt.release )
 
         # Remove options do not try to do
         # a release, so exit now
-        sys.exit(0)
-
-    if opt.dryRun:
         sys.exit(0)
 
     #
@@ -368,15 +386,15 @@ try:
 
     # Do a test build first
     if not opt.noTestBuild:
-        rel.DoTestBuild()
+        pkgReleaser.DoTestBuild()
 
     # release tag
     if not opt.noTag:
-        rel.TagRelease( )
+        pkgReleaser.TagRelease( message=opt.message )
 
     # Install package
-    # rel.InstallPackage( repo_installDir	)
-    rel.InstallPackage( )
+    # pkgReleaser.InstallPackage( repo_installDir	)
+    pkgReleaser.InstallPackage( )
 
     # All done!
     sys.exit(0)

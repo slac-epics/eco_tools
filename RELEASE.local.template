@@ -21,10 +21,17 @@
 # ==========================================================
 
 # ==========================================================
-# Define module paths using pattern
-# FOO = $(EPICS_MODULES)/foo/$(FOO_MODULE_VERSION)
-#  or
-# FOO = /Full/Path/To/Development/Version 
+# External Support module path definitions
+#
+# If any of these macros expand to a path which
+# contains an "include" directory, that directory will be
+# included in the compiler include path.
+#
+# If any of these macros expand to a path which
+# contains a "lib/<arch>" directory, that directory will be
+# included in the compiler link path for that architecture.
+#
+# If your build fails, look for these paths in your build output
 # ==========================================================
 
 # Set EPICS_BASE last so it appears last in the DB, DBD, INCLUDE, and LIB search paths

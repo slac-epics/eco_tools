@@ -26,16 +26,18 @@ class InstallError( Exception ):
 class Releaser(object):
     '''class Releaser( repo, package )
     repo must be a repo object that knows the URL, branch, tag, etc needed to checkout the required package version
-    package is the name of the package and release, for example: base/R3.15.4-1.0, asyn/R4.29-0.1.3, edm/R1.12.96, etc
+    package is the name of the package, w/o the release, for example: base/R3.15.4-1.0, asyn/R4.29-0.1.3, edm/R1.12.96, etc
     Note: There are a number of additional arguments to __init__(), all w/ defaults
     These were grandfathered in as part of refactoring a prior version and may be
     more appropriately made into function parameters or in some cases may not be needed at all. 
     '''
-    def __init__( self, repo, package, installDir=None, branch=None, noTag=True, debug=False, verbose=False, keepTmp=False, message=None, dryRun=False, quiet=False, batch=False ):
+    def __init__( self, repo, packagePath, installDir=None, branch=None, noTag=True, debug=False, verbose=False, keepTmp=False, message=None, dryRun=False, quiet=False, batch=False ):
         self._installDir= installDir
         self._repo		= repo
         self._branch	= branch
-        self._package	= package
+        self._packagePath= packagePath
+        if self._packagePath:
+            self._packageName = os.path.split( self._packagePath )[1]
         self._version	= ""
         self._dryRun	= dryRun
         self._batch		= batch
@@ -45,6 +47,7 @@ class Releaser(object):
         self._message	= message
         self._keepTmp	= keepTmp
         self._noTag		= noTag
+        self._installDir= None
         self._ReleasePath= None
         # TODO: Derive _EpicsHostArch from the module's RELEASE_SITE file instead of env
         self._EpicsHostArch = determine_epics_host_arch()
@@ -52,8 +55,26 @@ class Releaser(object):
             self._EpicsHostArch = 'unknown-host-arch'
         self._retcode	= 0
         # Create a directory where files will be checked-out
-        self.tmpDir		= tempfile.mktemp("-epics-release")
-        self.grpOwner	= None
+        self._tmpDir	= tempfile.mktemp("-epics-release")
+        self._grpOwner	= None
+
+    def __str__( self ):
+        strRep =  "Releaser:\n"
+        strRep += "%s Repo:         \n%s" % ( self.__class__.__name__, self._repo )
+        strRep += "%s branch:       %s\n" % ( self.__class__.__name__, self._branch 	if self._branch else 'None' )
+        strRep += "%s packageName:  %s\n" % ( self.__class__.__name__, self._packageName if self._packageName else 'None' )
+        strRep += "%s packagePath:  %s\n" % ( self.__class__.__name__, self._packagePath if self._packagePath else 'None' )
+        strRep += "%s version:      %s\n" % ( self.__class__.__name__, self._version    if self._version else 'None' )
+        strRep += "%s dryRun:       %s\n" % ( self.__class__.__name__, self._dryRun    	if self._dryRun else 'None' )
+        strRep += "%s batch:        %s\n" % ( self.__class__.__name__, self._batch    	if self._batch else 'None' )
+        strRep += "%s debug:        %s\n" % ( self.__class__.__name__, self._debug    	if self._debug else 'None' )
+        strRep += "%s quiet:        %s\n" % ( self.__class__.__name__, self._quiet    	if self._quiet else 'None' )
+        strRep += "%s ReleasePath:  %s\n" % ( self.__class__.__name__, self._ReleasePath   if self._ReleasePath else 'None' )
+        strRep += "%s installDir:   %s\n" % ( self.__class__.__name__, self._installDir    if self._installDir else 'None' )
+        strRep += "%s EpicsHostArch:%s\n" % ( self.__class__.__name__, self._EpicsHostArch if self._EpicsHostArch else 'None' )
+        strRep += "%s tmpDir:       %s\n" % ( self.__class__.__name__, self._tmpDir    	if self._tmpDir else 'None' )
+        strRep += "%s grpOwner:     %s\n" % ( self.__class__.__name__, self._grpOwner   if self._grpOwner else 'None' )
+        return strRep
 
     def __del__( self ):
         self.DoCleanup( 0 )
@@ -65,28 +86,30 @@ class Releaser(object):
             print "%s exited with return code %d." % (sys.argv[0], retcode)
 
         if self._keepTmp:
-            if os.path.exists(self.tmpDir):
+            if os.path.exists(self._tmpDir):
                 print "\n--keepTmp flag set. Remove the tmp build directory manually:"
-                print "\t%s" % (self.tmpDir)
+                print "\t%s" % (self._tmpDir)
         else:
             try:
                 sys.stdout.flush()
                 sys.stderr.flush()
-                if os.path.exists(self.tmpDir):
+                if os.path.exists(self._tmpDir):
                     if self._verbose:
-                        print "Removing temporary dir %s ..." % self.tmpDir
-                    shutil.rmtree( self.tmpDir )
+                        print "Removing temporary dir %s ..." % self._tmpDir
+                    shutil.rmtree( self._tmpDir )
             except:
                 print "failed:\n%s." % (sys.exc_value)
                 print "\nCould not remove the following directories, remove them manually:"
-                if os.path.exists(self.tmpDir):
-                    print "\t%s" % (self.tmpDir)
+                if os.path.exists(self._tmpDir):
+                    print "\t%s" % (self._tmpDir)
     
-    def RemoveTag( self ):
-        return self._repo.RemoveTag( self._package, self._repo._tag )
-    
-    def TagRelease( self ):
-        return self._repo.TagRelease( self._package, self._repo._tag, self._branch, self._message )
+    def RemoveTag( self, tag=None ):
+        if tag is not None:
+            tag = self._repo._tag
+        return self._repo.RemoveTag( package=self._packagePath, tag=tag )
+
+    def TagRelease( self, message=None ):
+        return self._repo.TagRelease( packagePath=self._packagePath, branch=self._branch, message=message )
 
     def execute( self, cmd, outputPipe = subprocess.PIPE ):
         if self._verbose or self._dryRun:
@@ -110,8 +133,6 @@ class Releaser(object):
 
     def RemoveBuild( self, buildDir ):
         print "\nRemoving build dir: %s ..." % ( buildDir )
-        if rel._dryRun:
-            return
 
         # Enable write access to build directory
         try:
@@ -135,9 +156,9 @@ class Releaser(object):
         userId  = os.geteuid()
         groupId = -1
         groups  = subprocess.check_output( [ "id" ] )
-        if self.grpOwner is not None:
-            if re.search( groups, self.grpOwner ):
-                groupId = grp.getgrname(self.grpOwner).gr_gid 
+        if self._grpOwner is not None:
+            if re.search( groups, self._grpOwner ):
+                groupId = grp.getgrname(self._grpOwner).gr_gid 
 
         # Make sure directories are able to be read and traversed
         # and leave them writable so we can build on a new host
@@ -213,8 +234,17 @@ class Releaser(object):
                 return
 
         try:
-            # Checkout release to build dir
-            self._repo.CheckoutRelease( buildDir, verbose=self._verbose, dryRun=self._dryRun )
+            if self._repo._url.find( 'extensions' ) > 0:
+                # For extensions, we first checkout extensions-top
+                topRepo = gitRepo.gitRepo( DEF_GIT_EXT_TOP, None, "extensions-top", DEF_GIT_EXT_TOP_TAG )
+                topRepo.CheckoutRelease( buildDir, verbose=self._verbose, dryRun=self._dryRun )
+
+                # Then checkout the package to src/packageName
+                extSrcDir = os.path.join( buildDir, 'src', self._packageName )
+                self._repo.CheckoutRelease( extSrcDir, verbose=self._verbose, dryRun=self._dryRun )
+            else:
+                # Checkout release to build dir
+                self._repo.CheckoutRelease( buildDir, verbose=self._verbose, dryRun=self._dryRun )
         except RuntimeError, e:
             print e
             raise BuildError, "BuildRelease %s: FAILED" % buildDir
@@ -251,16 +281,25 @@ class Releaser(object):
         sys.stderr.flush()
         self.fixPermissions( buildDir )
 
+        try:
+            if os.path.isdir( buildDir + "-FAILED" ):
+                # rm any stale -FAILED on success
+                cmdList = [ "rm", "-rf",    buildDir + "-FAILED" ]
+                subprocess.call( cmdList )
+        except RuntimeError, e:
+            print e
+            pass
+
     def DoTestBuild( self ):
         try:
-            self.BuildRelease( self._ReleasePath, self.tmpDir )
+            self.BuildRelease( self._ReleasePath, self._tmpDir )
             self.DoCleanup()
         except BuildError:
-            print "DoTestBuild: %s Build error from BuildRelease in %s" % ( self._package, self.tmpDir )
+            print "DoTestBuild: %s Build error from BuildRelease in %s" % ( self._packageName, self._tmpDir )
             self.DoCleanup()
             raise
         except subprocess.CalledProcessError, e:
-            print "DoTestBuild: %s CalledProcessError from BuildRelease in %s" % ( self._package, self.tmpDir )
+            print "DoTestBuild: %s CalledProcessError from BuildRelease in %s" % ( self._packageName, self._tmpDir )
             print e
             pass
 
@@ -268,7 +307,8 @@ class Releaser(object):
         '''Use InstallPackage to automatically determine the buildDir from installTop and the repo specs.
         If you already know where to build you can just call BuildRelease() directly.'''
         if self._verbose:
-            self._repo.ShowRepo( titleLine="InstallPackage: " + self._package, prefix="	" )
+            self._repo.ShowRepo( titleLine="InstallPackage: " + self._packageName, prefix="	" )
+            print self
 
         if not self._installDir:
             epics_site_top	= determine_epics_site_top()
@@ -276,7 +316,7 @@ class Releaser(object):
                 print "InstallPackage Error: Need valid installTop to determine installDir!"
                 return
             if not installTop:
-                if		os.path.split( self._package )[0] == 'modules' \
+                if		os.path.split( self._packagePath )[0] == 'modules' \
                      or	self._repo.GetUrl().find('modules') >= 0:
                     epics_modules_top = determine_epics_modules_top()
                     if not epics_modules_top:
@@ -284,6 +324,11 @@ class Releaser(object):
                         return
                     installTop = epics_modules_top
 
+            if not installTop:
+                if		self._packagePath.find('extensions') >= 0 \
+                     or	self._repo.GetUrl().find('extensions') >= 0:
+                    installTop = os.path.join( epics_site_top, 'extensions' ) 
+ 
             if not installTop:
                 print "InstallPackage Error: Unable to determine installTop!"
                 return
@@ -295,41 +340,47 @@ class Releaser(object):
                 print "InstallPackage Error: Invalid installTop:", installTop
                 return
 
-            moduleName = os.path.split( self._package )[0]
-            self._installDir = os.path.join( installTop, moduleName, self._repo.GetTag() )
+            self._installDir = os.path.join( installTop, self._packageName, self._repo.GetTag() )
 
         if self._installDir.startswith( DEF_EPICS_TOP_PCDS ):
-            self.grpOwner = DEF_PCDS_GROUP_OWNER
+            self._grpOwner = DEF_PCDS_GROUP_OWNER
 
         try:
             self.BuildRelease( self._ReleasePath, self._installDir, force=force )
             if self._verbose:
-                print "InstallPackage: %s installed to:\n%s" % ( self._package, os.path.realpath(self._installDir) )
+                print "InstallPackage: %s installed to:\n%s" % ( self._packageName, os.path.realpath(self._installDir) )
         except BuildError, e:
-            print "InstallPackage: %s Build error from BuildRelease in %s" % ( self._package, os.path.realpath(self._installDir) )
+            print "InstallPackage: %s Build error from BuildRelease in %s" % ( self._packageName, os.path.realpath(self._installDir) )
             print e
             pass
         except subprocess.CalledProcessError, e:
-            print "InstallPackage: %s CalledProcessError from BuildRelease in %s" % ( self._package, os.path.realpath(self._installDir) )
+            print "InstallPackage: %s CalledProcessError from BuildRelease in %s" % ( self._packageName, os.path.realpath(self._installDir) )
             print e
             pass
 
-def find_release( package, verbose=False ):
+def find_release( packageSpec, verbose=False ):
+    '''packageSpec should be packageName/Version.  Ex: ADCore/R2.6-0.1.0
+       packageSpec can include one or two parent directories to help specify the package,
+       of which the last component is the packageName.
+       Ex. ioc/amo/gigECam, extensions/caqtdm'''
     release = None
-    ( package_name, package_release ) = os.path.split( package )
-    (git_url, git_tag) = gitFindPackageRelease( package_name, package_release, debug=False, verbose=verbose )
+    repo = None
+    ( packagePath, packageVersion ) = os.path.split( packageSpec )
+    packageName = os.path.split(packagePath)[1]
+    (git_url, git_tag) = gitFindPackageRelease( packagePath, packageVersion, debug=False, verbose=verbose )
     if git_url is not None:
-        repo = gitRepo.gitRepo( git_url, None, git_tag )
-        release = Releaser( repo, package, None, git_tag, verbose=verbose )
+        repo = gitRepo.gitRepo( git_url, None, packageName, git_tag )
+        release = Releaser( repo, packagePath, None, git_tag, verbose=verbose )
     if release is None:
-        (svn_url, svn_branch, svn_tag) = svnFindPackageRelease( package_name, package_release, debug=False, verbose=verbose )
+        (svn_url, svn_branch, svn_tag) = svnFindPackageRelease( packagePath, packageVersion, debug=False, verbose=verbose )
         if svn_url is not None:
             if verbose:
                 print "find_release: Found svn_url=%s, svn_path=%s, svn_tag=%s" % ( svn_url, svn_branch, svn_tag )
-            repo = svnRepo.svnRepo( svn_url, svn_branch, svn_tag )
-            release = Releaser( repo, package, verbose=verbose )
-    if release is None:
-        print "find_release Error: Unable to find package %s in svn or git repos" % package
-    elif verbose:
-        repo.ShowRepo( titleLine="find_release: " + package, prefix=" " )
+            repo = svnRepo.svnRepo( svn_url, svn_branch, packageName, svn_tag )
+            release = Releaser( repo, packagePath, verbose=verbose )
+    if verbose:
+        if repo is not None:
+            repo.ShowRepo( titleLine="find_release found: " + packageSpec, prefix=" " )
+        else:
+            print "find_release: Could not find packageSpec: %s" % packageSpec
     return release

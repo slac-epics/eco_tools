@@ -5,6 +5,7 @@ import os
 import fileinput
 import subprocess
 import sys
+from repo_defaults import *
 
 import gc
 
@@ -26,15 +27,12 @@ from cvs2svn_lib.symbol_strategy import HeuristicStrategyRule
 from cvs2svn_lib.symbol_strategy import AllBranchRule
 from cvs2svn_lib.symbol_strategy import HeuristicPreferredParentRule
 
-DEF_GIT_REPOS		= "/afs/slac/g/cd/swe/git/repos"
-#DEF_GIT_REPOS		= "git@code.stanford.edu:slac-epics"
-DEF_GIT_MODULES		= DEF_GIT_REPOS + "/package/epics/modules"
-LCLS_TOOLS			= '/afs/slac/g/lcls/tools'
 TOOLS_SITE_TOP		= os.environ['TOOLS']
 if  TOOLS_SITE_TOP is None:
-    TOOLS_SITE_TOP	= LCLS_TOOLS
+    TOOLS_SITE_TOP	= DEF_LCLS_TOOLS
 
-gitModulesTxtFile	= os.path.join( LCLS_TOOLS, 'eco_modulelist', 'modulelist.txt' )
+
+gitModulesTxtFile	= os.path.join( DEF_LCLS_TOOLS, 'eco_modulelist', 'modulelist.txt' )
 
 def parseGitModulesTxt():
     '''Parse the GIT modules txt file and return a dict of packageName -> location'''
@@ -117,8 +115,11 @@ def initBareRepo(parentFolder, packageName):
 
 def cloneMasterRepo(gitMasterRepo, tpath, packageName):
     '''Create a clone of the master repo given a destination folder'''
-    print "Cloning the master repo at", gitMasterRepo, "into", tpath
-    clonedFolder = os.path.join(tpath, packageName)
+    if packageName:
+        clonedFolder = os.path.join(tpath, packageName)
+    else:
+        clonedFolder = tpath
+    print "Cloning the master repo at", gitMasterRepo, "into", clonedFolder
     subprocess.check_call(['git', 'clone', '--recursive', gitMasterRepo, clonedFolder])
     return clonedFolder
 
@@ -298,19 +299,25 @@ def gitGetWorkingBranch( debug = False, verbose = False ):
 
 def gitFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
     (repo_url, repo_tag) = (None, None)
-    (packagePath, sep, packageName) = packageSpec.rpartition('/')
+    if tag:
+        packagePath = packageSpec
+    else:
+        (packagePath, tag) = os.path.split( packageSpec )
+    packageName = os.path.split( packagePath )[1]
     # See if the package was listed in $TOOLS/eco_modulelist/modulelist.txt
     if packageName in git_package2Location:
         url_path = git_package2Location[packageName]
         (repo_url, repo_tag) = gitGetRemoteTag( url_path, tag, debug=debug )
     else:
-        for url_root in [ DEF_GIT_MODULES, DEF_GIT_REPOS ]:
-            if packagePath:
-                url_path = '%s/%s/%s.git' % ( url_root, packagePath, packageName )
-            else:
-                url_path = '%s/%s.git' % ( url_root, packageName )
-            (repo_url, repo_tag) = gitGetRemoteTag( url_path, tag, debug=debug )
-            break
+        for url_root in [ DEF_GIT_MODULES, DEF_GIT_EXTENSIONS, DEF_GIT_EPICS, DEF_GIT_REPOS ]:
+            if repo_url is not None:
+                break
+            for p in [ packageName, packagePath ]:
+                url_path = '%s/%s.git' % ( url_root, p )
+                (repo_url, repo_tag) = gitGetRemoteTag( url_path, tag, debug=debug )
+                if repo_url is not None:
+                    break
+
     if verbose:
         if repo_url:
             print "gitFindPackageRelease found %s/%s: url=%s, tag=%s" % ( packageSpec, tag, repo_url, repo_tag )

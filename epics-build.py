@@ -62,7 +62,9 @@ def find_releases( options ):
     releases = []
     for package in options.packages:
         release = Releaser.find_release( package, options.verbose )
-        if release is not None:
+        if release is None:
+            print "Error: Could not find packageSpec: %s" % package
+        else:
             releases += [ release ]
     return releases
 

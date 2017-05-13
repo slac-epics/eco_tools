@@ -96,13 +96,18 @@ class cvsRepo( Repo.Repo ):
         subprocess.check_call( cmdList )
         print "Successfully removed release tag %s." % ( self._tag )
 
-    def TagRelease( self, verbose=True, message="TODO: Set message for TagRelease", dryRun=False ):
-        if verbose:
-            print "Tagging release %s %s ..." % ( self._branch, self._tag )
+    def TagRelease( self, package=None, release=None, branch=None, message="", verbose=True, dryRun=False ):
+        if branch is None:
+            branch = self._branch
+        if release is None:
+            release = self._repo._tag
         if dryRun:
-            print "TagRelease: --dryRun--"
+            print "--dryRun--",
+        if verbose:
+            print "Tagging branch %s release %s ..." % ( branch, release )
+        if dryRun:
             return
 
-        cmdList = [ "cvs", "tag", self._tag, self._branch ]
+        cmdList = [ "cvs", "tag", release, branch ]
         subprocess.check_call( cmdList )
 

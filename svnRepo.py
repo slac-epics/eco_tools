@@ -12,15 +12,15 @@ class svnError( Exception ):
     pass
 
 class svnRepo( Repo.Repo ):
-    def __init__( self, url, branch=None, tag=None ):
-        super(svnRepo, self).__init__( url, branch, tag )
+    def __init__( self, url, branch=None, package=None, tag=None ):
+        super(svnRepo, self).__init__( url, branch, package, tag )
         self.grpowner	= DEF_PCDS_GROUP_OWNER
         self._version	= ""
         self._retcode	= 0
+        self._tagUrl	= None
         self._svnStub1	= DEF_SVN_STUB1
         self._svnStub2	= DEF_SVN_STUB2
         self._svnRepo	= DEF_SVN_REPO
-        self._svnTags	= DEF_SVN_TAGS
         # Make sure we have a valid EPICS_SITE_TOP
         #defaultEpicsSiteTop = DEF_EPICS_TOP_LCLS 
         #if not os.path.isdir( defaultEpicsSiteTop ):
@@ -59,8 +59,8 @@ class svnRepo( Repo.Repo ):
             return None
 
         branchHead	= svn_url
-        defStub1	= os.path.join( self._svnRepo, self._svnStub1 )
-        defStub2	= os.path.join( self._svnRepo, self._svnStub2 )
+        defStub1	= "/".join( [ self._svnRepo, self._svnStub1 ] )
+        defStub2	= "/".join( [ self._svnRepo, self._svnStub2 ] )
         while branchHead != "":
             ( branchHead, branchTail ) = os.path.split( branchHead )
             if	defaultPackage is None:
@@ -91,8 +91,11 @@ class svnRepo( Repo.Repo ):
         return defaultPackage
 
     def CheckoutRelease( self, buildDir, verbose=False, dryRun=False ):
+        targetUrl = self._url
+        if self._tagUrl:
+            targetUrl = self._tagUrl
         if verbose or dryRun:
-            print "Checking out: %s\nto build dir: %s ..." % ( self._url, buildDir )
+            print "Checking out: %s\nto build dir: %s ..." % ( targetUrl, buildDir )
         outputPipe = None
         if verbose:
             outputPipe = subprocess.PIPE
@@ -107,18 +110,18 @@ class svnRepo( Repo.Repo ):
             # See if the tag is already checked out
             curTag = None
             cmdList = [ "svn", "info", "." ]
-            gitOutput = subprocess.check_output( cmdList ).splitlines()
-            if len(gitOutput) == 1:
-                curUrl = gitOutput[0]
-                if curUrl == self._url:
+            cmdOutput = subprocess.check_output( cmdList ).splitlines()
+            if len(cmdOutput) == 1:
+                curUrl = cmdOutput[0]
+                if curUrl == targetUrl:
                     os.chdir( curDir )
                     return
         else:
             try:
-                cmdList = [ "svn", "co", self._url, buildDir ]
+                cmdList = [ "svn", "co", targetUrl, buildDir ]
                 subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
             except RuntimeError:
-                raise Releaser.BuildError, "CheckoutRelease: svn co failed for %s %s" % ( self._url, buildDir )
+                raise Releaser.BuildError, "CheckoutRelease: svn co failed for %s %s" % ( targetUrl, buildDir )
 
     def svnMakeDir( self, svnDir, dryRun=True ):
         try:
@@ -136,27 +139,53 @@ class svnRepo( Repo.Repo ):
         except:
             raise svnError, "Error: svnMakeDir %s\n%s" % ( svnDir, sys.exc_value )
 
-    def RemoveTag( self, dryRun=True ):
-        print "RemoveTag: Removing %s release tag %s ..." % ( self._package[0], self._tag )
-        if dryRun:
-            print "RemoveTag: --dryRun--"
-            return
-        self.svnMakeDir( os.path.split( self._ReleaseTag )[0] )
-        svnRmTagCmd = "svn rm %s" % ( self._ReleaseTag ) 
-        svnComment = "Removing unwanted tag %s for %s" % ( svnRmTagCmd, self._tag, self._branch ) 
-        cmdList = [ "svn", "rm", self._ReleaseTag, "-m", svnComment ]
-        subprocess.check_call( cmdList )
-        print "Successfully removed %s release tag %s." % ( self._branch, self._tag )
+    def RemoveTag( self, package=None, tag=None ):
+        if not package:
+            package = self._package
+        if not tag:
+            tag = self._tag
+        print "RemoveTag: Removing %s release tag %s ..." % ( package, tag )
 
-    def TagRelease( self, verbose=True, message="TODO: Set message for TagRelease", dryRun=False ):
-        if verbose:
-            print "Tagging release %s %s ..." % ( self._branch, self._tag )
-        if dryRun:
-            print "TagRelease: --dryRun--"
+        tagPath	= "/".join( [ DEF_SVN_TAGS, package, tag ]  )
+        svnComment = "Removing unwanted tag %s for %s" % ( tag, package ) 
+        try:
+            cmdList = [ "svn", "ls", tagPath ]
+            cmdOutput = subprocess.check_output( cmdList, stderr=subprocess.STDOUT )
+        except:
+            print "tagPath %s not found." % ( tagPath )
             return
-        #self.svnMakeDir( os.path.split( self._ReleaseTag )[0] )
-        releaseComment = "Release %s/%s: %s\n%s" % (	self._branch,	self._tag,
-                                                        message,		"svn cp" )
-        cmdList = [ "svn", "cp", self._branch, self._tag, self._branch, "-m", releaseComment ]
+
+        cmdList = [ "svn", "rm", tagPath, "-m", svnComment ]
+        subprocess.check_call( cmdList )
+        print "Successfully removed %s release tag %s." % ( package, tag )
+
+    def TagRelease( self, packagePath=None, release=None, branch=None, message=None, verbose=True, dryRun=False ):
+        if branch is None:
+            branch = self._branch
+        if message is None:
+            message = self._message
+        if release is None:
+            release = self._tag
+        self._tagUrl	= "/".join( [ DEF_SVN_TAGS, packagePath, release ]  )
+
+        try: # See if tag already exists
+            cmdList = [ "svn", "ls", self._tagUrl ]
+            cmdOutput = subprocess.check_output( cmdList, stderr=subprocess.STDOUT )
+            print "%s/%s already tagged." % ( packagePath, release )
+            return
+        except:
+            pass
+
+        if dryRun:
+            print "--dryRun--",
+        if verbose:
+            print "Tagging %s ..." % ( self._tagUrl )
+        if dryRun:
+            return
+        releaseComment	= "Release %s: " % release
+        if message:
+            releaseComment += message
+        releaseComment	+= "\n%s %s %s" % ( "svn cp", self._url, self._tagUrl )
+        cmdList = [ "svn", "cp", "--parents", self._url, self._tagUrl, "-m", releaseComment ]
         subprocess.check_call( cmdList )
 

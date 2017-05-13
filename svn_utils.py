@@ -63,12 +63,16 @@ def svnGetWorkingBranch( debug=False ):
 
 def svnFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
     (repo_url, repo_path, repo_tag) = (None, None, None)
+    if not tag:
+        ( packagePath, tag ) = os.path.split(packageSpec)
+    else:
+        packagePath = packageSpec
     # Our svn tags all start w/ "R"
     # For compatibility w/ pkg_mgr, provide missing R if needed
     if not tag.startswith( "R" ):
         tag = "R" + tag
     if verbose:
-        print "svnFindPackageRelease: Need to find packageSpec=%s, tag=%s" % (packageSpec, tag)
+        print "svnFindPackageRelease: Looking for packagePath=%s, tag=%s" % (packagePath, tag)
 
     svn_tag_paths  =  [ DEF_SVN_TAGS ]
     svn_tag_paths  += [ os.path.join( DEF_SVN_TAGS, 'modules' ) ]
@@ -76,14 +80,14 @@ def svnFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
     svn_tag_paths  += [ os.path.join( DEF_SVN_TAGS, 'ioc/common' ) ]
 
     for path in svn_tag_paths:
-        url = os.path.join( DEF_SVN_REPO, path, packageSpec, tag )
+        url = os.path.join( path, packagePath, tag )
         if svnPathExists( url, debug=debug ):
             (repo_url, repo_path, repo_tag) = ( url, path, tag )
             break
     if verbose:
         if repo_url:
-            print "svnFindPackageRelease found %s/%s: url=%s, repo_path=%s, tag=%s" % (packageSpec, tag, repo_url, repo_path, repo_tag)
+            print "svnFindPackageRelease found %s/%s: url=%s, repo_path=%s, tag=%s" % (packagePath, tag, repo_url, repo_path, repo_tag)
         else:
-            print "svnFindPackageRelease Error: Cannot find %s/%s" % (packageSpec, tag)
+            print "svnFindPackageRelease Error: Cannot find %s/%s" % (packagePath, tag)
     return (repo_url, repo_path, repo_tag)
 

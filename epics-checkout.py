@@ -284,7 +284,7 @@ def assemble_cvs_inputs_from_term(options):
                 except:
                     tags = []
             else:
-                dirName = '%s-git' % packageName
+                dirName = packageName + '-git'
                 if os.path.exists(os.path.join(pathToGitRepo, "refs", "tags")):
                     # Determine the list of tags..
                     tags = os.listdir(os.path.join(pathToGitRepo, "refs", "tags"))
@@ -337,9 +337,13 @@ def assemble_cvs_inputs_from_term(options):
         destinationPath = options.destination
     else:
         ( parent_dir, folder_name ) = os.path.split( os.getcwd() )
-        if folder_name == packageName:
-            destinationPath = dirName
-        else:
+        destinationPath = dirName
+        if os.path.isdir(packageName):
+            # Already a folder for different checkouts of this packageName.  Use it.
+            destinationPath = os.path.join( packageName, dirName )
+        if folder_name != packageName and dirName != (packageName + "-git"):
+            # Don't create packageName/packageName/dirName
+            # Also, no need for a parent packageName folder for PackageName-git style dirnames
             destinationPath = os.path.join( packageName, dirName )
 
     curDir = os.getcwd()

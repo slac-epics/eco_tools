@@ -18,8 +18,8 @@ class gitError( Exception ):
     pass
 
 class gitRepo( Repo.Repo ):
-    def __init__( self, url, branch=None, tag=None ):
-        super(gitRepo, self).__init__( url, branch, tag )
+    def __init__( self, url, branch=None, package=None, tag=None ):
+        super(gitRepo, self).__init__( url, branch, package, tag )
 
 #	def __repr__( self ):
 #		return "gitRepo"
@@ -54,19 +54,25 @@ class gitRepo( Repo.Repo ):
             os.chdir( buildDir )
 
             # See if the tag is already checked out
-            curTag = None
-            cmdList = [ "git", "describe", '--tags' ]
+            curSha = None
+            cmdList = [ "git", "rev-parse", "HEAD" ]
             gitOutput = subprocess.check_output( cmdList ).splitlines()
             if len(gitOutput) == 1:
-                curTag = gitOutput[0]
-                if curTag == self._tag:
-                    os.chdir( curDir )
-                    return
+                curSha = gitOutput[0]
+            tagSha = None
+            cmdList = [ "git", "rev-parse", self._tag ]
+            gitOutput = subprocess.check_output( cmdList ).splitlines()
+            if len(gitOutput) == 1:
+                tagSha = gitOutput[0]
+            if curSha == tagSha:
+                os.chdir( curDir )
+                return
         else:
             try:
                 # Clone the repo
-                cmdList = [ "git", "clone", self._url, buildDir ]
-                subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
+                #cmdList = [ "git", "clone", self._url, buildDir ]
+                #subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
+                cloneMasterRepo( self._url, buildDir, '' )
                 os.chdir( buildDir )
             except RuntimeError, e:
                 print e
@@ -92,13 +98,12 @@ class gitRepo( Repo.Repo ):
             cmdList = [ "git", "fetch", "origin", "--tags" ]
             subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
 
-
             # Get the tagSha
             tagSha = None
-            cmdList = [ "git", "show-ref", '-s', 'refs/tags/%s' % self._tag ]
+            cmdList = [ "git", "show-ref", self._tag ]
             gitOutput = subprocess.check_output( cmdList ).splitlines()
             if len(gitOutput) == 1:
-                tagSha = gitOutput[0]
+                tagSha = gitOutput[0].split()[0]
 
             if branchSha and branchSha != tagSha:
                 # Rename the branch to put it aside till we delete it later
@@ -106,7 +111,8 @@ class gitRepo( Repo.Repo ):
                 subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
 
             # Checkout the tag
-            cmdList = [ "git", "checkout", '-q', 'refs/tags/%s' % self._tag ]
+            #cmdList = [ "git", "checkout", '-q', 'refs/tags/%s' % self._tag ]
+            cmdList = [ "git", "checkout", '-q', self._tag ]
             subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
 
             if branchSha != tagSha:
@@ -130,24 +136,27 @@ class gitRepo( Repo.Repo ):
             raise gitError, "CheckoutRelease CalledProcessError: Failed to checkout %s in %s" % ( self._tag, buildDir )
         os.chdir(curDir)
 
-    def RemoveTag( self, package, release, verbose=True, dryRun=False ):
+    def RemoveTag( self, package=None, tag=None, verbose=True, dryRun=False ):
+        if not package:
+            package = self._package
+            tag = self._tag
         if verbose:
-            print "\nRemoving %s release tag %s ..." % ( package, release )
-        if dryRun:
-            print "RemoveTag: --dryRun--"
-            return
-        comment = "Removing unwanted tag %s for %s" % ( gitRmTagCmd, release, package )
-        cmdList = [ "git", "tag", "-d", release ]
+            print "\nRemoving %s release tag %s ..." % ( package, tag )
+        cmdList = [ "git", "tag", "-d", tag ]
         subprocess.check_call( cmdList )
-        print "Successfully removed %s release tag %s." % ( package, release )
+        print "Successfully removed %s release tag %s." % ( package, tag )
 
-    def TagRelease( self, package, release, branch=None, message="", verbose=True, dryRun=False ):
-        if verbose:
-            print "Tagging release %s %s ..." % ( self._branch, release )
+    def TagRelease( self, packagePath=None, release=None, branch=None, message="", verbose=True, dryRun=False ):
+        if branch is None:
+            branch = self._branch
+        if release is None:
+            release = self._tag
         if dryRun:
-            print "TagRelease: --dryRun--"
+            print "--dryRun--",
+        if verbose:
+            print "Tagging branch %s release %s ..." % ( branch, release )
             return
-        comment = "Release %s/%s: %s" % ( package, release, message )
+        comment = "Release %s/%s: %s" % ( packagePath, release, message )
         cmdList = [ "git", "tag", release, "-m", comment ]
         subprocess.check_call( cmdList )
         subprocess.check_call( [ 'git', 'push', '-u', 'origin' ] )
