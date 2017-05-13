@@ -132,66 +132,85 @@ caPutLog:
     gitRecommitBranch.py -p github-master -d pcds-trunk -s svn-history -m e1d47d476f5d:R3-1 -m bbb10032d290:R3-3-1 -m 19264b25d734:R3-4
 
 
-Additional modules needed:
-ADClCam			both	Only in svn, but rework needed to match other AD camera support
-ether_ip		both	pcds merge still in progress
-ethercat		both	pcds merge still in progress
-ffmpegServer	both	collaboration, merges in progress
-highlandLVDTV550 both	Simple
-ip231-asyn		both	Simple
-ip330-asyn		both	Simple
-ip330			both	Difficult merge
-laserLocking	both	Simple
-LeCroy_ENET		both	Simple
-motor			both	Difficult merge
-ssi				both	Simple
-VHSx0x			both	Difficult merge
-waveProc		both	Collaboration but few local changes
+50	hours	Base migration
 
-The rest of these modules are only used by one group and most
-were created locally, so merges should generally be simple.
-A few are from the collaboration so may have some local patches
-a16vme			lcls
-agilent53210a	lcls
-anc350			lcls	collaboration
-caenADCV965		lcls
-caenN1470		lcls	collaboration
-drvPciMcor		lcls
-EDT_CL			lcls
-epicsPing		lcls
-epm2000			lcls	collaboration
-genPolySub		lcls
-gtr				lcls	collaboration
-gtr-sis8300		lcls
-Hp53181A		lcls
-icdTemplates	lcls
-InternalData	lcls
-ipmiComm		lcls
-ipUnidig		lcls	collaboration
-LLRFControl		lcls
-longSubRecord	lcls
-mksu			lcls
-mps				lcls
-PSCD_Camac		lcls
-pvlistServer	lcls	collaboration
-s7plc			lcls
-softGlue		lcls	collaboration
-tds3000			lcls	collaboration
-vmeCardRecord	lcls
-VMTG			lcls
-vsam			lcls
-waveAnlRecord	lcls
-
-acqiris			pcds
-bpmDigitizer	pcds
-hytecMotor8601	pcds
-ipimb			pcds
-lkup			pcds
-MMC				pcds
-pcds_motion		pcds
-pgp				pcds
-timesync		pcds
-usb_sn			pcds
-vacuum			pcds
-VHQ2xx			pcds
-xps8			pcds
+Modules completed so far: 73
+Estimates are rough at best.  Feel free to update if you think they're off.
+30	hours	ADCore
+2	hours	ADCSimDetector
+6	hours	ADEdtPdv
+10	hours	ADProsilica
+2	hours	ADSimDetector
+2	hours	ADStream
+4	hours	ADSupport
+2	hours	ADUtil
+16	hours	aravisGigE
+10	hours	asyn
+6	hours	autosave
+2	hours	BergozBCM-RF-asyn
+2	hours	bldClient
+2	hours	bsaDriver
+3	hours	busy
+4	hours	Bx9000_MBT
+6	hours	calc
+2	hours	caPutLog
+2	hours	cexpsh
+2	hours	devBusMapped
+2	hours	devGenVar
+2	hours	devlib2
+2	hours	diagTimer
+2	hours	drvUioPciGen
+4	hours	ethercat
+4	hours	ether_ip
+2	hours	etherPSC
+2	hours	ev2_driver
+4	hours	event
+6	hours	event2
+2	hours	evrClient
+3	hours	fcom
+3	hours	fcomUtil
+8	hours	ffmpegServer
+2	hours	history
+3	hours	hytec8413
+10	hours	iocAdmin
+16	hours	ip231
+6	hours	ip440
+2	hours	ip440-asyn
+6	hours	ip445
+2	hours	ip445-asyn
+4	hours	ip470
+2	hours	ipimb
+20	hours	ipac
+4	hours	Keithley6487
+2	hours	LLRFLibs
+2	hours	MCoreUtils
+4	hours	miscUtils
+2	hours	MMC
+4	hours	modbus
+8	hours	ModBusTCPClnt
+2	hours	normativeTypesCPP
+2	hours	nullhttpd
+2	hours	pau
+2	hours	pcds_motion
+2	hours	perfMeasure
+2	hours	plcAdmin
+4	hours	pvAccessCPP
+4	hours	pvaSrv
+3	hours	pvCommonCPP
+2	hours	pvDatabaseCPP
+3	hours	pvDataCPP
+2	hours	rtemsutils
+6	hours	seq
+3	hours	sis8300
+10	hours	snmp
+6	hours	sscan
+6	hours	std
+10	hours	streamdevice
+2	hours	timeStampFifo
+2	hours	timesync
+2	hours	TRCore
+2	hours	udpComm
+2	hours	usb_sn
+2	hours	xipIo
+3	hours	yamlLoader
+3	hours	ycpswasyn

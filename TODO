@@ -2,7 +2,10 @@
 1.	epics-checkout should use our SLAC templates when it creates the bare git repo.
 
 2.	epics-versions should consider makefile ifdef's instead of using a simple grep.
-	Possibly leverage off EPICS base checkRelease.pm script
+	Possibly leverage off EPICS base checkRelease.pm script.
+	Sumo uses makejk
+	Update iocAdmin python that creates pv's for module depdendencies to share
+	code w/ eco_tools to do proper RELEASE parsing and dependency maps.
 
 3.	epics-versions could allow a directory to be specified and it would show
 	EPICS_BASE, and each module dependency it finds assuming that directory is
@@ -11,4 +14,87 @@
 	See my bash function, evers(), for a bash equivalent.
 	Add a soft link shortcut named evers pointing to epics-versions.
 
-4.	?
+Additional modules needed:
+8	hours	ADClCam			both	Rename to ADPgp and move to git. Needs driver release and some svn history stitching.
+40	hours	ADClCam			both	Rework needed to add serial commands
+6	hours	ether_ip		both	pcds merge still in progress
+6	hours	ethercat		both	pcds merge still in progress
+2	hours	highlandLVDTV550 both	Simple
+2	hours	ip231-asyn		both	Simple, don't import
+2	hours	ip330-asyn		both	Simple, don't import
+12	hours	ip330			both	Difficult merge
+2	hours	laserLocking	both	Simple
+2	hours	LeCroy_ENET		both	Simple
+30	hours	motor			both	Difficult merge
+2	hours	ssi				both	Simple
+8	hours	VHSx0x			both	Difficult merge
+3	hours	waveProc		both	Collaboration but few local changes
+
+The rest of these modules are only used by one group and most
+were created locally, so merges should generally be simple.
+A few are from the collaboration so may have some local patches
+2	hours	a16vme			lcls
+2	hours	agilent53210a	lcls
+3	hours	anc350			lcls	collaboration
+2	hours	caenADCV965		lcls
+3	hours	caenN1470		lcls	collaboration
+2	hours	drvPciMcor		lcls
+2	hours	EDT_CL			lcls	don't import
+2	hours	epicsPing		lcls	don't import
+3	hours	epm2000			lcls	collaboration
+2	hours	genPolySub		lcls
+4	hours	gtr				lcls	collaboration
+2	hours	gtr-sis8300		lcls
+2	hours	Hp53181A		lcls
+2	hours	icdTemplates	lcls
+2	hours	InternalData	lcls
+2	hours	ipmiComm		lcls
+3	hours	ipUnidig		lcls	collaboration
+2	hours	LLRFControl		lcls
+2	hours	longSubRecord	lcls
+2	hours	mksu			lcls
+2	hours	mps				lcls
+2	hours	PSCD_Camac		lcls
+3	hours	pvlistServer	lcls	collaboration	don't import
+2	hours	s7plc			lcls
+3	hours	softGlue		lcls	collaboration
+3	hours	tds3000			lcls	collaboration
+2	hours	vmeCardRecord	lcls	don't import
+2	hours	VMTG			lcls
+2	hours	vsam			lcls
+2	hours	waveAnlRecord	lcls
+
+3	hours	acqiris			pcds	don't import
+3	hours	bpmDigitizer	pcds	don't import
+30	hours	event			pcds	Still a few RTEMS crates that need pcds event	don't import
+2	hours	hytecMotor8601	pcds	don't import
+2	hours	lkup			pcds	don't import
+2	hours	pgp				pcds
+2	hours	vacuum			pcds
+2	hours	VHQ2xx			pcds
+4	hours	xps8			pcds
+
+Extensions, Need to deploy latest versions for lcls and pcds:
+5	hours	alh
+8	hours	ArchiveViewer
+30	hours	edm				In git, still merging
+12	hours	gateway			On github, need to merge svn
+2	hours	labca			Merged, needs release and deployment
+0	hours	labca-sciclean	Merged, submodule of labca
+2	hours	probe
+4	hours	procServ		Merged
+4	hours	StripTool		github - Have patches from svn to merge
+
+EPICS related tools not built as extensions
+	We still need a way to manage their deployment so we can control
+	which versions users get.
+archapplv4proxy	AFS git - Murali
+carchivetools	github	- Davidsaver
+epicsarchiverap	github - Murali
+epicsqt			Sourceforge svn
+caqtdm			github
+pydm			github	- Gibbs
+pyepics
+pyca			Currently in svn and pkg_mgr
+qgit			git://repo.or.cz/qgit4/redivivus.git
+
