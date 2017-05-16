@@ -203,9 +203,14 @@ def importHistoryFromCVS(tpath, gitRepoPath, CVSpackageLocation, gitFolder=None,
 
     # If a gitRepoPath wasn't provided, create a new bare repo
     if gitRepoPath is None:
+        if not gitFolder:
+            print "git repo path and import folder are not defined!"
+            return
         gitRepoPath = os.path.join( gitFolder, module+".git")
-    if not os.path.exists(gitRepoPath):
-        gitRepoPath = initBareRepo( gitFolder, module )
+    if os.path.exists(gitRepoPath):
+        print "cvs import of repo already exists:", gitRepoPath
+        return
+    gitRepoPath = initBareRepo( gitRepoPath, module )
     os.chdir(gitRepoPath)
 
     # Use Python Pipes to import CVS dump into GIT

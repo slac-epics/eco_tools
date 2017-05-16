@@ -33,7 +33,7 @@ def importModule( module, module_type, gitFolder=None, repoPath=None ):
         if module in git_modules2Location:
             gitFolder = git_modules2Location[module]
         else:
-            gitFolder = gitDefaultDirFormat.format(tp['git'])
+            gitFolder = os.path.join( gitDefaultDirFormat.format(tp['git']), module + ".git" )
     if os.path.isdir( gitFolder ):
         print "cvs import of repo already exists:", gitFolder
         return
@@ -41,7 +41,7 @@ def importModule( module, module_type, gitFolder=None, repoPath=None ):
  
     # Import the CVS history using a tmp folder
     tpath = tempfile.mkdtemp()
-    importHistoryFromCVS(tpath, None, repoPath, gitFolder=gitFolder, module=module )
+    importHistoryFromCVS(tpath, gitFolder, repoPath, module=module )
     shutil.rmtree(tpath)
 
 if __name__ == '__main__':
