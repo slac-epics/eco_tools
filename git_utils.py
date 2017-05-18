@@ -312,22 +312,22 @@ def gitFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
     # See if the package was listed in $TOOLS/eco_modulelist/modulelist.txt
     if packageName in git_package2Location:
         url_path = git_package2Location[packageName]
-        (repo_url, repo_tag) = gitGetRemoteTag( url_path, tag, debug=debug )
+        (repo_url, repo_tag) = gitGetRemoteTag( url_path, tag, verbose=verbose )
     else:
         for url_root in [ DEF_GIT_MODULES, DEF_GIT_EXTENSIONS, DEF_GIT_EPICS, DEF_GIT_REPOS ]:
             if repo_url is not None:
                 break
             for p in [ packageName, packagePath ]:
                 url_path = '%s/%s.git' % ( url_root, p )
-                (repo_url, repo_tag) = gitGetRemoteTag( url_path, tag, debug=debug )
+                (repo_url, repo_tag) = gitGetRemoteTag( url_path, tag, verbose=verbose )
                 if repo_url is not None:
                     break
 
     if verbose:
         if repo_url:
-            print "gitFindPackageRelease found %s/%s: url=%s, tag=%s" % ( packageSpec, tag, repo_url, repo_tag )
+            print "gitFindPackageRelease found %s/%s: url=%s, tag=%s" % ( packagePath, tag, repo_url, repo_tag )
         else:
-            print "gitFindPackageRelease Error: Cannot find %s/%s" % (packageSpec, tag)
+            print "gitFindPackageRelease Error: Cannot find %s/%s" % (packagePath, tag)
     return (repo_url, repo_tag)
 
 def parseGitModulesTxt():

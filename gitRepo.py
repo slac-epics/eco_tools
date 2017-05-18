@@ -1,6 +1,7 @@
 import re
 import sys
 import os
+import shutil
 import subprocess
 
 import Repo
@@ -51,23 +52,41 @@ class gitRepo( Repo.Repo ):
 
         curDir = os.getcwd()
         if os.path.isdir( os.path.join( buildDir, '.git' ) ):
-            os.chdir( buildDir )
+            try:
+                # See if the tag is already checked out
+                # Get the current HEAD SHA
+                os.chdir( buildDir )
+                curSha = None
+                cmdList = [ "git", "rev-parse", "HEAD" ]
+                gitOutput = subprocess.check_output( cmdList ).splitlines()
+                if len(gitOutput) == 1:
+                    curSha = gitOutput[0]
 
-            # See if the tag is already checked out
-            curSha = None
-            cmdList = [ "git", "rev-parse", "HEAD" ]
-            gitOutput = subprocess.check_output( cmdList ).splitlines()
-            if len(gitOutput) == 1:
-                curSha = gitOutput[0]
-            tagSha = None
-            cmdList = [ "git", "rev-parse", self._tag ]
-            gitOutput = subprocess.check_output( cmdList ).splitlines()
-            if len(gitOutput) == 1:
-                tagSha = gitOutput[0]
-            if curSha == tagSha:
-                os.chdir( curDir )
-                return
-        else:
+                # Get the tag SHA
+                tagSha = None
+                cmdList = [ "git", "rev-parse", self._tag ]
+                gitOutput = subprocess.check_output( cmdList ).splitlines()
+                if len(gitOutput) == 1:
+                    tagSha = gitOutput[0]
+
+                # If they match, it's already checked out!
+                if curSha == tagSha:
+                    os.chdir( curDir )
+                    return
+
+            except RuntimeError, e:
+                print e
+                os.chdir(curDir)
+                shutil.rmtree( buildDir )
+                pass
+
+            except subprocess.CalledProcessError, e:
+                print e
+                os.chdir(curDir)
+                shutil.rmtree( buildDir )
+                pass
+
+        if not os.path.isdir( os.path.join( buildDir, '.git' ) ):
             try:
                 # Clone the repo
                 #cmdList = [ "git", "clone", self._url, buildDir ]
