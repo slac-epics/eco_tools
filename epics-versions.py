@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 import re
 import sys
 import optparse
@@ -10,6 +10,7 @@ import pprint
 import signal
 import traceback
 
+from repo_defaults import *
 from version_utils import *
 from eco_version import eco_tools_version
 
@@ -51,18 +52,13 @@ from eco_version import eco_tools_version
 #           SNMP_MODULE_VERSION             = R1.1.0-1.5.0
 #
 #
-# Copyright 2011,2012,2016 Stanford University
+# Copyright 2011,2012,2016,2017 Stanford University
 # Photon Controls and Data Systems
 # Author: Bruce Hill <bhill@slac.stanford.edu>
 #
 # Released under the GPLv2 licence <http://www.gnu.org/licenses/gpl-2.0.html>
 #
-DEF_EPICS_TOP_PCDS  = "/reg/g/pcds/package/epics"
-DEF_EPICS_TOP_AFS   = "/afs/slac/g/pcds/package/epics"
-DEF_EPICS_TOP_LCLS  = "/afs/slac/g/lcls/epics"
-DEF_EPICS_TOP_MCC   = "/usr/local/lcls/epics"
 debugScript         = False
-
 
 # Create a pretty printer for nicer diagnostics
 pp  = pprint.PrettyPrinter( indent=4 )

@@ -37,9 +37,6 @@ from eco_version import eco_tools_version
 # from cram_utils import *
 from repo_defaults import *
 
-CVS_ROOT_TOP = '/afs/slac/g/lcls/cvs'
-GIT_REPO_MODULES = DEF_GIT_REPOS + '/package/epics/modules'
-
 # __all__ = ['export_release_site_file', 'assemble_cvs_inputs_from_term']
 
 def getEnv( envVar ):
@@ -88,7 +85,7 @@ def process_options(argv):
             + '\nExamples:\n' \
             + 'epics-build -p history/R2.6.1\n' \
             + 'epics-build -p asyn/4.31-0.1.0 --top /afs/slac/g/lcls/epics/R3.15.5-1.0/modules\n'
-    epilog = textwrap.dedent(epilog_fmt % ( gitModulesTxtFile, DEF_GIT_REPOS, DEF_SVN_REPO, CVS_ROOT_TOP ))
+    epilog = textwrap.dedent(epilog_fmt % ( gitModulesTxtFile, DEF_GIT_REPOS_URL, DEF_SVN_REPO, DEF_CVS_ROOT ))
     parser = argparse.ArgumentParser( description=description, formatter_class=argparse.RawDescriptionHelpFormatter, epilog=epilog )
     parser.add_argument( '-p', '--package',   dest='packages', action='append', \
                         help='EPICS module-name/release-version. Ex: asyn/R4.30-1.0.1', default=[] )

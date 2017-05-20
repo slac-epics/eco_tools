@@ -27,12 +27,12 @@ from cvs2svn_lib.symbol_strategy import HeuristicStrategyRule
 from cvs2svn_lib.symbol_strategy import AllBranchRule
 from cvs2svn_lib.symbol_strategy import HeuristicPreferredParentRule
 
-TOOLS_SITE_TOP		= os.environ['TOOLS']
+TOOLS_SITE_TOP      = os.environ['TOOLS']
 if  TOOLS_SITE_TOP is None:
-    TOOLS_SITE_TOP	= DEF_LCLS_TOOLS
+    TOOLS_SITE_TOP  = DEF_LCLS_TOOLS
 
 
-gitModulesTxtFile	= os.path.join( DEF_LCLS_TOOLS, 'eco_modulelist', 'modulelist.txt' )
+gitModulesTxtFile   = os.path.join( DEF_LCLS_TOOLS, 'eco_modulelist', 'modulelist.txt' )
 
 def parseGitModulesTxt():
     '''Parse the GIT modules txt file and return a dict of packageName -> location'''
@@ -58,10 +58,12 @@ git_package2Location = parseGitModulesTxt()
 
 def determineGitRoot( ):
     '''Get the root folder for GIT repos at SLAC'''
-    gitRoot = DEF_GIT_REPOS
+    gitRoot = DEF_GIT_REPOS_URL
     # The GIT_REPO_ROOT variable is mainly used when testing eco and is not something that we really expect from the environment.
     if "GIT_REPO_ROOT" in os.environ:
         gitRoot = os.environ["GIT_REPO_ROOT"]
+    elif "GIT_TOP" in os.environ:
+        gitRoot = os.environ["GIT_TOP"]
     return gitRoot
 
 def gitGetRemoteTag( url, tag, debug = False, verbose = False ):
@@ -71,10 +73,10 @@ def gitGetRemoteTag( url, tag, debug = False, verbose = False ):
     git_url     = None
     git_tag     = None
     if tag is None:
-        tag			= 'HEAD'
-        tag_spec	= tag
+        tag         = 'HEAD'
+        tag_spec    = tag
     else:
-        tag_spec	= 'refs/tags/%s' % tag
+        tag_spec    = 'refs/tags/%s' % tag
     try:
         statusInfo = subprocess.check_output( [ 'git', 'ls-remote', url ], stderr=subprocess.STDOUT )
         for line in statusInfo.splitlines():
@@ -108,7 +110,7 @@ def initBareRepo(parentFolder, packageName):
         subprocess.check_call(["zenity", "--error", "--title", "Error", "--text", "Git master repo for package " + packageName + " already exists at " + gitMasterRepo])
         raise Exception("Git master repo already exists at " + gitMasterRepo)
     print "Creating a new bare repo in", parentFolder, "for package", packageName
-    subprocess.check_call(["git", "init", "--bare", "--template=%s/templates" % DEF_GIT_MODULES, gitMasterRepo])
+    subprocess.check_call(["git", "init", "--bare", "--template=%s/templates" % DEF_GIT_MODULES_PATH, gitMasterRepo])
     if not os.path.exists(gitMasterRepo):
         raise Exception("Git master repo does not seem to exist at " + gitMasterRepo)
     return gitMasterRepo
@@ -175,9 +177,9 @@ def importHistoryFromCVS(tpath, gitRepoPath, CVSpackageLocation, gitFolder=None,
     # Read SLAC cvs2git options file for author info
     # This maps cvs userid to git style user name and email
     # The options file also specifies:
-    #	blobfile		cvs2git-tmp/git-blob.dat
-    #	dumpfile		cvs2git-tmp/git-dump.dat
-    #	username		cvs2git
+    #   blobfile        cvs2git-tmp/git-blob.dat
+    #   dumpfile        cvs2git-tmp/git-dump.dat
+    #   username        cvs2git
     run_options = GitRunOptions( 'cvs2git', [
                         "--options=%s" % os.path.join( os.environ['TOOLS'],
                             "cvs2git", "current", "cvs2git-slac.options"), ], pass_manager )
@@ -314,7 +316,7 @@ def gitFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
         url_path = git_package2Location[packageName]
         (repo_url, repo_tag) = gitGetRemoteTag( url_path, tag, verbose=verbose )
     else:
-        for url_root in [ DEF_GIT_MODULES, DEF_GIT_EXTENSIONS, DEF_GIT_EPICS, DEF_GIT_REPOS ]:
+        for url_root in [ DEF_GIT_MODULES_URL, DEF_GIT_EXTENSIONS_URL, DEF_GIT_EPICS_URL, DEF_GIT_REPOS_URL ]:
             if repo_url is not None:
                 break
             for p in [ packageName, packagePath ]:

@@ -108,10 +108,6 @@ from version_utils import *
 from eco_version import eco_tools_version
 
 
-GIT_REPO_MODULES = '/afs/slac/g/cd/swe/git/repos/package/epics/modules'
-
-__all__ = ['export_release_site_file', 'assemble_release_site_inputs','assemble_cvs_inputs_from_file', 'assemble_cvs_inputs_from_term']
-
 git_package2Location = parseGitModulesTxt()
 cvs_modules2Location = parseCVSModulesTxt()
 
@@ -269,7 +265,7 @@ def assemble_cvs_inputs_from_term(options):
         pathToGitRepo = determinePathToGitRepo( packageName )
         autoGitPath = False
         if autoGitPath and not pathToGitRepo:
-            pathToGitRepo = os.path.join( GIT_REPO_MODULES, packageName + '.git' )
+            pathToGitRepo = os.path.join( DEF_GIT_MODULES_PATH, packageName + '.git' )
             if not os.path.exists( pathToGitRepo ):
                 pathToGitRepo = None
         if pathToGitRepo:
