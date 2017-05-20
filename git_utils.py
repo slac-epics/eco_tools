@@ -66,6 +66,87 @@ def determineGitRoot( ):
         gitRoot = os.environ["GIT_TOP"]
     return gitRoot
 
+def git_call( gitCommand, gitDir=None, debug=False, *args, ** kwargs ):
+    '''
+    Run the specified git command via subprocess.call
+    gitCommand can be a string or a list of strings.
+    An initial "git" string will be provided if needed.
+    Returns command status
+    '''
+    cmdList = []
+    if type(gitCommand) is string:
+        if not gitCommand.startswith( 'git ' ):
+            cmdList = [ 'git' ]
+        cmdList += gitCommand.split()
+    else:
+        if gitCommand[0] != 'git':
+            cmdList = [ 'git' ]
+        cmdList += gitCommand
+    if gitDir is not None:
+        cmdList.insert( 1, [ '--git-dir', gitDir ] )
+    if debug:
+        print "git_call running: %s" % ' '.join( cmdList )
+    callStatus = subprocess.call( cmdList, *args, **kwargs )
+    if debug:
+        print "git_call  status:", callStatus
+    return callStatus
+
+def git_check_call( gitCommand, gitDir=None, debug=False, *args, ** kwargs ):
+    '''
+    Run the specified git command via subprocess.check_call
+    gitCommand can be a string or a list of strings.
+    An initial "git" string will be provided if needed.
+    Returns cmd status code
+    May throw RuntimeError or subprocess.CalledProcessError exceptions
+    '''
+    cmdList = []
+    if isinstance( gitCommand, basestring ):
+        if not gitCommand.startswith( 'git ' ):
+            cmdList = [ 'git' ]
+        cmdList += gitCommand.split()
+    else:
+        if gitCommand[0] != 'git':
+            cmdList = [ 'git' ]
+        cmdList += gitCommand
+    if gitDir is not None:
+        cmdList.insert( 1, [ '--git-dir', gitDir ] )
+    if debug:
+        print "git_check_call running: %s" % ' '.join( cmdList )
+    callStatus = subprocess.check_call( cmdList, *args, **kwargs )
+    if debug:
+        print "git_check_call  status:", callStatus
+    return callStatus
+
+def git_check_output( gitCommand, gitDir=None, debug=False, *args, ** kwargs ):
+    '''
+    Run the specified git command via subprocess.check_output
+    gitCommand can be a string or a list of strings.
+    An initial "git" string will be provided if needed.
+    Returns cmd output
+    May throw RuntimeError or subprocess.CalledProcessError exceptions
+    '''
+    cmdList = []
+    if type(gitCommand) is string:
+        if not gitCommand.startswith( 'git ' ):
+            cmdList = [ 'git' ]
+        cmdList += gitCommand.split()
+    else:
+        if gitCommand[0] != 'git':
+            cmdList = [ 'git' ]
+        cmdList += gitCommand
+
+    if gitDir is not None:
+        cmdList.insert( 1, [ '--git-dir', gitDir ] )
+
+    if debug:
+        print "git_check_output running: %s" % ' '.join( cmdList )
+
+    git_output = subprocess.check_output( cmdList, *args, **kwargs )
+
+    if debug:
+        print git_output
+    return git_output
+
 def gitGetRemoteTag( url, tag, debug = False, verbose = False ):
     '''Fetchs tags from a git repo url and looks for a match w/ the desired tag.
     Returns a tuple of ( url, tag ), ( None, None ) on error.
@@ -115,14 +196,20 @@ def initBareRepo(parentFolder, packageName):
         raise Exception("Git master repo does not seem to exist at " + gitMasterRepo)
     return gitMasterRepo
 
-def cloneMasterRepo(gitMasterRepo, tpath, packageName):
+def cloneMasterRepo( gitMasterRepo, tpath, packageName, branch=None, depth=None, verbose=False ):
     '''Create a clone of the master repo given a destination folder'''
     if packageName:
         clonedFolder = os.path.join(tpath, packageName)
     else:
         clonedFolder = tpath
     print "Cloning the master repo at", gitMasterRepo, "into", clonedFolder
-    subprocess.check_call(['git', 'clone', '--recursive', gitMasterRepo, clonedFolder])
+    gitCommand = "clone --recursive %s %s" % ( gitMasterRepo, clonedFolder )
+    if branch:
+        gitCommand += " --branch %s --config advice.detachedHead=false" % branch
+    #if depth and gitMasterRepo.find('://') > 0:
+    if depth:
+        gitCommand += " --no-local --depth %d" % depth
+    git_check_call( gitCommand, debug=verbose )
     return clonedFolder
 
 def createGitIgnore():
