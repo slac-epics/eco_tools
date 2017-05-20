@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 import os
 import re
 import sys
@@ -223,3 +223,116 @@ def export_release_site_file( inputs, debug=False):
     print >> out_file, '#=============================================================================='
     if out_file != sys.stdout:
         out_file.close()
+
+def assemble_release_site_inputs( batch=False ):
+
+    input_dict = {}
+
+    epics_base_ver = determine_epics_base_ver()
+    epics_site_top = determine_epics_site_top()
+
+    if not epics_base_ver:
+        # base_versions = get_base_versions( epics_site_top )
+        print 'TODO: Provide list of available epics_base_ver options to choose from'
+        epics_base_ver = 'unknown-base-ver'
+    input_dict['EPICS_BASE_VER'] = epics_base_ver
+    if not batch:
+        prompt5 = 'Enter EPICS_BASE_VER or [RETURN] to use "' + epics_base_ver + '">'
+        user_input = raw_input(prompt5).strip()
+        if user_input:
+            input_dict['EPICS_BASE_VER'] = user_input
+    print 'Using EPICS_BASE_VER: ' + input_dict['EPICS_BASE_VER']
+
+    # TODO: Substitute input_dict['EPICS_BASE_VER'] for any substrings below that match
+    # the default epics_base_ver we got from the environment before prompting the user.
+    # That way users can easily change the base version in one place
+
+    if not epics_site_top:
+        epics_site_top = 'unknown-epics-site-top'
+    input_dict['EPICS_SITE_TOP'] = epics_site_top
+    if not batch:
+        prompt1 = 'Enter full path for EPICS_SITE_TOP or [RETURN] to use "' + epics_site_top + '">'
+        user_input = raw_input(prompt1).strip()
+        if user_input:
+            input_dict['EPICS_SITE_TOP'] = user_input
+    print 'Using EPICS_SITE_TOP: ' + input_dict['EPICS_SITE_TOP']
+
+    input_dict['BASE_SITE_TOP'] = os.path.join( input_dict['EPICS_SITE_TOP'], 'base' )
+    print 'Using BASE_SITE_TOP: ' + input_dict['BASE_SITE_TOP']
+
+    epics_modules_ver = input_dict['EPICS_BASE_VER']
+    if epics_modules_ver.startswith( 'base-' ):
+        epics_modules_ver = epics_modules_ver.replace( 'base-', '' )
+
+    epics_modules = getEnv('EPICS_MODULES_TOP')
+    if os.path.isdir( epics_modules ):
+        input_dict['EPICS_MODULES'] = epics_modules
+    else:
+        epics_modules = os.path.join( input_dict['EPICS_SITE_TOP'], epics_modules_ver, 'modules' )
+        if not os.path.isdir( epics_modules ):
+            epics_modules = os.path.join( epics_site_top, 'modules' )
+        input_dict['EPICS_MODULES'] = epics_modules
+    if not batch:
+        prompt5 = 'Enter full path for EPICS_MODULES or [RETURN] to use "' + input_dict['EPICS_MODULES'] + '">'
+        user_input = raw_input(prompt5).strip()
+        if user_input:
+            input_dict['EPICS_MODULES'] = user_input
+    print 'Using EPICS_MODULES: ' + input_dict['EPICS_MODULES']
+
+    ioc_site_top = os.path.join( input_dict['EPICS_SITE_TOP'], 'iocTop' )
+    if os.path.isdir( ioc_site_top ):
+        input_dict['IOC_SITE_TOP'] = ioc_site_top
+        print 'Using IOC_SITE_TOP: ' + input_dict['IOC_SITE_TOP']
+
+    package_site_top = getEnv('PACKAGE_TOP')
+    if not os.path.isdir( package_site_top ):
+        package_site_top = getEnv('PACKAGE_SITE_TOP')
+    if not os.path.isdir( package_site_top ):
+        package_site_top = '/reg/g/pcds/package'
+    if not os.path.isdir( package_site_top ):
+        package_site_top = '/afs/slac/g/lcls/package'
+    if not os.path.isdir( package_site_top ):
+        package_site_top = '/afs/slac/g/pcds/package'
+    input_dict['PACKAGE_SITE_TOP'] = package_site_top
+    if not batch:
+        prompt6 = 'Enter full path for PACKAGE_SITE_TOP or [RETURN] to use "' + package_site_top + '">'
+        user_input = raw_input(prompt6).strip()
+        if user_input:
+            input_dict['PACKAGE_SITE_TOP'] = user_input
+    print 'Using PACKAGE_SITE_TOP: ' + input_dict['PACKAGE_SITE_TOP']
+
+    if VersionToRelNumber(input_dict['EPICS_BASE_VER']) >= 3.141205:
+        pspkg_root = getEnv('PSPKG_ROOT')
+        if not os.path.isdir( pspkg_root ):
+            pspkg_root = '/reg/g/pcds/pkg_mgr'
+        if not os.path.isdir( pspkg_root ):
+            pspkg_root = '/afs/slac/g/lcls/pkg_mgr'
+        if not os.path.isdir( pspkg_root ):
+            pspkg_root = '/afs/slac/g/pcds/pkg_mgr'
+        print 'Using PSPKG_ROOT:', pspkg_root
+        input_dict['PSPKG_ROOT'] = pspkg_root
+
+    input_dict['TOOLS_SITE_TOP'] = ''
+    input_dict['ALARM_CONFIGS_TOP'] = ''
+    tools_site_top = getEnv('TOOLS')
+    if os.path.isdir(tools_site_top):
+        input_dict['TOOLS_SITE_TOP'] = tools_site_top
+        if not batch:
+            prompt6 = 'Enter full path for TOOLS_SITE_TOP or [RETURN] to use "' + tools_site_top + '">'
+            user_input = raw_input(prompt6).strip()
+            if user_input:
+                input_dict['TOOLS_SITE_TOP'] = user_input
+        if os.path.isdir( input_dict['TOOLS_SITE_TOP'] ):
+            print 'Using TOOLS_SITE_TOP: ' + input_dict['TOOLS_SITE_TOP']
+
+            alarm_configs_top = os.path.join( input_dict['TOOLS_SITE_TOP'], 'AlarmConfigsTop' )
+            input_dict['ALARM_CONFIGS_TOP'] = alarm_configs_top
+            if not batch:
+                prompt6 = 'Enter full path for ALARM_CONFIGS_TOP or [RETURN] to use "' + alarm_configs_top + '">'
+                user_input = raw_input(prompt6).strip()
+                if user_input:
+                    input_dict['ALARM_CONFIGS_TOP'] = user_input
+            if os.path.isdir( input_dict['ALARM_CONFIGS_TOP'] ):
+                print 'Using ALARM_CONFIGS_TOP: ' + input_dict['ALARM_CONFIGS_TOP']
+
+    return input_dict
