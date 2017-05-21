@@ -333,9 +333,12 @@ def checkOutModule(packageName, tag, destinationPath, options, from_file=False )
                 print "Aborting....."
                 sys.exit(1)
             # TODO: Verify the tag exists before we clone the repo for better user error msg and to avoid broken release dirs
-            cmd=['git', 'clone', '--recursive', pathToGitRepo, destinationPath]
-            print cmd
-            subprocess.check_call(cmd)
+            branch = None
+            depth  = None
+            if (tag != ''):
+                branch = tag
+                depth  = DEF_GIT_RELEASE_DEPTH
+            cloneMasterRepo( pathToGitRepo, destinationPath, '', branch=branch, depth=depth, verbose=options.verbose )
             os.chdir(destinationPath)
             if (tag != ''):
                 # Do a headless checkout to the specified tag
