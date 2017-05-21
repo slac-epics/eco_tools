@@ -89,9 +89,10 @@ class gitRepo( Repo.Repo ):
         if not os.path.isdir( os.path.join( buildDir, '.git' ) ):
             try:
                 # Clone the repo
-                #cmdList = [ "git", "clone", self._url, buildDir ]
-                #subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
-                cloneMasterRepo( self._url, buildDir, '' )
+                depth=None
+                if self._tag:
+                    depth = DEF_GIT_RELEASE_DEPTH
+                cloneMasterRepo( self._url, buildDir, '', branch=self._tag, depth=depth )
                 os.chdir( buildDir )
             except RuntimeError, e:
                 print e
