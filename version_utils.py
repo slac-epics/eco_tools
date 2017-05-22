@@ -396,3 +396,199 @@ def pkgSpecToMacroVersions( pkgSpec, verbose=False ):
         macroVersions[ macroName ] = pkgVersion
     return macroVersions
 
+def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=False ):
+    """
+    update_pkg_dep_file(
+        filePath,		 	#  path to file
+        oldMacroVersions,	#  dict of old macro versions: macroVersion[macroName] = version
+        newMacroVersions,	#  dict of new macro versions: macroVersion[macroName] = version
+        verbose=False		#  show progress )
+    Update the specified package dependencies, (module or base versions).
+    newMacroVersions can specify a subset of the old macroNames
+    Checks and updates the specfied file if needed.
+    Returns 1 if modified, else 0
+    """
+    using_MODULE_VERSION = {}
+    using_BASE_MODULE_VERSION = False
+    using_EPICS_BASE_VER = False
+    modified   = False
+    lineCache  = []
+    in_file = open( filePath, "r" )
+    for line in in_file:
+        strippedLine = line.strip()
+        if strippedLine.startswith( '#' ) or len(strippedLine) == 0:
+            lineCache += line
+            continue
+
+        # XXX_MODULE_VERSION = YYYYYYYYY
+        match = moduleVersionRegExp.search( line )
+        if match:
+            macroName  = match.group(1)
+            oldVersion = match.group(2)
+            if macroName in newMacroVersions:
+                newVersion = newMacroVersions[macroName]
+                if newVersion != oldVersion:
+                    line = string.replace( line, oldVersion, newMacroVersions[macroName] )
+                    modified = True
+                if macroName == "BASE":
+                    using_BASE_MODULE_VERSION = True
+                else:
+                    using_MODULE_VERSION[macroName] = True
+            lineCache += line
+            continue
+
+        # XXX = YYYYYYYYYYYYYYYYYYYYYYYYYYYY
+        # Matches any macro definition
+        match = macroNameRegExp.search( line )
+        if not match:
+            lineCache += line
+            continue
+
+        macroName      = match.group(1)
+        oldVersionPath = match.group(2)
+        if macroName in newMacroVersions:
+            pkgName = macroNameToPkgName[macroName]
+            macroName_MODULE_VERSION = "%s_MODULE_VERSION" % macroName
+            if using_MODULE_VERSION.get( macroName, False ):
+                newVersionPath = "$(EPICS_MODULES)/%s/$(%s_MODULE_VERSION)" % ( pkgName, macroName )
+            else:
+                newVersionPath = "$(EPICS_MODULES)/%s/%s" % ( pkgName, newMacroVersions[macroName] )
+            if oldVersionPath != newVersionPath:
+                line = string.replace( line, oldVersionPath, newVersionPath )
+                modified = True
+
+        if not "BASE" in newMacroVersions:
+            lineCache += line
+            continue
+
+        # Handle BASE related macros
+        if not macroName in [ "EPICS_BASE", "EPICS_BASE_VER", "EPICS_MODULES", "MODULES_SITE_TOP" ]:
+            lineCache += line
+            continue
+
+        newBaseVersion = newMacroVersions["BASE"]
+        oldBaseVersion = oldMacroVersions["BASE"]
+        if oldBaseVersion == newBaseVersion:
+            lineCache += line
+            continue
+
+        if VersionToRelNumber(newBaseVersion) < 3.141205:
+            baseDirName = "base-%s" % newBaseVersion
+        else:
+            baseDirName = newBaseVersion
+
+        if VersionToRelNumber(oldBaseVersion) >= 3.141205:
+            # For these, just replace all old instances of base version w/ new version
+            line = string.replace( line, oldBaseVersion, newBaseVersion )
+            if newBaseVersion in line:
+                modified = True
+                lineCache += line
+                continue
+
+            if	   "EPICS_BASE_VER" in oldVersionPath \
+                or "BASE_MODULE_VERSION" in oldVersionPath:
+                lineCache += line
+                continue
+
+        # Handle fixing unusual paths
+        if macroName == "EPICS_BASE_VER":
+            line = string.replace( line, oldVersionPath, baseDirName )
+            modified = True
+
+        if macroName == "EPICS_BASE":
+            if   "BASE_MODULE_VERSION" in oldVersionPath:
+                newVersionPath = "$(EPICS_SITE_TOP)/base/$(BASE_MODULE_VERSION)"
+            elif "EPICS_BASE_VER" in oldVersionPath:
+                newVersionPath = "$(EPICS_SITE_TOP)/base/$(EPICS_BASE_VER)"
+            else:
+                newVersionPath = "$(EPICS_SITE_TOP)/base/%s" % baseDirName 
+            if oldVersionPath != newVersionPath:
+                line = string.replace( line, oldVersionPath, newVersionPath )
+                modified = True
+
+        if macroName == "EPICS_MODULES" or macroName == "MODULES_SITE_TOP":
+            if   "BASE_MODULE_VERSION" in oldVersionPath:
+                newVersionPath = "$(EPICS_SITE_TOP)/$(BASE_MODULE_VERSION)/modules"
+            else:
+                newVersionPath = "$(EPICS_SITE_TOP)/%s/modules" % newBaseVersion
+            if oldVersionPath != newVersionPath:
+                line = string.replace( line, oldVersionPath, newVersionPath )
+                modified = True
+
+        lineCache += line
+        continue
+
+    in_file.close()
+    if not modified:
+        if verbose:
+            print "%s, No change" %  filePath
+        return 0
+
+    # Replace prior version w/ updates
+    try:
+        os.remove( filePath )
+        out_file = open( filePath, 'w' )
+        out_file.writelines( lineCache )
+        out_file.close()
+    except OSError, e:
+        sys.stderr.write( 'Could not remove "%s": %s\n' % ( filePath, e.strerror ) )
+        return 0
+    except IOError, e:
+        sys.stderr.write( 'Could not replace "%s": %s\n' % ( filePath, e.strerror ) )
+        return 0
+    print "%s, UPDATED" %  filePath
+    return 1
+
+def update_pkg_dependency( topDir, pkgSpecs, verbose=False ):
+    """
+    update_pkg_dependency(
+        topDir,			#  path to top directory of epics package
+        pkgSpecs,       #  array of pkg specification strings: pkgPath/pkgVersion, ex asyn/R4.31
+        verbose=False   #  show progress )
+    Update the specified package dependencies, (module or base versions).
+    Checks and updates as needed:
+        TOP/RELEASE_SITE
+        TOP/configure/RELEASE
+        TOP/configure/RELEASE.local
+    Returns count of how many files were updated.
+    """
+    # Check for a valid top directory
+    if not os.path.isdir( topDir ):
+        print "update_pkg_dependency: Invalid topDir: %s" % topDir
+        return 0
+    if verbose:
+        print "update_pkg_dependency: %s" % topDir
+
+    # Get current pkgSpecs
+    oldPkgDependents = getEpicsPkgDependents( topDir, verbose=verbose )
+    oldMacroVersions = {}
+    for pkgName in oldPkgDependents:
+        pkgSpec = pkgName + "/" + oldPkgDependents[pkgName]
+        if verbose:
+            print "OLD: %s" % pkgSpec
+        oldMacroVersions.update( pkgSpecToMacroVersions( pkgSpec ) )
+    if len(oldMacroVersions) == 0:
+        print "update_pkg_dependency error: No pkgSpecs found under topDir:\n%s" % topDir
+        return 0
+
+    # Convert the list of pkgSpecs into a list of macroVersions
+    # Each macroVersion is a tuple of ( macroName, version )
+    newMacroVersions = {}
+    for pkgSpec in pkgSpecs:
+        if verbose:
+            print "NEW: %s" % pkgSpec
+        newMacroVersions.update( pkgSpecToMacroVersions( pkgSpec ) )
+    if len(newMacroVersions) == 0:
+        print "update_pkg_dependency error: No valid converions for pkgSpecs:"
+        print pkgSpecs
+        return 0
+
+    count = 0
+
+    for fileName in [	"RELEASE_SITE",
+                        os.path.join( "configure", "RELEASE" ),
+                        os.path.join( "configure", "RELEASE.local" ) ]:
+        filePath = os.path.join( topDir, fileName )
+        if os.access( filePath, os.R_OK ):
+            count += update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose )
+    return count
