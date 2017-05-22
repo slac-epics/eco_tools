@@ -3,7 +3,9 @@ import os
 import re
 import sys
 import dircache
+import fileinput
 from repo_defaults import *
+from pkgNamesToMacroNames import *
 #
 # Purpose:
 #
@@ -15,9 +17,25 @@ from repo_defaults import *
 # Released under the GPLv2 licence <http://www.gnu.org/licenses/gpl-2.0.html>
 #
 
+# Raw string regular expression patterns
+numberRawStr        = r"(\d+)"
+releaseRawStr       = r"(|[a-zA-Z0-9_-]*-)R(\d+)[-_.](\d+)(.*)"
+macroNameRawStr     = r"^\s*([a-zA-Z0-9_]*)\s*=\s*(\S*)\s*$"
+moduleVersionRawStr = r"^\s*([a-zA-Z0-9_]*)_MODULE_VERSION\s*=\s*(\S*)\s*$"
+epicsBaseVerRawStr  = r"^\s*([A-Za-z0-9_-]*BASE[A-Za-z0-9_-]*VER[SION]*)\s*=\s*(\S*)\s*$"
+epicsModulesRawStr  = r"^\s*EPICS_MODULES\s*=\s*(\S*\s*)$"
+modulesSiteTopRawStr= r"^\s*MODULES_SITE_TOP\s*=\s*(\S*\s*)$"
+versionRawStr       = r"^\s*([A-Za-z0-9_-]*VERSION)\s*=\s*(\S*)\s*$"
+
 # Pre-compile regular expressions for speed
-numberRegExp        = re.compile( r"(\d+)" )
-releaseRegExp       = re.compile( r"([^0-9]*)R(\d+)[-_.](\d+)(.*)" )
+numberRegExp        = re.compile( numberRawStr )
+releaseRegExp       = re.compile( releaseRawStr )
+macroNameRegExp     = re.compile( macroNameRawStr )
+moduleVersionRegExp = re.compile( moduleVersionRawStr )
+epicsBaseVerRegExp  = re.compile( epicsBaseVerRawStr )
+epicsModulesRegExp  = re.compile( epicsModulesRawStr )
+modulesSiteTopRegExp= re.compile( modulesSiteTopRawStr )
+versionRegExp       = re.compile( versionRawStr )
 
 def VersionToRelNumber( version, debug=False ):
     relNumber = 0.0
@@ -336,3 +354,45 @@ def assemble_release_site_inputs( batch=False ):
                 print 'Using ALARM_CONFIGS_TOP: ' + input_dict['ALARM_CONFIGS_TOP']
 
     return input_dict
+
+def getEpicsPkgDependents( topDir, debug=False, verbose=False ):
+    pkgDependents    = {}
+    #if not module.startswith( "screens" ):
+    if True:
+        # Get the base and dependent modules from RELEASE files
+        releaseFiles = []
+        releaseFiles += [ os.path.join( topDir, "..", "..", "RELEASE_SITE" ) ]
+        releaseFiles += [ os.path.join( topDir, "RELEASE_SITE" ) ]
+        releaseFiles += [ os.path.join( topDir, "configure", "RELEASE" ) ]
+        releaseFiles += [ os.path.join( topDir, "configure", "RELEASE.local" ) ]
+        for releaseFile in releaseFiles:
+            if debug:
+                print "Checking release file: %s" % ( releaseFile )
+            if not os.path.isfile( releaseFile ):
+                continue
+            for line in fileinput.input( releaseFile ):
+                line = line.strip()
+                if line.startswith( '#' ) or len(line) == 0:
+                    continue
+                for regExp in [ versionRegExp, epicsBaseVerRegExp ]:
+                    m = regExp.search( line )
+                    if m and m.group(1) and m.group(2):
+                        macroName = m.group(1).replace( '_MODULE_VERSION', '' )
+                        if macroName in macroNameToPkgName:
+                            pkgName = macroNameToPkgName[macroName]
+                            pkgDependents[ pkgName ] = m.group(2)
+    return pkgDependents
+
+def pkgSpecToMacroVersions( pkgSpec, verbose=False ):
+    """
+    Convert the pkgSpec into a dictionary of macroVersions
+    Each macroVersion entry maps macroName to version
+    """
+    macroVersions = {}
+    ( pkgPath, pkgVersion ) = os.path.split( pkgSpec )
+    pkgName = os.path.split( pkgPath )[1]
+    macroNames = pkgNameGetMacroNames( pkgName )
+    for macroName in macroNames:
+        macroVersions[ macroName ] = pkgVersion
+    return macroVersions
+

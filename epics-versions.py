@@ -9,9 +9,11 @@ import os
 import pprint
 import signal
 import traceback
+import subprocess
 
 from repo_defaults import *
 from version_utils import *
+from pkgNamesToMacroNames import *
 from eco_version import eco_tools_version
 
 #
@@ -64,8 +66,6 @@ debugScript         = False
 pp  = pprint.PrettyPrinter( indent=4 )
 
 # Pre-compile regular expressions for speed
-baseVersionRegExp   = re.compile( r"^\s*([A-Za-z0-9_-]*BASE[A-Za-z0-9_-]*VER[SION]*)\s*=\s*(\S*)\s*$" )
-versionRegExp       = re.compile( r"^\s*([A-Za-z0-9_-]*VERSION)\s*=\s*(\S*)\s*$" )
 parentRegExp        = re.compile( r"RELEASE\s*=\s*(\S*)\s*$" )
 
 class ValidateError( Exception ):
@@ -159,62 +159,38 @@ def ReportReleases( moduleTop, module, releases, opt ):
     found = False
     priorModule = None
     for release in releases:
-        reportedModule = ReportRelease( moduleTop, module, release, priorModule, opt )
+        reportedModule = ReportRelease( moduleTop, release, priorModule, opt )
         if reportedModule != None:
             found = True
             priorModule = reportedModule
     return found
 
-def ReportRelease( moduleTop, module, release, priorModule, opt ):
-
-    # Get the module and version from the release string
+def ReportRelease( moduleTop, release, priorModule, opt ):
+    ''' Get the module and version from the release string. '''
+    cmdList = [ "readlink", "-e", release ]
+    cmdOutput = subprocess.check_output( cmdList ).splitlines()
+    if len(cmdOutput) == 1:
+        release = cmdOutput[0]
     ( relPath, moduleVersion ) = os.path.split( release )
-    module = relPath.replace( moduleTop, "" )
-    module = module.lstrip( "/" )
+    module = relPath.replace( moduleTop + "/", "" )
     if opt.debug:
         print "ReportRelease: %s, priorModule = %s" % ( module, priorModule )
     if module == priorModule and not opt.showAll:
         return None
 
-    moduleDependents    = {}
-    baseDependents      = {}
-    if not module.startswith( "screens" ):
-        # Get the base and dependent modules from RELEASE files
-        releaseFiles = []
-        releaseFiles += [ os.path.join( release, "..", "..", "RELEASE_SITE" ) ]
-        releaseFiles += [ os.path.join( release, "RELEASE_SITE" ) ]
-        releaseFiles += [ os.path.join( release, "configure", "RELEASE" ) ]
-        releaseFiles += [ os.path.join( release, "configure", "RELEASE.local" ) ]
-        for releaseFile in releaseFiles:
-            if opt.debug:
-                print "Checking release file: %s" % ( releaseFile )
-            if not os.path.isfile( releaseFile ):
-                continue
-            for line in fileinput.input( releaseFile ):
-                m = versionRegExp.search( line )
-                if m and m.group(1) and m.group(2):
-                    moduleDependents[ m.group(1) ] = m.group(2)
-                m = baseVersionRegExp.search( line )
-                if m and m.group(1) and m.group(2):
-                    baseDependents[ m.group(1) ] = m.group(2)
-
+    pkgDependents	= getEpicsPkgDependents( release, debug=opt.debug, verbose=opt.verbose )
+    baseVerMacros	= [ "base", "BASE", "EPICS_BASE", "BASE_MODULE_VERSION", "BASE_VERSION", "EPICS_BASE_VER", "EPICS_BASE_VERSION" ]
     baseVer = "?"
-    baseVerMacros = [ "BASE_MODULE_VERSION", "BASE_VERSION", "EPICS_BASE_VER", "EPICS_BASE_VERSION" ]
     for baseMacro in baseVerMacros:
-        # For the BASE macro's, remove them from moduleDependents
-        if baseMacro in moduleDependents:
-            del moduleDependents[ baseMacro ]
-
-        if not baseMacro in baseDependents:
-            continue
-
-        # Skip any defined by other macros
-        baseMacroValue = baseDependents[ baseMacro ]
-        if '$' in baseMacroValue:
-            continue
-
-        # Found a base version!
-        baseVer = baseMacroValue
+        # For the BASE macro's, grab the base version
+        # and then remove their macros from pkgDependents
+        if baseMacro in pkgDependents:
+            baseMacroValue = pkgDependents[ baseMacro ]
+            # Skip any defined by other macros
+            if not '$' in baseMacroValue:
+                # Found a base version!
+                baseVer = baseMacroValue
+            del pkgDependents[ baseMacro ]
 
     if module == 'base':
         baseVer = moduleVersion
@@ -239,19 +215,23 @@ def ReportRelease( moduleTop, module, release, priorModule, opt ):
     # Print the module and version, along with base version if any
     if opt.wide:
         print "%s %s" % ( release, baseVerPrompt ),
+    elif module.startswith('/'):
+        print "%-43s %s" % ( release, baseVerPrompt )
     else:
         print "%-24s %-18s %s" % ( module, moduleVersion, baseVerPrompt )
 
-    # Show moduleDependents for --verbose
+    # Show pkgDependents for --verbose
     if opt.verbose:
-        for dep in sorted( moduleDependents.keys() ):
+        for dep in sorted( pkgDependents.keys() ):
             # Print dependent info w/o newline (trailing ,)
             depRoot = dep.replace( "_MODULE_VERSION", "" )
+            if depRoot in macroNameToPkgName:
+                depRoot = macroNameToPkgName[ depRoot ]
             if opt.wide:
                 # Don't print newline in wide mode 
-                print " %s=%s" % ( depRoot, moduleDependents[ dep ] ),
+                print " %s=%s" % ( depRoot, pkgDependents[ dep ] ),
             else:
-                print "%-24s %-18s %-18s = %s" % ( "", "", depRoot, moduleDependents[ dep ] )
+                print "%-24s %-18s %-18s = %s" % ( "", "", depRoot, pkgDependents[ dep ] )
     if opt.wide:
         print
 
@@ -317,7 +297,17 @@ def ExpandPackagesForTop( topDir, packages, opt ):
     releases = []
     numReleasesForTop = 0
     for package in packages:
-        if package != "modules":
+        # If the package is a directory, assume it's a release dir
+        if os.path.isdir( package ):
+            if False:
+                releases += package
+            else:
+                if not ReportRelease( topDir, package, None, opt ):
+                    print "%s: No releases found.\n" % ( package )
+                else:
+                    numReleasesForTop += 1
+                continue
+        elif package != "modules":
             releases += ExpandModulePath( topDir, package, opt )
         elif topDir.endswith("modules"):
             for dirPath, dirs, files in os.walk( topDir, topdown=True ):
@@ -352,6 +342,7 @@ try:
                                     version = eco_tools_version,
                                     usage = "usage: %prog [options] PKG ...\n"
                                             "\tPKG can be one or more of:\n"
+                                            "\t\tdirectoryPath\n"
                                             "\t\tbase\n"
                                             "\t\t<MODULE_NAME>\n"
                                             "\t\tmodules\n"
@@ -368,7 +359,9 @@ try:
                                             "\tepics-versions IOCManager\n"
                                             "\tepics-versions -a iocAdmin\n"
                                             "\tepics-versions ioc/xpp\n"
-                                            "\tFor help: %prog --help" )
+                                            "\tWith no args, shows dependencies for current directory.\n"
+                                            "\tepics-versions\n"
+                                            "\tFor help: epics-versions --help" )
     parser.set_defaults(    verbose     = False,
                             revision    = "HEAD",
                             debug       = debugScript )
@@ -406,7 +399,12 @@ try:
 
     # validate the arglist
     if not args or not args[0]:
-        raise ValidateError, "No valid packages specified."
+        # If no arguments, show the current directory
+        args = [ "." ]
+
+    # If used to query a single directory, set verbose to show it's dependents
+    if len(args) == 1 and os.path.isdir( args[0] ):
+        opt.verbose = True
 
     # Determine EPICS_SITE_TOP and BASE version
     epics_site_top = determine_epics_site_top()
@@ -418,10 +416,6 @@ try:
             epics_base_ver = 'unknown-base-ver'
 
     releaseCount = 0
-    if epics_site_top:
-        # See if we find any matches directly under epics_site_top
-        releaseCount += ExpandPackagesForTop( epics_site_top, args, opt )
-
     # See which epicsTop to search
     if not opt.epicsTop and epics_site_top:
         # --top not specified, look for EPICS_MODULES_TOP in environment
@@ -439,8 +433,12 @@ try:
     if opt.epicsTop:
         releaseCount += ExpandPackagesForTop( opt.epicsTop, args, opt )
 
+    if releaseCount == 0 and epics_site_top:
+        # See if we find any matches directly under epics_site_top
+        releaseCount += ExpandPackagesForTop( epics_site_top, args, opt )
+
     # If we haven't found a default or --allTops, try any we can find
-    if opt.allTops or not opt.epicsTop:
+    if opt.allTops or releaseCount == 0:
         for site_top in [ DEF_EPICS_TOP_LCLS, DEF_EPICS_TOP_MCC, DEF_EPICS_TOP_PCDS, DEF_EPICS_TOP_AFS ]:
             # if site_top == epics_site_top:
                 # Already shown
