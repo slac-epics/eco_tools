@@ -6,6 +6,7 @@ import subprocess
 
 import Repo
 from git_utils import *
+from version_utils import *
 
 
 # TODO: Move these to a common defaults file
@@ -39,7 +40,7 @@ class gitRepo( Repo.Repo ):
     def GetTag( self ):
         return self._tag
 
-    def CheckoutRelease( self, buildDir, verbose=True, quiet=False, dryRun=False ):
+    def CheckoutRelease( self, buildDir, verbose=True, quiet=False, dryRun=False, depth=-1 ):
         if verbose:
             print "Checking out: %s\nto build dir: %s ..." % ( self._url, buildDir )
         if dryRun:
@@ -89,9 +90,12 @@ class gitRepo( Repo.Repo ):
         if not os.path.isdir( os.path.join( buildDir, '.git' ) ):
             try:
                 # Clone the repo
-                depth=None
-                if self._tag:
-                    depth = DEF_GIT_RELEASE_DEPTH
+                if depth == -1:
+                    # Default to shallow depth for tagged releases
+                    if self._tag:
+                        depth = DEF_GIT_RELEASE_DEPTH
+                    else:
+                        depth = None
                 cloneMasterRepo( self._url, buildDir, '', branch=self._tag, depth=depth )
                 os.chdir( buildDir )
             except RuntimeError, e:
@@ -115,6 +119,7 @@ class gitRepo( Repo.Repo ):
 
         try:
             # Refresh the tags
+            # TODO: May fail if git repo is read-only
             cmdList = [ "git", "fetch", "origin", "--tags" ]
             subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
 
@@ -145,6 +150,16 @@ class gitRepo( Repo.Repo ):
                 # or if the old one didn't match the tag
                 #cmdList = [ "git", "checkout", '-b', self._tag ]
                 #subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
+
+            # See if a RELEASE_SITE file needs to be provided
+            if not os.path.isfile( 'RELEASE_SITE'):
+                useDotDotRelease = (	hasIncludeDotDotReleaseSite()
+                                    and	os.path.isfile( os.path.join( '..', '..', 'RELEASE_SITE' ) ) )
+                if	(		not isBaseTop(		'.' )
+                        and		isEpicsPackage( '.' )
+                        and not useDotDotRelease ):
+                    inputs = assemble_release_site_inputs( batch=True )
+                    export_release_site_file( inputs )
 
         except RuntimeError, e:
             print e

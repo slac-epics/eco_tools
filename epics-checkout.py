@@ -258,23 +258,6 @@ def assemble_cvs_inputs_from_file(repo, rel, options):
     # TODO: checkOutModule changes cwd to curDir/destinationPath.  Do we want functions to change current dir and not restore?
     # os.chdir(curDir)
 
-# Check if any file inside configure/ has included a ../../RELEASE_SITE file
-def hasIncludeDotDotReleaseSite():
-    configPath = os.path.join('.', 'configure')
-    if not os.path.isdir( configPath ):
-        return False
-
-    # Ignore directories
-    onlyFiles = [f for f in os.listdir(configPath)
-                 if os.path.isfile(os.path.join(configPath, f))]
-    for filename in onlyFiles:
-        configFile = open(os.path.join(configPath, filename), 'r')
-        for line in configFile:
-            # Check included ../../RELEASE_SITE file unless it is commented
-            if re.search('^[^\#]include(.*)/../../RELEASE_SITE', line):
-                return True
-    return False
-
  
 def checkOutModule(packageName, tag, destinationPath, options, from_file=False ):
     '''Checkout the module from GIT/CVS. 
@@ -337,7 +320,8 @@ def checkOutModule(packageName, tag, destinationPath, options, from_file=False )
             depth  = None
             if (tag != ''):
                 branch = tag
-                depth  = DEF_GIT_RELEASE_DEPTH
+                # Don't do shallow clone for eco as users may want to fix bugs, retag, and push from there.
+                # depth  = DEF_GIT_RELEASE_DEPTH
             cloneMasterRepo( pathToGitRepo, destinationPath, '', branch=branch, depth=depth, verbose=options.verbose )
             os.chdir(destinationPath)
             if (tag != ''):
@@ -389,25 +373,28 @@ def checkOutModule(packageName, tag, destinationPath, options, from_file=False )
     # TODO: checkOutModule changes cwd to curDir/destinationPath.  Do we want functions to change current dir and not restore?
     os.chdir(curDir)
 
-def determinePathToGitRepo(packageName):
+def determinePathToGitRepo(packagePath):
     '''If the specified package is stored in GIT, then return the URL to the GIT repo. Otherwise, return None'''
     # See if the package was listed in $TOOLS/eco_modulelist/modulelist.txt
+    packageName = os.path.split( packagePath )[-1]
     if packageName in git_package2Location:
         return git_package2Location[packageName]
     # Check under the root of the git repo area for a bare repo w/ the right name
     gitRoot = determineGitRoot()
-    gitPackageDir = packageName + ".git"
+    gitPackageDir  = packageName + ".git"
+    gitPackagePath = packagePath + ".git"
     for dirPath, dirs, files in os.walk( gitRoot, topdown=True ):
         if len( dirs ) == 0:
             continue
         for dir in dirs[:]:
             if dir == gitPackageDir:
-                return os.path.join( gitRoot, dirPath, dir )
+                return os.path.join( dirPath, dir )
+            if os.path.isdir( os.path.join( dirPath, gitPackagePath ) ):
+                return os.path.join( dirPath, gitPackagePath )
             if dir.endswith( ".git" ):
                 # Remove from list so we don't search recursively
                 dirs.remove( dir )
     return None
-
 
 def initGitBareRepo():
     '''Initialize a bare repo in the user specified folder'''
