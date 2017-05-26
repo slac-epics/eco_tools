@@ -15,6 +15,9 @@ DEF_EPICS_TOP_MCC   = "/usr/local/lcls/epics"
 DEF_EPICS_TOP_PCDS	= "/reg/g/pcds/epics"
 DEF_LCLS_GROUP_OWNER= "lcls"
 DEF_LCLS_TOOLS		= '/afs/slac/g/lcls/tools'
+DEF_LCLS_CRAM_DIR	= DEF_LCLS_TOOLS + '/script/multi_facility_deploy'
+DEF_LCLS_CRAM_CFG	= DEF_LCLS_CRAM_DIR	+ '/facilities.cfg'
+DEF_LCLS_CRAM_USER	= '.cram_user_facilities.cfg'
 DEF_PCDS_GROUP_OWNER= "ps-pcds"
 
 # Use these for filesystem access
@@ -34,4 +37,24 @@ DEF_GIT_EXTENSIONS_URL	= "file://" + DEF_GIT_EXTENSIONS_PATH
 DEF_GIT_EXT_TOP_URL		= "file://" + DEF_GIT_EXTENSIONS_PATH + "/extensions-top.git"
 DEF_GIT_EXT_TOP_TAG		= "slac-master"
 DEF_GIT_RELEASE_DEPTH = 10
+
+defEpicsTopVariants = []
+defEpicsTopVariants.append( "modules" )
+defEpicsTopVariants.append( "extensions" )
+defEpicsTopVariants.append( "iocTop" )
+defEpicsTopVariants.append( "ioc" )
+defEpicsTopVariants.append( "ioc/common" )
+defEpicsTopVariants.append( "ioc/amo" )
+defEpicsTopVariants.append( "ioc/sxr" )
+defEpicsTopVariants.append( "ioc/xpp" )
+defEpicsTopVariants.append( "ioc/cxi" )
+defEpicsTopVariants.append( "ioc/mec" )
+defEpicsTopVariants.append( "ioc/mfx" )
+defEpicsTopVariants.append( "ioc/xcs" )
+defEpicsTopVariants.append( "ioc/xrt" )
+defEpicsTopVariants.append( "ioc/tst" )
+defEpicsTopVariants.append( "ioc/fee" )
+defEpicsTopVariants.append( "ioc/las" )
+defEpicsTopVariants.append( "screens" )
+defEpicsTopVariants.append( "screens/edm" )
 

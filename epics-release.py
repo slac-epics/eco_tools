@@ -112,7 +112,7 @@ def ValidateArgs( repo, packageSpec, opt ):
     if opt.release is None:
         raise ValidateError, "Release tag not specified (--release)"
 
-    if not re.match( r"(R\d+(\.\d+)+-\d+\.\d+\.\d+)|(R\d+\.\d+\.\d+)", opt.release ):
+    if not re.match( r"(\S*R\d+([\-\.]\d+)-\d+\.\d+\.\d+)|(\S*R\d+[\.\-]\d+[\-\.]\d+)", opt.release ):
         raise ValidateError, "%s is an invalid release tag: Must be R[<orig_release>-]<major>.<minor>.<bugfix>" % opt.release
 
     if not opt.noTag:
@@ -321,10 +321,22 @@ try:
     ValidateArgs( repo, packagePath, opt )
 
     if not opt.installDir:
+        # See if we can get the releaseDir from cram
+        releaseDir = get_cram_releaseDir( )
+        if releaseDir:
+            opt.installDir = os.path.join(	releaseDir, opt.release	)
+
+    if not opt.installDir:
+        # See if we can derive the releaseDir from the packagePath
+        epics_base_ver = None
+        topDirDependents = getEpicsPkgDependents( os.getcwd(), verbose=opt.verbose )
+        if 'base' in topDirDependents:
+            epics_base_ver = topDirDependents['base']
         if not packageName:
             raise ValidateError, "No release package specified"
         if os.path.split( packagePath )[0] == 'modules':
-            epics_base_ver = determine_epics_base_ver()
+            if not epics_base_ver:
+                epics_base_ver = determine_epics_base_ver()
             if not epics_base_ver:
                 raise ValidateError, "Unable to determine EPICS base version"
             opt.installDir = os.path.join(	defaultEpicsSiteTop, epics_base_ver,

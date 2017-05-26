@@ -2,6 +2,7 @@
 import os
 import re
 import sys
+import json
 import dircache
 import fileinput
 from repo_defaults import *
@@ -592,3 +593,59 @@ def update_pkg_dependency( topDir, pkgSpecs, verbose=False ):
         if os.access( filePath, os.R_OK ):
             count += update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose )
     return count
+
+def get_cram_releaseDir( ):
+    packageInfo = None
+    packageInfoFile = '.cram/packageinfo'
+    if os.path.isfile( packageInfoFile ):
+        try:
+            with open( packageInfoFile, 'r' ) as pkgInfoFp:
+                packageInfo = json.load( pkgInfoFp )
+        except:
+            pass
+    if not packageInfo:
+        return None
+
+    facilityConfigFile = None
+    if os.path.isfile( DEF_LCLS_CRAM_USER ):
+        facilityConfigFile = DEF_LCLS_CRAM_USER
+    elif os.path.isfile( DEF_LCLS_CRAM_CFG ):
+        facilityConfigFile = DEF_LCLS_CRAM_CFG
+    if not facilityConfigFile:
+        return None
+    
+    facilityConfigDict = None
+    try:
+        with open( facilityConfigFile, 'r' ) as facilityFp:
+            facilityConfig = json.load( facilityFp )
+            facilityConfigDict = {}
+            for facility in facilityConfig:
+                facilityConfigDict[ facility['name'] ] = facility
+    except:
+        pass
+    if not facilityConfigDict:
+        return None
+
+    releaseDir = None
+    try:
+        releaseDir = facilityConfigDict['Dev'][ packageInfo['type'] ]['releaseFolder']
+        releaseDir += '/'
+        releaseDir += packageInfo['name']
+    except:
+        pass
+    return releaseDir
+
+# Check if any file inside configure/ has included a ../../RELEASE_SITE file
+def hasIncludeDotDotReleaseSite():
+    # Just check configure/RELEASE and configure/RELEASE.local
+    for filename in [ 'RELEASE', 'RELEASE.local' ]:
+        configFilePath = os.path.join( 'configure', filename )
+        if not os.path.isfile( configFilePath ):
+            continue
+        configFile = open( configFilePath, 'r')
+        for line in configFile:
+            # Check included ../../RELEASE_SITE file unless it is commented
+            if re.search('^[^\#]include(.*)/../../RELEASE_SITE', line):
+                return True
+    return False
+
