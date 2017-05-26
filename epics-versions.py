@@ -172,7 +172,22 @@ def ReportRelease( moduleTop, release, priorModule, opt ):
     if len(cmdOutput) == 1:
         release = cmdOutput[0]
     ( relPath, moduleVersion ) = os.path.split( release )
-    module = relPath.replace( moduleTop + "/", "" )
+    # Simplify the module path by removing the default module release
+    # portion of the path
+    cmdList = [ "readlink", "-e", moduleTop ]
+    cmdOutput = subprocess.check_output( cmdList ).splitlines()
+    if len(cmdOutput) == 1:
+        moduleTop = cmdOutput[0]
+    #relPath = relPath.replace( "slac.stanford.edu", "slac" )
+    relPath = relPath.replace( moduleTop + "/", "" )
+    # If that didn't work, just show the last 3 directory levels
+    dirCount = relPath.count( "/" )
+    if dirCount > 3:
+        dir1Index = relPath.rfind( "/" )
+        dir2Index = relPath.rfind( "/", 0, dir1Index )
+        dir3Index = relPath.rfind( "/", 0, dir2Index )
+        relPath   = relPath[dir3Index+1:]
+    module = relPath
     if opt.debug:
         print "ReportRelease: %s, priorModule = %s" % ( module, priorModule )
     if module == priorModule and not opt.showAll:
@@ -269,27 +284,19 @@ def ExpandPackageForTopVariants( siteTop, package, opt ):
         # All modules already checked for
         return []
     topVariants = []
-    topVariants += [ os.path.join( siteTop, "extensions" ) ]
-    topVariants += [ os.path.join( siteTop, "iocTop" ) ]
-    topVariants += [ os.path.join( siteTop, "ioc" ) ]
-    topVariants += [ os.path.join( siteTop, "ioc", "common" ) ]
-    topVariants += [ os.path.join( siteTop, "ioc", "amo" ) ]
-    topVariants += [ os.path.join( siteTop, "ioc", "sxr" ) ]
-    topVariants += [ os.path.join( siteTop, "ioc", "xpp" ) ]
-    topVariants += [ os.path.join( siteTop, "ioc", "cxi" ) ]
-    topVariants += [ os.path.join( siteTop, "ioc", "mec" ) ]
-    topVariants += [ os.path.join( siteTop, "ioc", "mfx" ) ]
-    topVariants += [ os.path.join( siteTop, "ioc", "xcs" ) ]
-    topVariants += [ os.path.join( siteTop, "ioc", "xrt" ) ]
-    topVariants += [ os.path.join( siteTop, "ioc", "tst" ) ]
-    topVariants += [ os.path.join( siteTop, "ioc", "fee" ) ]
-    topVariants += [ os.path.join( siteTop, "ioc", "las" ) ]
-    topVariants += [ os.path.join( siteTop, "screens" ) ]
-    topVariants += [ os.path.join( siteTop, "screens", "edm" ) ]
+    for topVariant in defEpicsTopVariants:
+        topVariants.append( os.path.join( siteTop, topVariant ) )
+
     releases = []
     for topDir in topVariants:
         releases += ExpandModulePath( topDir, package, opt )
     return releases
+
+def isEpicsTopVariant( topDir ):
+    for topVariant in defEpicsTopVariants:
+        if topDir.endswith( topVariant ):
+            return True
+    return False
 
 def ExpandPackagesForTop( topDir, packages, opt ):
     '''Look for and report on each package under the specified top directory.'''
@@ -307,9 +314,10 @@ def ExpandPackagesForTop( topDir, packages, opt ):
                 else:
                     numReleasesForTop += 1
                 continue
-        elif package != "modules":
+        elif package not in defEpicsTopVariants:
             releases += ExpandModulePath( topDir, package, opt )
-        elif topDir.endswith("modules"):
+        #elif isEpicsTopVariant( topDir ):
+        elif topDir.endswith(package):
             for dirPath, dirs, files in os.walk( topDir, topdown=True ):
                 if len( dirs ) == 0:
                     continue
