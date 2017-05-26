@@ -236,7 +236,7 @@ class Releaser(object):
         try:
             if self._repo._url.find( 'extensions' ) > 0:
                 # For extensions, we first checkout extensions-top
-                topRepo = gitRepo.gitRepo( DEF_GIT_EXT_TOP, None, "extensions-top", DEF_GIT_EXT_TOP_TAG )
+                topRepo = gitRepo.gitRepo( DEF_GIT_EXT_TOP_URL, None, "extensions-top", DEF_GIT_EXT_TOP_TAG )
                 topRepo.CheckoutRelease( buildDir, verbose=self._verbose, dryRun=self._dryRun )
 
                 # Then checkout the package to src/packageName
