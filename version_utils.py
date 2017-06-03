@@ -219,18 +219,23 @@ def export_release_site_file( inputs, debug=False):
         print >> out_file, '# We will build some tools/scripts that allow us to'
         print >> out_file, '# change this easily when relocating software.'
         print >> out_file, '#=============================================================================='
+        if doesPkgNeedMacro( 'BASE_MODULE_VERSION' ):
+            print >> out_file, 'BASE_MODULE_VERSION=%s'%inputs['EPICS_BASE_VER']
     else:
         print >> out_file, 'BASE_MODULE_VERSION=%s'%inputs['EPICS_BASE_VER']
     print >> out_file, 'EPICS_SITE_TOP=%s'    % inputs['EPICS_SITE_TOP'] 
     if 'BASE_SITE_TOP' in inputs:
         print >> out_file, 'BASE_SITE_TOP=%s'     % inputs['BASE_SITE_TOP']
-    if VersionToRelNumber(inputs['EPICS_BASE_VER'], debug=debug) < 3.141205:
+    if VersionToRelNumber(inputs['EPICS_BASE_VER'], debug=debug) < 3.141205 \
+        or doesPkgNeedMacro( 'MODULES_SITE_TOP' ):
         print >> out_file, 'MODULES_SITE_TOP=%s'  % inputs['EPICS_MODULES']
-    if VersionToRelNumber(inputs['EPICS_BASE_VER'], debug=debug) >= 3.141205:
+    if VersionToRelNumber(inputs['EPICS_BASE_VER'], debug=debug) >= 3.141205 \
+        or doesPkgNeedMacro( 'EPICS_MODULES' ):
         print >> out_file, 'EPICS_MODULES=%s'     % inputs['EPICS_MODULES']
     if 'IOC_SITE_TOP' in inputs:
         print >> out_file, 'IOC_SITE_TOP=%s'      % inputs['IOC_SITE_TOP']
-    if VersionToRelNumber(inputs['EPICS_BASE_VER'], debug=debug) < 3.141205:
+    if VersionToRelNumber(inputs['EPICS_BASE_VER'], debug=debug) < 3.141205 \
+        or doesPkgNeedMacro( 'EPICS_BASE_VER' ):
         print >> out_file, 'EPICS_BASE_VER=%s' %inputs['EPICS_BASE_VER']
     print >> out_file, 'PACKAGE_SITE_TOP=%s'  % inputs['PACKAGE_SITE_TOP']
     if 'PSPKG_ROOT' in inputs:
@@ -648,3 +653,30 @@ def hasIncludeDotDotReleaseSite():
                 return True
     return False
 
+def doesPkgNeedMacro( macroName ):
+    '''
+    Check if configure/RELEASE* files need a particular macro
+    '''
+    if not macroName or len(macroName) == 0:
+        return False
+    # TODO: Check all configure/RELEASE* files
+    definesMacro = False
+    needsMacro = False
+    definesMacroRegExp = re.compile( '^%s\s*=\s*\S' % macroName )
+    needsMacroRegExp   = re.compile( '\$\(' + macroName )
+    for filename in [ 'RELEASE', 'RELEASE.local' ]:
+        configFilePath = os.path.join( 'configure', filename )
+        if not os.path.isfile( configFilePath ):
+            continue
+        configFile = open( configFilePath, 'r')
+        for line in configFile:
+            # Check if this macro is used
+            if  needsMacroRegExp.search( line ):
+                needsMacro = True
+            # Check if this macro is defined
+            if  definesMacroRegExp.search( line ):
+                definesMacro = True
+
+    if needsMacro and definesMacro:
+        needsMacro = False
+    return needsMacro
