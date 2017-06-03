@@ -114,9 +114,30 @@ class svnRepo( Repo.Repo ):
             if len(cmdOutput) == 1:
                 curUrl = cmdOutput[0]
                 if curUrl == targetUrl:
+                    # TODO: Move this to a function that fixes permissions
+                    # for all files/directories owned by userid
+                    # Use args to control whether files should be
+                    # made writable or not
+                    try:
+                        self.execute( "chmod -R u+w %s" % ( buildDir ) )
+                    except OSError:
+                        # Just pass till this is more robust
+                        pass
+                        #raise BuildError, "Cannot make build dir writeable: %s" % ( buildDir )
+                    except RuntimeError:
+                        raise
+
+                    cmdList = [ "svn", "update", "." ]
+                    cmdOutput = subprocess.check_output( cmdList ).splitlines()
+                    self.execute("/bin/rm -f %s" % ( self.built_cookie_path() ))
                     os.chdir( curDir )
                     return
-        else:
+                else:
+                    # Not the right url, remove the bad checkout
+                    os.chdir( curDir )
+                    self.execute( "/bin/rm -rf %s" % buildDir )
+
+        if not os.path.isdir( os.path.join( buildDir, '.svn' ) ):
             try:
                 cmdList = [ "svn", "co", targetUrl, buildDir ]
                 subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
