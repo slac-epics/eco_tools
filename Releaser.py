@@ -49,6 +49,7 @@ class Releaser(object):
         self._noTag		= noTag
         self._installDir= None
         self._ReleasePath= None
+        self._CookieJarPath= None
         # TODO: Derive _EpicsHostArch from the module's RELEASE_SITE file instead of env
         self._EpicsHostArch = determine_epics_host_arch()
         if  self._EpicsHostArch is None:
@@ -60,6 +61,7 @@ class Releaser(object):
 
     def __str__( self ):
         strRep =  "Releaser:\n"
+        # TODO: Cleanup this classroom!  Throw out class variables we don't need
         strRep += "%s Repo:         \n%s" % ( self.__class__.__name__, self._repo )
         strRep += "%s branch:       %s\n" % ( self.__class__.__name__, self._branch 	if self._branch else 'None' )
         strRep += "%s packageName:  %s\n" % ( self.__class__.__name__, self._packageName if self._packageName else 'None' )
@@ -134,13 +136,19 @@ class Releaser(object):
     def RemoveBuild( self, buildDir ):
         print "\nRemoving build dir: %s ..." % ( buildDir )
 
+        # TODO: Move this to a function that fixes permissions
         # Enable write access to build directory
         try:
             self.execute("chmod -R u+w %s" % ( buildDir ))
         except OSError:
-            raise BuildError, "Cannot make build dir writeable: %s" % ( buildDir )
+            # Just pass till this is more robust
+            pass
+            #raise BuildError, "Cannot make build dir writeable: %s" % ( buildDir )
         except RuntimeError:
-            raise BuildError, "Build dir not found: %s" % ( buildDir )
+            # Just pass till this is more robust
+            pass
+            #raise BuildError, "Build dir not found: %s" % ( buildDir )
+
         try:
             self.execute("/bin/rm -rf %s" % ( buildDir ))
         except OSError:
@@ -149,6 +157,9 @@ class Releaser(object):
             raise BuildError, "Build dir not found: %s" % ( buildDir )
         print "Successfully removed build dir: %s ..." % ( buildDir )
 
+    # TODO: Move this to a standalone function usable
+    # by any class
+    # def fixPermissions( self, dir, makeFilesWritable=False ):
     def fixPermissions( self, dir ):
         if self._verbose:
             print "Fixing permissions for %s ..." % dir
@@ -171,6 +182,9 @@ class Releaser(object):
         fileModeDeny = stat.S_IWUSR | stat.S_IWGRP
         for dirPath, dirs, files in os.walk(dir):
             pathStatus = os.stat( dirPath )
+            dirName = os.path.split( dirPath )[-1]
+            if dirName == '.git' or dirName == '.svn' or dirName == 'CVS':
+                continue
             if userId == pathStatus.st_uid:
                 os.chmod( dirPath, pathStatus.st_mode | dirModeAllow )
                 if groupId >= 0 and groupId != pathStatus.st_gid:
@@ -183,9 +197,25 @@ class Releaser(object):
                     if groupId >= 0 and groupId != pathStatus.st_gid:
                         os.chown( filePath, -1, groupId )
 
-    def built_cookie_path( self ):
+    def getCookieJarPath( self ):
+        if self._CookieJarPath:
+            return self._CookieJarPath 
         # TODO: Derive _EpicsHostArch from the module's RELEASE_SITE file instead of env
-        return os.path.join( self._ReleasePath, "configure", "O." + self._EpicsHostArch, ".is_built" )
+        if os.path.isdir( os.path.join( self._ReleasePath, "build" ) ):
+            return os.path.join( self._ReleasePath, "build", "O." + self._EpicsHostArch )
+        else:
+            return os.path.join( self._ReleasePath, "configure", "O." + self._EpicsHostArch )
+
+    def update_built_cookie( self ):
+        cookieJarPath = self.getCookieJarPath()
+        if not os.path.isdir( cookieJarPath ):
+            os.makedirs( cookieJarPath )
+        self.execute( "touch %s" % self.built_cookie_path() )
+        self._CookieJarPath = cookieJarPath
+
+    def built_cookie_path( self ):
+        cookieJarPath = self.getCookieJarPath()
+        return os.path.join( cookieJarPath, ".is_built" )
 
     def hasBuilt( self ):
         '''Returns True if module has built for any architecture.'''
@@ -212,13 +242,19 @@ class Releaser(object):
             except OSError:
                 raise BuildError, "Cannot create build dir: %s" % ( buildDir )
 
-        # Make sure we can write to the build directory
+        # TODO: Move this to a function that fixes permissions
+        # If user owns the build directory, make it writable.
         # Shouldn't have to do this now that we leave directories writable
-        # Won't work unless userid matches so need to check before trying
-        #try:
-        #	self.execute( "chmod -R u+w %s" % ( buildDir ) )
-        #except OSError:
-        #	raise BuildError, "Cannot make build dir writeable: %s" % ( buildDir )
+        try:
+            self.execute( "chmod -R u+w %s" % ( buildDir ) )
+        except OSError:
+            # Just pass till this is more robust
+            pass
+            #raise BuildError, "Cannot make build dir writeable: %s" % ( buildDir )
+        except RuntimeError:
+            # Just pass till this is more robust
+            pass
+            #raise BuildError, "Cannot make build dir writeable: %s" % ( buildDir )
 
         if	self._ReleasePath != buildDir:
             self._ReleasePath =  buildDir
@@ -234,6 +270,7 @@ class Releaser(object):
                 return
 
         try:
+            self.execute("/bin/rm -f %s" % ( self.built_cookie_path() ))
             if self._repo._url.find( 'extensions' ) > 0:
                 # For extensions, we first checkout extensions-top
                 topRepo = gitRepo.gitRepo( DEF_GIT_EXT_TOP_URL, None, "extensions-top", DEF_GIT_EXT_TOP_TAG )
@@ -264,7 +301,7 @@ class Releaser(object):
             sys.stdout.flush()
             sys.stderr.flush()
             buildOutput = self.execute( "make -C %s" % buildDir, outputPipe )
-            self.execute( "touch %s" % self.built_cookie_path() )
+            self.update_built_cookie()
             if self._verbose:
                 print "BuildRelease %s: SUCCESS" % ( buildDir )
         except RuntimeError, e:
