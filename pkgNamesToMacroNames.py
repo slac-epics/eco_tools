@@ -6,12 +6,19 @@ import os
 import string
 from repo_defaults import *
 
-macroNameToPkgName  = {}
-pkgNameToMacroNames = {}
+_macroNameToPkgName  = {}
+_pkgNameToMacroNames = {}
+
+def macroNameToPkgName( macroName ):
+    if macroName in _macroNameToPkgName:
+        pkgName = _macroNameToPkgName[ macroName ]
+    else:
+        pkgName = macroName.lower()
+    return pkgName
 
 def pkgNameGetMacroNames( pkgName ):
-    if pkgName in pkgNameToMacroNames:
-        macroNames = pkgNameToMacroNames[ pkgName ]
+    if pkgName in _pkgNameToMacroNames:
+        macroNames = _pkgNameToMacroNames[ pkgName ]
         if not pkgName.upper() in macroNames:
             macroNames.append( pkgName.upper() )
     else:
@@ -19,20 +26,20 @@ def pkgNameGetMacroNames( pkgName ):
     return macroNames
 
 def pkgNameAddMacroName( pkgName, macroName ):
-    if not pkgName in pkgNameToMacroNames:
-        pkgNameToMacroNames[pkgName] = [ macroName ]
+    if not pkgName in _pkgNameToMacroNames:
+        _pkgNameToMacroNames[pkgName] = [ macroName ]
     else:
-        macroNames = pkgNameToMacroNames[pkgName]
+        macroNames = _pkgNameToMacroNames[pkgName]
         if not macroName in macroNames:
             macroNames.append( macroName )
-            pkgNameToMacroNames[pkgName] = macroNames
+            _pkgNameToMacroNames[pkgName] = macroNames
 
-    if not macroName in macroNameToPkgName:
-        macroNameToPkgName[macroName]	= pkgName
+    if not macroName in _macroNameToPkgName:
+        _macroNameToPkgName[macroName]	= pkgName
     else:
-        if macroNameToPkgName[macroName] != pkgName:
+        if _macroNameToPkgName[macroName] != pkgName:
             print	"pkgNameAddMacroName Error: Pkg %s Macro %s already mapped to %s" % \
-                    ( pkgName, macroName, macroNameToPkgName[macroName] )
+                    ( pkgName, macroName, _macroNameToPkgName[macroName] )
 
 if os.path.isdir( DEF_GIT_MODULES_PATH ):
     for d in os.listdir( DEF_GIT_MODULES_PATH ):

@@ -379,9 +379,8 @@ def getEpicsPkgDependents( topDir, debug=False, verbose=False ):
                     m = regExp.search( line )
                     if m and m.group(1) and m.group(2):
                         macroName = m.group(1).replace( '_MODULE_VERSION', '' )
-                        if macroName in macroNameToPkgName:
-                            pkgName = macroNameToPkgName[macroName]
-                            pkgDependents[ pkgName ] = m.group(2)
+                        pkgName = macroNameToPkgName(macroName)
+                        pkgDependents[ pkgName ] = m.group(2)
     return pkgDependents
 
 def pkgSpecToMacroVersions( pkgSpec, verbose=False ):
@@ -448,7 +447,7 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
         macroName      = match.group(1)
         oldVersionPath = match.group(2)
         if macroName in newMacroVersions:
-            pkgName = macroNameToPkgName[macroName]
+            pkgName = macroNameToPkgName(macroName)
             macroName_MODULE_VERSION = "%s_MODULE_VERSION" % macroName
             if using_MODULE_VERSION.get( macroName, False ):
                 newVersionPath = "$(EPICS_MODULES)/%s/$(%s_MODULE_VERSION)" % ( pkgName, macroName )

@@ -240,8 +240,7 @@ def ReportRelease( moduleTop, release, priorModule, opt ):
         for dep in sorted( pkgDependents.keys() ):
             # Print dependent info w/o newline (trailing ,)
             depRoot = dep.replace( "_MODULE_VERSION", "" )
-            if depRoot in macroNameToPkgName:
-                depRoot = macroNameToPkgName[ depRoot ]
+            depRoot = macroNameToPkgName(depRoot)
             if opt.wide:
                 # Don't print newline in wide mode 
                 print " %s=%s" % ( depRoot, pkgDependents[ dep ] ),
