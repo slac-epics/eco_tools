@@ -44,11 +44,8 @@ from Releaser import *
 #	Checkout the release version to the release area
 #	Build the release version in the release area
 #
-# Copyright 2010,2011,2012,2014,2015,2016 Stanford University
+# Copyright 2010,2011,2012,2014,2015,2016,2017 Stanford University
 # Author: Bruce Hill <bhill@slac.stanford.edu>
-#
-# TODO: Branch releases working, but could use more testing w/ different variations
-# TODO: Fix ability to release revisions other than HEAD
 #
 # Released under the GPLv2 licence <http://www.gnu.org/licenses/gpl-2.0.html>
 #
@@ -141,10 +138,16 @@ def ValidateArgs( repo, packageSpec, opt ):
                     branchMsg = "Branch mismatch!\n"
                     raise ValidateError, branchMsg
 
-    # TODO: Check git config ecotools.versionfile: has it changed, show the change, prompt to edit
+    versionFileName = git_get_versionFileName()
+    if versionFileName and os.path.isfile( versionFileName ):
+        # TODO: has it changed, show the change, prompt to edit
+        print "Did you remember to update the version file? %s" % versionFileName
 
-    # TODO: Check RELEASE_NOTES: has it changed, is tag found, show the change, prompt to edit
-    
+    if os.path.isfile( "RELEASE_NOTES" ):
+        # TODO: has it changed, is tag found, show the change
+        # TODO: prompt to edit, pre-populate release entry
+        print "Did you remember to update the RELEASE_NOTES file?"
+
     # validate repo_grpowner	= DEF_LCLS_GROUP_OWNER
     if opt.verbose:
         print "ValidateArgs: Success"
