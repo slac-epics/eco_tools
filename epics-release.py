@@ -109,7 +109,7 @@ def ValidateArgs( repo, packageSpec, opt ):
     if opt.release is None:
         raise ValidateError, "Release tag not specified (--release)"
 
-    if not re.match( r"(\S*R\d+([\-\.]\d+)-\d+\.\d+\.\d+)|(\S*R\d+[\.\-]\d+[\-\.]\d+)", opt.release ):
+    if not re.match( r"(\S*R\d+([\-\.]\d+)-\d+\.\d+\.\d+?)|(\S*R\d+[\.\-]\d+([\-\.]\d+)?)", opt.release ):
         raise ValidateError, "%s is an invalid release tag: Must be R[<orig_release>-]<major>.<minor>.<bugfix>" % opt.release
 
     if not opt.noTag:
