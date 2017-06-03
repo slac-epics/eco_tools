@@ -440,3 +440,13 @@ def parseGitModulesTxt():
         package2Location[packageName] = packageLocation
     return package2Location
 
+def git_get_versionFileName():
+    '''If git config has a value for ecotools.versionfile,
+    this routine returns it.  If not, returns None'''
+    versionFileName = None
+    try:
+        versionFileName = git_check_output( "git config --get ecotools.versionfile" )
+    except:
+        pass
+    return versionFileName
+
