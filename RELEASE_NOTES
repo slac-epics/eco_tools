@@ -1,3 +1,26 @@
+R2.0	2017-06-03 Bruce Hill
+	Added function to check if a macro is needed and used it to make eco work for newer modules in old base
+	Rolling out new epics-update tool to help w/ updating RELEASE files.
+		Initial options include:
+			--RELEASE_SITE to update your TOP/RELEASE_SITE file from your env variables
+			-p module/version   One or more module dependency specifications to update.
+	Fixed many issues for epics-release so it'll work for both svn and git
+	Added function git_get_versionFileName() to fetch git config ecotools.versionfile
+	Added prompts for if you updated your versionFile or RELEASE_NOTES
+	Made output more user friendly by only showing the significant packagePath portions of directory paths for dependencies.
+	Added support for using .cram/packageinfo to determine installDir
+	Also loosened up tag name restrictions for epics-release
+	Allow epics-checkout to support package specs w/a packagePath like extensions/edm.
+	Also added --depth option so higher levels can determine whether or not to use shallow clones.
+	Translates RELEASE macro names to module names for more user friendly output.
+	Modified epics-checkout.py to call cloneMasterRepo() instead of using raw subprocess call. 
+		Allows eco to take advantage of faster and smaller release checkouts
+	Created consistent usage and naming of package specification components.
+		packageName - Always just the base name of the package: edm, asyn, base, etc
+		packagePath - Includes package organization dirs: extensions/edm modules/asyn
+		packageSpec - packagePath or packageName plus an optional release: modules/asyn/R30.1-0.1.0
+	Created a version file for the eco_tools version and add --verison support to each command line tool.
+
 R1.9	2017-04-17 Marcio Donadio
 	- Now, if ../../RELEASE_SITE exists but is not included in a
 	configuration file, $TOP/RELEASE_SITE is created
