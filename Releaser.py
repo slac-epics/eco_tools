@@ -31,7 +31,7 @@ class Releaser(object):
     These were grandfathered in as part of refactoring a prior version and may be
     more appropriately made into function parameters or in some cases may not be needed at all. 
     '''
-    def __init__( self, repo, packagePath, installDir=None, branch=None, noTag=True, debug=False, verbose=False, keepTmp=False, message=None, dryRun=False, quiet=False, batch=False ):
+    def __init__( self, repo, packagePath, installDir=None, branch=None, noTag=False, debug=False, verbose=False, keepTmp=False, message=None, dryRun=False, quiet=False, batch=False ):
         self._installDir= installDir
         self._repo		= repo
         self._branch	= branch

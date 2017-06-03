@@ -190,7 +190,6 @@ class gitRepo( Repo.Repo ):
             print "--dryRun--",
         if verbose:
             print "Tagging branch %s release %s ..." % ( branch, release )
-            return
         comment = "Release %s/%s: %s" % ( packagePath, release, message )
         cmdList = [ "git", "tag", release, "-m", comment ]
         subprocess.check_call( cmdList )
