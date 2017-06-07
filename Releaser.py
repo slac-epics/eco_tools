@@ -300,7 +300,9 @@ class Releaser(object):
             print "\nBuilding Release in %s ..." % ( buildDir )
             sys.stdout.flush()
             sys.stderr.flush()
-            buildOutput = self.execute( "make -C %s" % buildDir, outputPipe )
+            if		os.path.isfile( os.path.join( buildDir, 'makefile' )) \
+                or	os.path.isfile( os.path.join( buildDir, 'Makefile' )):
+                buildOutput = self.execute( "make -C %s" % buildDir, outputPipe )
             self.update_built_cookie()
             if self._verbose:
                 print "BuildRelease %s: SUCCESS" % ( buildDir )
