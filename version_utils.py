@@ -641,6 +641,8 @@ def get_cram_releaseDir( ):
 
 # Check if any file inside configure/ has included a ../../RELEASE_SITE file
 def hasIncludeDotDotReleaseSite():
+    if not os.path.isdir( 'configure' ):
+        return False
     # Just check configure/RELEASE and configure/RELEASE.local
     for filename in [ 'RELEASE', 'RELEASE.local' ]:
         configFilePath = os.path.join( 'configure', filename )
