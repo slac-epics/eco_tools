@@ -79,7 +79,10 @@ def parseCVSModulesTxt( cvsRepoRoot=None, verbose=False ):
     '''Parse the CVS modules file and return a dict of packageName -> location'''
     package2Location = {}
     if  cvsRepoRoot is None:
-        cvsRepoRoot = os.environ['CVSROOT']
+        if 'CVSROOT' in os.environ:
+            cvsRepoRoot = os.environ['CVSROOT']
+        else:
+            cvsRepoRoot = DEF_CVS_ROOT
     cvsModulesTxtFile = os.path.join( cvsRepoRoot, 'CVSROOT', 'modules')
     if not os.path.exists(cvsModulesTxtFile):
         print "Cannot determine CVS modules from modules file."
