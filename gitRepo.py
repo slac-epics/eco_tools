@@ -182,14 +182,14 @@ class gitRepo( Repo.Repo ):
         print "Successfully removed %s release tag %s." % ( package, tag )
 
     def TagRelease( self, packagePath=None, release=None, branch=None, message="", verbose=True, dryRun=False ):
-        if branch is None:
-            branch = self._branch
         if release is None:
             release = self._tag
         if dryRun:
-            print "--dryRun--",
+            print "--dryRun-- Tag %s release %s" % ( packagePath, release )
+            return
+
         if verbose:
-            print "Tagging branch %s release %s ..." % ( branch, release )
+            print "Tagging %s release %s ..." % ( packagePath, release )
         comment = "Release %s/%s: %s" % ( packagePath, release, message )
         cmdList = [ "git", "tag", release, "-m", comment ]
         subprocess.check_call( cmdList )
