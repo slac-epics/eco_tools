@@ -91,8 +91,8 @@ def ValidateArgs( repo, packageSpec, opt ):
     if not repo_branch:
         if not packageSpec:
             raise ValidateError, "No release package specified"
-        if len( packageSpec ) > 1:
-            raise ValidateError, "Multiple  release packages specified: %s" % (packageSpec)
+        if packageSpec is list and len( packageSpec ) > 1:
+            raise ValidateError, "Multiple release packages specified: %s" % (packageSpec)
         if repo_url:
             repo_branch = repo_url
 
