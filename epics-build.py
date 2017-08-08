@@ -65,11 +65,6 @@ def find_releases( options ):
             releases += [ release ]
     return releases
 
-def determinePathToGitRepo(packageName):
-    '''If the specified package is stored in GIT, then return the URL to the GIT repo. Otherwise, return None'''
-    (git_url, git_tag) = gitGetRemoteTag( packageName, tag=None )
-    return git_url
-
 def process_options(argv):
     if argv is None:
         argv = sys.argv[1:]
