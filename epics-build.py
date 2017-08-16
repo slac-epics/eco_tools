@@ -47,6 +47,13 @@ def getEnv( envVar ):
 
 
 def build_modules( options ):
+    if options.top:
+        if not os.path.isdir( options.top ):
+            print "Invalid --top %s" % options.top
+        if not options.top.endswith( '/modules' ):
+            options.top += '/modules'
+        if not os.path.isdir( options.top ):
+            print "Invalid top %s" % options.top
     try:
         releases = find_releases( options )
         for release in releases:
