@@ -233,7 +233,10 @@ class Releaser(object):
             raise BuildError, "Build dir not defined!"
         if self._verbose:
             print "BuildRelease: Checking for buildDir %s" % buildDir
-        if not os.path.exists( buildDir ):
+        if os.path.exists( buildDir ):
+            buildDirExists = True
+        else:
+            buildDirExists = False
             try:
                 if self._dryRun:
                     print "os.makedirs %s drwxrwxr-x" % buildDir
@@ -308,7 +311,7 @@ class Releaser(object):
                 print "BuildRelease %s: SUCCESS" % ( buildDir )
         except RuntimeError, e:
             print e
-            if hasBuilt == False:
+            if hasBuilt == False and not buildDirExists:
                 cmdList = [ "rm", "-rf",    buildDir + "-FAILED" ]
                 subprocess.call( cmdList )
                 cmdList = [ "mv", buildDir, buildDir + "-FAILED" ]
