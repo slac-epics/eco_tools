@@ -78,12 +78,11 @@ def cvsFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
 def parseCVSModulesTxt( cvsRepoRoot=None, verbose=False ):
     '''Parse the CVS modules file and return a dict of packageName -> location'''
     package2Location = {}
-    if  cvsRepoRoot is None:
-        if 'CVSROOT' in os.environ:
-            cvsRepoRoot = os.environ['CVSROOT']
-        else:
-            cvsRepoRoot = DEF_CVS_ROOT
-    cvsModulesTxtFile = os.path.join( cvsRepoRoot, 'CVSROOT', 'modules')
+    if  cvsRepoRoot is not None:
+        os.environ['CVSROOT'] = cvsRepoRoot
+    if 'CVSROOT' not in os.environ:
+        os.environ['CVSROOT'] = DEF_CVS_ROOT
+    cvsModulesTxtFile = os.path.join( os.environ['CVSROOT'], 'CVSROOT', 'modules')
     if not os.path.exists(cvsModulesTxtFile):
         print "Cannot determine CVS modules from modules file."
         return package2Location

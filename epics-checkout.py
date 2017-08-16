@@ -387,6 +387,10 @@ def determinePathToGitRepo(packagePath):
         if len( dirs ) == 0:
             continue
         for dir in dirs[:]:
+            if dir == 'from-svn' or dir == 'from-cvs':
+                # Remove from list so we don't search these import directories
+                dirs.remove( dir )
+                continue
             if dir == gitPackageDir:
                 return os.path.join( dirPath, dir )
             if os.path.isdir( os.path.join( dirPath, gitPackagePath ) ):
@@ -399,6 +403,8 @@ def determinePathToGitRepo(packagePath):
 def initGitBareRepo():
     '''Initialize a bare repo in the user specified folder'''
     gitRoot = determineGitRoot()
+    if 'CVSROOT' not in os.environ:
+        os.environ['CVSROOT'] = DEF_CVS_ROOT
     
     # Ask the user for the name of the package
     packageName = subprocess.check_output(["zenity", "--entry", "--title", "Package Name", "--text", "Please enter the name of the package"]).strip()
@@ -450,7 +456,9 @@ def importFromCVS():
     if packageName not in cvs_modules2Location:
         subprocess.check_call(["zenity", "--error", "--title", "Error", "--text", "The package " + packageName + " does not seem to be a CVS package."])
         return
-    
+
+    if 'CVSROOT' not in os.environ:
+        os.environ['CVSROOT'] = DEF_CVS_ROOT
     CVSpackageLocation = os.path.join(os.environ['CVSROOT'], cvs_modules2Location[packageName])
     print "Importing CVS package from ", CVSpackageLocation
     
