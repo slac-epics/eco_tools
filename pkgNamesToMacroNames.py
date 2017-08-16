@@ -41,6 +41,8 @@ def pkgNameAddMacroName( pkgName, macroName ):
             print	"pkgNameAddMacroName Error: Pkg %s Macro %s already mapped to %s" % \
                     ( pkgName, macroName, _macroNameToPkgName[macroName] )
 
+# Automatically populate most of our macro names for packages
+# by converting the git directory name to uppercase
 if os.path.isdir( DEF_GIT_MODULES_PATH ):
     for d in os.listdir( DEF_GIT_MODULES_PATH ):
         if not '.git' in d:
@@ -51,11 +53,13 @@ if os.path.isdir( DEF_GIT_MODULES_PATH ):
 # Add special cases
 pkgNameAddMacroName( 'areaDetector',	'AREA_DETECTOR' )
 pkgNameAddMacroName( 'base',			'BASE' )
+pkgNameAddMacroName( 'BergozBCM-RF-asyn','BERGOZBCM_RF_ASYN' )
 pkgNameAddMacroName( 'Bk9000_MBT',		'BK9000_MBT' )
 pkgNameAddMacroName( 'Bx9000_MBT',		'BX9000' )
 pkgNameAddMacroName( 'Bx9000_MBT',		'BX9000_MBT' )
 pkgNameAddMacroName( 'diagTimer',		'DIAG_TIMER' )
 pkgNameAddMacroName( 'etherPSC',		'EPSC' )
+pkgNameAddMacroName( 'ethercat',		'ECASYN' )
 pkgNameAddMacroName( 'ip231-asyn',		'IP231_ASYN' )
 pkgNameAddMacroName( 'ip330-asyn',		'IP330_ASYN' )
 pkgNameAddMacroName( 'ip440',			'XY2440' )
