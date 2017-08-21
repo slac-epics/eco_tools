@@ -25,11 +25,12 @@ class InstallError( Exception ):
 
 class Releaser(object):
     '''class Releaser( repo, package )
-    repo must be a repo object that knows the URL, branch, tag, etc needed to checkout the required package version
-    package is the name of the package, w/o the release, for example: base/R3.15.4-1.0, asyn/R4.29-0.1.3, edm/R1.12.96, etc
+    repo must be a repo object that knows the URL, branch, tag, etc needed to checkout
+    the required package version package is the name of the package, w/o the release.
+    For example: base/R3.15.4-1.0, asyn/R4.29-0.1.3, edm/R1.12.96, etc
     Note: There are a number of additional arguments to __init__(), all w/ defaults
     These were grandfathered in as part of refactoring a prior version and may be
-    more appropriately made into function parameters or in some cases may not be needed at all. 
+    more appropriately made into function parameters or in some cases may not be needed at all.
     '''
     def __init__( self, repo, packagePath, installDir=None, branch=None, noTag=False, debug=False, verbose=False, keepTmp=False, message=None, dryRun=False, quiet=False, batch=False ):
         self._installDir= installDir
@@ -81,7 +82,7 @@ class Releaser(object):
     def __del__( self ):
         self.DoCleanup( 0 )
 
-    def DoCleanup( self, errCode = 0 ):
+    def DoCleanup( self, errCode=0 ):
         self._retcode = errCode
         if self._debug and self._retcode != 0:
             traceback.print_tb(sys.exc_traceback)
@@ -104,7 +105,7 @@ class Releaser(object):
                 print "\nCould not remove the following directories, remove them manually:"
                 if os.path.exists(self._tmpDir):
                     print "\t%s" % (self._tmpDir)
-    
+
     def RemoveTag( self, tag=None ):
         if tag is not None:
             tag = self._repo._tag
@@ -191,11 +192,14 @@ class Releaser(object):
                     os.chown( dirPath, -1, groupId )
             for fileName in files:
                 filePath   = os.path.join( dirPath, fileName )
-                pathStatus = os.stat( filePath )
+                pathStatus = os.lstat( filePath )
                 if userId == pathStatus.st_uid:
-                    os.chmod( filePath, pathStatus.st_mode & ~fileModeDeny )
+                    if os.path.islink(filePath) and hasattr(os, 'lchmod' ):
+                        os.lchmod( filePath, pathStatus.st_mode & ~fileModeDeny )
+                    else:
+                        os.chmod( filePath, pathStatus.st_mode & ~fileModeDeny )
                     if groupId >= 0 and groupId != pathStatus.st_gid:
-                        os.chown( filePath, -1, groupId )
+                        os.lchown( filePath, -1, groupId )
 
     def getCookieJarPath( self ):
         if self._CookieJarPath:
