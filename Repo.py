@@ -71,4 +71,3 @@ class Repo(object):
     def TagRelease( self, packagePath=None, release=None, branch=None, message="", verbose=True, dryRun=False ):
         print "\nPlease override Repo.TagRelease() via a version control specific subclass."
         os.sys.exit()
-

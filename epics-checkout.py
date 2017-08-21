@@ -124,6 +124,7 @@ def assemble_cvs_inputs_from_term(options):
         cvs_dict['REPOSITORY'] = options.module
 
     packageNames = set().union(git_package2Location.keys(), cvs_modules2Location.keys())
+
     def packageNameCompleter(text, state):
         options = [x for x in packageNames if x.startswith(text)]
         try:
@@ -135,7 +136,7 @@ def assemble_cvs_inputs_from_term(options):
     readline.parse_and_bind("tab: complete")
 
     while not cvs_dict['REPOSITORY']:
-       cvs_dict['REPOSITORY'] = raw_input('Enter name of module/package to checkout: ').strip()
+        cvs_dict['REPOSITORY'] = raw_input('Enter name of module/package to checkout: ').strip()
     packageName = cvs_dict['REPOSITORY']
 
     # Remove completer after we are done...
@@ -163,7 +164,7 @@ def assemble_cvs_inputs_from_term(options):
                 tagsPath = tagsPath.replace( "/current", "" )
                 try:
                     tags = subprocess.check_output(["svn", "ls", tagsPath ] ).splitlines()
-                    tags = [ tag.replace("/","") for tag in tags ]
+                    tags = [ tag.replace("/", "") for tag in tags ]
                 except:
                     tags = []
             else:
@@ -549,8 +550,8 @@ def process_options(argv):
     return options 
 
 commands = {
-    "initrepo" : initGitBareRepo,
-    "cvs2git" : importFromCVS
+    "initrepo": initGitBareRepo,
+    "cvs2git":  importFromCVS
 }
 
 def main(argv=None):

@@ -41,7 +41,7 @@ def importModule( module, module_type, gitFolder=None, repoPath=None ):
  
     # Import the CVS history using a tmp folder
     tpath = tempfile.mkdtemp()
-    importHistoryFromCVS(tpath, gitFolder, repoPath, module=module )
+    importHistoryFromCVS( tpath, gitFolder, repoPath, module=module )
     shutil.rmtree(tpath)
 
 if __name__ == '__main__':
