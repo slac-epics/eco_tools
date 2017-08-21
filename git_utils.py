@@ -74,7 +74,7 @@ def git_call( gitCommand, gitDir=None, debug=False, *args, ** kwargs ):
     Returns command status
     '''
     cmdList = []
-    if type(gitCommand) is string:
+    if type(gitCommand) is str:
         if not gitCommand.startswith( 'git ' ):
             cmdList = [ 'git' ]
         cmdList += gitCommand.split()
@@ -126,7 +126,7 @@ def git_check_output( gitCommand, gitDir=None, debug=False, *args, ** kwargs ):
     May throw RuntimeError or subprocess.CalledProcessError exceptions
     '''
     cmdList = []
-    if type(gitCommand) is string:
+    if type(gitCommand) is str:
         if not gitCommand.startswith( 'git ' ):
             cmdList = [ 'git' ]
         cmdList += gitCommand.split()
@@ -445,7 +445,9 @@ def git_get_versionFileName():
     this routine returns it.  If not, returns None'''
     versionFileName = None
     try:
-        versionFileName = git_check_output( "git config --get ecotools.versionfile" )
+        git_output = git_check_output( "git config --get ecotools.versionfile" ).splitlines()
+        if len(git_output) >= 1:
+            versionFileName = git_output[0]
     except:
         pass
     return versionFileName
