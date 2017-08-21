@@ -1,3 +1,12 @@
+R2.1	2017-09-16 Bruce Hill
+	Added check for valid --top in epics-build.py
+	Made eco_tools not require CVSROOT in env as we're moving away from CVS and not everyone will have it.
+	Added a few more special case MACRO names
+	Modified Releaser to not rename any pre-existing diretories on build failures.
+	Replaced obsolete branch info w/ packagePath in diag msg and made dryRun not do the tag.
+	Added check for a configure directory in hasIncludeDotDotReleaseSite() to avoid errors for packages w/o a configure directory.
+	Added check for a makefile before issuing make cmd in BuildRelease()
+
 R2.0	2017-06-03 Bruce Hill
 	Added function to check if a macro is needed and used it to make eco work for newer modules in old base
 	Rolling out new epics-update tool to help w/ updating RELEASE files.
