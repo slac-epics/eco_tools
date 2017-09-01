@@ -15,6 +15,10 @@ if [ -z "$1" -o "$1" == "-h" -o "$1" == "--help" ]; then
 	exit 1
 fi
 GIT_DIR=$1
+if [ -d $GIT_DIR ]; then
+	echo "Error: $GIT_DIR already exists!"
+	exit 1
+fi
 
 # Make bash exit if any of the following cmds fail
 set -e
