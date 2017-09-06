@@ -131,7 +131,20 @@ caPutLog:
     pcds-trunk:
     gitRecommitBranch.py -p github-master -d pcds-trunk -s svn-history -m e1d47d476f5d:R3-1 -m bbb10032d290:R3-3-1 -m 19264b25d734:R3-4
 
+ip330
+    github-master shares no common history w/ the SLAC version written by Sheng Peng
+	
+	lcls-trunk:	Take straight from cvs-history
+	pcds-trunk:
+    gitRecommitBranch.py -p lcls-trunk -d pcds-trunk -s svn-history -m e92e89c8:ip330-R1-0-4
+	dabney-linux:
 
+jca	
+	github-master imported from http://hg.code.sf.net/p/epics-jca/jca 
+	cvs-history Tip of TRUNK, mshankar 2012-09-21 matches mecurial tag JCA_20120614_2_3_6
+		No need to bring in older SLAC changes from 2010 and 2008 as they were all tossed 5 yrs ago.
+
+ESTIMATES
 50	hours	Base migration
 
 Modules completed so far: 73
@@ -174,6 +187,7 @@ Estimates are rough at best.  Feel free to update if you think they're off.
 3	hours	hytec8413
 10	hours	iocAdmin
 16	hours	ip231
+8	hours	ip330
 6	hours	ip440
 2	hours	ip440-asyn
 6	hours	ip445
