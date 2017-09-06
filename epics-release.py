@@ -16,6 +16,7 @@ from eco_version import eco_tools_version
 from gitRepo  import *
 from svnRepo  import *
 from Releaser import *
+from repo_defaults import *
 
 # This script releases an EPICS package into the release area.
 # It is written to support the following version control repositories:
@@ -49,15 +50,6 @@ from Releaser import *
 #
 # Released under the GPLv2 licence <http://www.gnu.org/licenses/gpl-2.0.html>
 #
-DEF_CVS_REPO		= "/afs/slac/g/lcls/cvs"
-
-DEF_CVS_MODULES		= DEF_CVS_REPO  + "/epics/site/src"
-
-DEF_EPICS_TOP_PCDS	= "/reg/g/pcds/epics"
-DEF_EPICS_TOP_LCLS	= "/afs/slac/g/lcls/epics"
-DEF_EPICS_TOP_AFS	= "/afs/slac/g/pcds/epics"
-DEF_LCLS_GROUP_OWNER= "lcls"
-DEF_PCDS_GROUP_OWNER= "ps-pcds"
 debugScript			= False
 
 

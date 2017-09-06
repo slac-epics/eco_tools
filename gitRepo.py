@@ -7,14 +7,7 @@ import subprocess
 import Repo
 from git_utils import *
 from version_utils import *
-
-
-# TODO: Move these to a common defaults file
-DEF_EPICS_TOP_PCDS	= "/reg/g/pcds/package/epics/3.14"
-DEF_EPICS_TOP_LCLS	= "/afs/slac/g/lcls/epics"
-DEF_EPICS_TOP_AFS	= "/afs/slac/g/pcds/package/epics/3.14"
-DEF_LCLS_GROUP_OWNER= "lcls"
-DEF_PCDS_GROUP_OWNER= "ps-pcds"
+from repo_defaults import *
 
 class gitError( Exception ):
     pass
