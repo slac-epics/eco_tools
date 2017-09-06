@@ -84,9 +84,13 @@ def isEpicsPackage(path):
     return False
 
 def isPCDSPath(path):
-    '''isPCDSPackage does a simple startswith /reg or /afs/slac/g/pcds check
+    '''isPCDSPackage does a couple of simple path.startswith string comparisons
     More tests can be added if needed.'''
-    if path.startswith( '/reg' ) or path.startswith( '/afs/slac/g/pcds' ):
+    if path.startswith( DEF_EPICS_TOP_PCDS ):
+        return True
+    if path.startswith( '/afs/slac/g/pcds' ): # /afs/slac symbolic link might be part of pcds pathnames
+        return True
+    if path.startswith( DEF_EPICS_TOP_PCDS ):
         return True
     return False
 
@@ -314,9 +318,9 @@ def assemble_release_site_inputs( batch=False ):
     if not os.path.isdir( package_site_top ):
         package_site_top = '/reg/g/pcds/package'
     if not os.path.isdir( package_site_top ):
-        package_site_top = '/afs/slac/g/lcls/package'
+        package_site_top = '/afs/slac.stanford.edu/g/lcls/package'
     if not os.path.isdir( package_site_top ):
-        package_site_top = '/afs/slac/g/pcds/package'
+        package_site_top = '/afs/slac.stanford.edu/g/pcds/package'
     input_dict['PACKAGE_SITE_TOP'] = package_site_top
     if not batch:
         prompt6 = 'Enter full path for PACKAGE_SITE_TOP or [RETURN] to use "' + package_site_top + '">'
@@ -330,9 +334,9 @@ def assemble_release_site_inputs( batch=False ):
         if not os.path.isdir( pspkg_root ):
             pspkg_root = '/reg/g/pcds/pkg_mgr'
         if not os.path.isdir( pspkg_root ):
-            pspkg_root = '/afs/slac/g/lcls/pkg_mgr'
+            pspkg_root = '/afs/slac.stanford.edu/g/lcls/pkg_mgr'
         if not os.path.isdir( pspkg_root ):
-            pspkg_root = '/afs/slac/g/pcds/pkg_mgr'
+            pspkg_root = '/afs/slac.stanford.edu/g/pcds/pkg_mgr'
         print 'Using PSPKG_ROOT:', pspkg_root
         input_dict['PSPKG_ROOT'] = pspkg_root
 

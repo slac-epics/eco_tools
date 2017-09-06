@@ -2,13 +2,15 @@
 
 import os
 import sys
+from version_utils import *
 
 
 
 with open('./MODULES_STABLE_VERSION', 'r') as f:  
     lines = f.readlines()
 
-moduleNames = os.listdir('/afs/slac/g/lcls/epics/R3-14-12-4_1-0/modules')
+epics_modules_top = determine_epics_modules_top()
+moduleNames = os.listdir( epics_modules_top )
 lowercaseModuleName2moduleName = {}
 
 # Preload modules names that do not fit a pattern
