@@ -59,7 +59,7 @@
 #  15-Dec-2010, Dayle Kotturi
 #    Add this header of comments
 #    Add WWW_DIR to entries in RELEASE_SITE;
-#    Use /afs/slac/www/grp/lcls as the default for WWW_DIR 
+#    Use /afs/slac.stanford.edu/www/grp/lcls as the default for WWW_DIR 
 #    Change default for WWW_DIR to env var LCLS_WWW
 #    Add capability to accept a file of 'package tag' pairs, 
 #    one per line to do checkout with default env vars
@@ -105,12 +105,13 @@ from cram_utils import *
 from cvs_utils import *
 from git_utils import *
 from version_utils import *
-from eco_version import eco_tools_version
 
+
+GIT_REPO_MODULES = '/afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/modules'
+from eco_version import eco_tools_version
 
 git_package2Location = parseGitModulesTxt()
 cvs_modules2Location = parseCVSModulesTxt()
-
 
 # TODO: 1. Breakout packageName completer code into it's own function
 # TODO: 2. Combine assemble_cvs_inputs_from_term and assemble_cvs_inputs_from_file into one function w/ a from_file boolean
@@ -358,13 +359,13 @@ def checkOutModule(packageName, tag, destinationPath, options, from_file=False )
                        os.path.isfile( os.path.join( curDir, destinationPath, 
                                                   '..', '..', 'RELEASE_SITE' )))
 
-    if	(		not isBaseTop(		os.path.join( curDir, destinationPath ) )
-            and		isEpicsPackage( os.path.join( curDir, destinationPath ) )
+    if  (       not isBaseTop(      os.path.join( curDir, destinationPath ) )
+            and     isEpicsPackage( os.path.join( curDir, destinationPath ) )
             and not hasDotDotRelease
             # Step on a RELEASE_SITE pulled from the repo? No for PCDS, Yes for LCLS
             # TODO: Add a user prompt here w/ appropriate default
-            and	(	not isPCDSPath( curDir )
-                or	not os.path.isfile( os.path.join(curDir, destinationPath, 'RELEASE_SITE') )	) ):
+            and (   not isPCDSPath( curDir )
+                or  not os.path.isfile( os.path.join(curDir, destinationPath, 'RELEASE_SITE') ) ) ):
         if from_file:
             inputs = assemble_release_site_inputs( batch=True )
         else:

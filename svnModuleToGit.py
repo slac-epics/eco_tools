@@ -9,13 +9,13 @@ import tempfile
 import subprocess
 from git_utils import *
 
-svnRepoEnvVar		= 'CTRL_REPO'
-svnRepoBranchPath	= 'branches/merge/epics/modules'
-svnRepoTagsPath		= 'epics/tags/modules'
-svnRepoTrunkPath	= 'trunk/pcds/epics/modules'
-gitModuleDir		= "/afs/slac/g/cd/swe/git/repos/package/epics/modules"
-moduleDestDir		= "/afs/slac/g/cd/swe/git/repos/package/epics/modules/from-svn"
-authorsFile			= "/afs/slac/g/cd/swe/git/repos/package/epics/modules/authors.txt"
+svnRepoEnvVar       = 'CTRL_REPO'
+svnRepoBranchPath   = 'branches/merge/epics/modules'
+svnRepoTagsPath     = 'epics/tags/modules'
+svnRepoTrunkPath    = 'trunk/pcds/epics/modules'
+gitModuleDir        = "/afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/modules"
+moduleDestDir       = "/afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/modules/from-svn"
+authorsFile         = "/afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/modules/authors.txt"
 svnRepoRoot         = os.environ[svnRepoEnvVar]
 
 def importModule( module, name=None, trunk=None, branches=[], tags=[], verbose=False ):
@@ -38,7 +38,7 @@ def importTrunk( trunk, name, branches=[], tags=[], verbose=False ):
         return
 
     # Create the git svn clone command
-    git_cmd = [	"git","svn","clone",
+    git_cmd = [ "git","svn","clone",
                     "--authors-file",   authorsFile,
                     "--trunk", trunk ]
     for b in branches:
@@ -74,7 +74,7 @@ def importTrunk( trunk, name, branches=[], tags=[], verbose=False ):
     os.chdir(curDir)
 
     # Create a bare master repo for the new git repository, cloned from our tmp repo
-    subprocess.check_call([	"git", "clone", "--bare", tmpGitRepoPath, svnGitRepoPath ])
+    subprocess.check_call([ "git", "clone", "--bare", tmpGitRepoPath, svnGitRepoPath ])
     shutil.rmtree(tpath)
 
 if __name__ == '__main__':
@@ -84,9 +84,9 @@ If you do NOT specify a module, you must specify a package name and either a sin
 Additional paths for both branches and tags may be added if desired either way.
 ''')
     parser.add_argument( '-m', '--module',   action='store',  help='svn module name to import. (trunk is $CTRL_REPO/trunk/pcds/epics/modules/MODULE_NAME/current)' )
-    parser.add_argument( '-T', '--trunk',	 action='store',  help='svn trunk path  to import. (relative to env CTRL_REPO)', default=None )
+    parser.add_argument( '-T', '--trunk',    action='store',  help='svn trunk path  to import. (relative to env CTRL_REPO)', default=None )
     parser.add_argument( '-b', '--branches', action='append', help='svn branch(es)  to import. (relative to env CTRL_REPO)', default=[] )
-    parser.add_argument( '-t', '--tags',	 action='append', help='svn tag paths   to import. (relative to env CTRL_REPO)', default=[] )
+    parser.add_argument( '-t', '--tags',     action='append', help='svn tag paths   to import. (relative to env CTRL_REPO)', default=[] )
     parser.add_argument( '-v', '--verbose',  action="store_true", help='show more verbose output.' )
     parser.add_argument( '-n', '--name',     help='name of GitHub Repo.' )
 

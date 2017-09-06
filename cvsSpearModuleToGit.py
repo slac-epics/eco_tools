@@ -8,8 +8,8 @@ import tempfile
 from cvs_utils import *
 from git_utils import *
 
-defaultModulesDir = "/afs/slac/g/cd/swe/git/repos/package/epics/modules/from-spear"
-cvsRoot	= "/afs/slac/g/spear/cvsrep"
+defaultModulesDir = "/afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/modules/from-spear"
+cvsRoot = "/afs/slac.stanford.edu/g/spear/cvsrep"
 cvs_modules2Location = parseCVSModulesTxt( cvsRoot )
 git_modules2Location = parseGitModulesTxt()
 
@@ -42,8 +42,8 @@ if __name__ == '__main__':
 
     # TODO: Need to do a better job of handling differences in LCLS vs PCDS env
     if 'TOOLS' not in os.environ:
-        if os.path.exists( '/afs/slac/g/lcls/tools' ):
-            os.environ['TOOLS'] = '/afs/slac/g/lcls/tools'
+        if os.path.exists( '/afs/slac.stanford.edu/g/lcls/tools' ):
+            os.environ['TOOLS'] = '/afs/slac.stanford.edu/g/lcls/tools'
 
     for m in args.module:
         importModule( m, repoPath=args.repoPath, gitFolder=args.gitFolder )

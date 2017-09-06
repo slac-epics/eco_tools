@@ -11,8 +11,8 @@ import gc
 
 # TODO: Need to do a better job of handling differences in LCLS vs PCDS env
 if 'TOOLS' not in os.environ:
-    if os.path.exists( '/afs/slac/g/lcls/tools' ):
-        os.environ['TOOLS'] = '/afs/slac/g/lcls/tools' 
+    if os.path.exists( '/afs/slac.stanford.edu/g/lcls/tools' ):
+        os.environ['TOOLS'] = '/afs/slac.stanford.edu/g/lcls/tools' 
 sys.path.append( "%s/cvs2git/current" % os.environ['TOOLS'] )
 
 from cvs2svn_lib.git_run_options import GitRunOptions
@@ -32,7 +32,7 @@ if  TOOLS_SITE_TOP is None:
     TOOLS_SITE_TOP  = DEF_LCLS_TOOLS
 
 
-gitModulesTxtFile   = os.path.join( DEF_LCLS_TOOLS, 'eco_modulelist', 'modulelist.txt' )
+gitModulesTxtFile   = os.path.join( TOOLS_SITE_TOP, 'eco_modulelist', 'modulelist.txt' )
 
 def parseGitModulesTxt():
     '''Parse the GIT modules txt file and return a dict of packageName -> location'''
