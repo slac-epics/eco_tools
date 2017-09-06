@@ -194,18 +194,11 @@ def ReportRelease( moduleTop, release, priorModule, opt ):
         return None
 
     pkgDependents	= getEpicsPkgDependents( release, debug=opt.debug, verbose=opt.verbose )
-    baseVerMacros	= [ "base", "BASE", "EPICS_BASE", "BASE_MODULE_VERSION", "BASE_VERSION", "EPICS_BASE_VER", "EPICS_BASE_VERSION" ]
     baseVer = "?"
-    for baseMacro in baseVerMacros:
-        # For the BASE macro's, grab the base version
-        # and then remove their macros from pkgDependents
-        if baseMacro in pkgDependents:
-            baseMacroValue = pkgDependents[ baseMacro ]
-            # Skip any defined by other macros
-            if not '$' in baseMacroValue:
-                # Found a base version!
-                baseVer = baseMacroValue
-            del pkgDependents[ baseMacro ]
+    # We should always get a base version if there is one
+    if 'base' in pkgDependents:
+        baseVer = pkgDependents['base']
+        del pkgDependents['base']
 
     if module == 'base':
         baseVer = moduleVersion
@@ -223,9 +216,9 @@ def ReportRelease( moduleTop, release, priorModule, opt ):
         if "screens" in release or module == "base":
             baseVerPrompt = ""
         elif opt.wide:
-            baseVerPrompt = " BASE=" + baseVer
+            baseVerPrompt = " base=" + baseVer
         else:
-            baseVerPrompt = "%-18s = %s" % ( "BASE", baseVer )
+            baseVerPrompt = "%-18s = %s" % ( "base", baseVer )
 
     # Print the module and version, along with base version if any
     if opt.wide:
