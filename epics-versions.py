@@ -301,7 +301,7 @@ def ExpandPackagesForTop( topDir, packages, opt ):
     numReleasesForTop = 0
     for package in packages:
         # If the package is a directory, assume it's a release dir
-        if os.path.isdir( package ):
+        if os.path.isdir( package ) and isEpicsPackage( package ):
             if False:
                 releases += package
             else:
