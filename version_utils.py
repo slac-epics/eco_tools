@@ -365,31 +365,96 @@ def assemble_release_site_inputs( batch=False ):
 
     return input_dict
 
+def getPkgReleaseList( top, pkgName ):
+    '''For a given top directory, add pkgName to top and look
+    for EPICS releases in that directory.
+    Returns a sorted list of releases, most recent first.'''
+    # Loop through the directories looking for releases
+    if not os.path.isdir( top ):
+        print "getPkgReleaseList Error: top is not a directory: %s\n" % top
+    pkgDir = os.path.join( top, pkgName )
+    if not os.path.isdir( pkgDir ):
+        print "getPkgReleaseList Error: %s is not a package under %s\n" % ( pkgName, top )
+
+    releaseList = [ ]
+    for dirPath, dirs, files in os.walk( pkgDir, topdown=True ):
+        if len( dirs ) == 0:
+            continue
+        if '.git' in dirs:
+            dirs.remove( '.git' )
+        if '.svn' in dirs:
+            dirs.remove( '.svn' )
+        if 'CVS' in dirs:
+            dirs.remove( 'CVS' )
+        releases = [ ]
+        dirs.sort()
+        for dir in dirs[:]:
+            # Remove from list so we don't search recursively
+            dirs.remove( dir )
+            if not isReleaseCandidate(dir):
+                continue
+            release = os.path.join( dirPath, dir )
+            verPath = os.path.join( release, "configure", "RELEASE" )
+
+            buildPath = os.path.join( release, "build" )
+            if os.path.isfile( verPath ) or os.path.isdir( buildPath ):
+                releases += [ release ]
+
+        if len( releases ) == 0:
+            continue;
+
+        # Create the release set so we can order the releases by version number
+        releaseSet  = { }
+        for release in releases:
+            ( reldir, ver ) = os.path.split( release )
+            relNumber = VersionToRelNumber( ver )
+            while relNumber in releaseSet:
+                relNumber -= 1e-12
+            releaseSet[ relNumber ] = release
+
+        for release in sorted( releaseSet.keys(), reverse = True ):
+            releaseList += [ releaseSet[ release ] ]
+    return releaseList
+
+def getVersionsFromFile( releaseFile ):
+    '''Find and return a dictionary of EPICS module and base versions
+    found in a release file.  Ex. releaseVersions['base'] = 'R3.15.5-1.0'
+    '''
+    if not os.path.isfile( releaseFile ):
+        print "Error: unable to open %s" % releaseFile 
+        return -1
+    releaseVersions = {}
+    for line in fileinput.input( releaseFile ):
+        line = line.strip()
+        if line.startswith( '#' ) or len(line) == 0:
+            continue
+        for regExp in [ versionRegExp, epicsBaseVerRegExp ]:
+            macroMatch = regExp.search( line )
+            if not macroMatch:
+                continue
+            macroName  = macroMatch.group(1).replace( '_MODULE_VERSION', '' )
+            pkgName    = macroNameToPkgName(macroName)
+            macroValue = macroMatch.group(2)
+            pkgVersion = os.path.split( macroValue )[-1]
+            if pkgName and pkgVersion and not '$' in pkgVersion:
+                releaseVersions[ pkgName ] = pkgVersion
+    return releaseVersions
+
 def getEpicsPkgDependents( topDir, debug=False, verbose=False ):
     pkgDependents    = {}
-    #if not module.startswith( "screens" ):
-    if True:
-        # Get the base and dependent modules from RELEASE files
-        releaseFiles = []
-        releaseFiles += [ os.path.join( topDir, "..", "..", "RELEASE_SITE" ) ]
-        releaseFiles += [ os.path.join( topDir, "RELEASE_SITE" ) ]
-        releaseFiles += [ os.path.join( topDir, "configure", "RELEASE" ) ]
-        releaseFiles += [ os.path.join( topDir, "configure", "RELEASE.local" ) ]
-        for releaseFile in releaseFiles:
-            if debug:
-                print "Checking release file: %s" % ( releaseFile )
-            if not os.path.isfile( releaseFile ):
-                continue
-            for line in fileinput.input( releaseFile ):
-                line = line.strip()
-                if line.startswith( '#' ) or len(line) == 0:
-                    continue
-                for regExp in [ versionRegExp, epicsBaseVerRegExp ]:
-                    m = regExp.search( line )
-                    if m and m.group(1) and m.group(2):
-                        macroName = m.group(1).replace( '_MODULE_VERSION', '' )
-                        pkgName = macroNameToPkgName(macroName)
-                        pkgDependents[ pkgName ] = m.group(2)
+    # Get the base and dependent modules from RELEASE files
+    releaseFiles = []
+    releaseFiles += [ os.path.join( topDir, "..", "..", "RELEASE_SITE" ) ]
+    releaseFiles += [ os.path.join( topDir, "RELEASE_SITE" ) ]
+    releaseFiles += [ os.path.join( topDir, "configure", "RELEASE" ) ]
+    releaseFiles += [ os.path.join( topDir, "configure", "RELEASE.local" ) ]
+    for releaseFile in releaseFiles:
+        if debug:
+            print "Checking release file: %s" % ( releaseFile )
+        if not os.path.isfile( releaseFile ):
+            continue
+        releaseVersions = getVersionsFromFile( releaseFile )
+        pkgDependents.update( releaseVersions )
     return pkgDependents
 
 def pkgSpecToMacroVersions( pkgSpec, verbose=False ):
