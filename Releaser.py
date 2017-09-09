@@ -240,7 +240,7 @@ class Releaser(object):
     def update_built_cookie( self ):
         cookieJarPath = self.getCookieJarPath()
         if not os.path.isdir( cookieJarPath ):
-            os.makedirs( cookieJarPath )
+            os.makedirs( cookieJarPath, 0775 )
         self.execute( "touch %s" % self.built_cookie_path() )
         self._CookieJarPath = cookieJarPath
 
@@ -303,6 +303,9 @@ class Releaser(object):
                 print "BuildRelease %s: Already built!" % ( buildDir )
                 return
 
+        print "\nBuildRelease: %s ..." % ( buildDir )
+        sys.stdout.flush()
+        sys.stderr.flush()
         try:
             self.execute("/bin/rm -f %s" % ( self.built_cookie_path() ))
             if self._repo._url.find( 'extensions' ) > 0:
@@ -331,12 +334,25 @@ class Releaser(object):
         if self._quiet:
             outputPipe = subprocess.PIPE
         try:
+            # Check Dependendents
+            print "\nChecking dependents for %s ..." % ( buildDir )
+            buildDep = getEpicsPkgDependents( buildDir, verbose=self._verbose )
+            for dep in buildDep:
+                if dep == 'base':
+                    continue	# Just check module dependents
+                package = "%s/%s" % ( dep, buildDep[dep] )
+                release = find_release( package, verbose=self._verbose )
+                if release is not None:
+                    release.InstallPackage( )
+
             print "\nBuilding Release in %s ..." % ( buildDir )
             sys.stdout.flush()
             sys.stderr.flush()
             if		os.path.isfile( os.path.join( buildDir, 'makefile' )) \
                 or	os.path.isfile( os.path.join( buildDir, 'Makefile' )):
                 buildOutput = self.execute( "make -C %s" % buildDir, outputPipe )
+
+            # Build succeeded!   Update the built_cookie
             self.update_built_cookie()
             if self._verbose:
                 print "BuildRelease %s: SUCCESS" % ( buildDir )
