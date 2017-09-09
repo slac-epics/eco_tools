@@ -23,6 +23,33 @@ class ValidateError( Exception ):
 class InstallError( Exception ):
     pass
 
+def find_release( packageSpec, verbose=False ):
+    '''packageSpec should be packageName/Version.  Ex: ADCore/R2.6-0.1.0
+       packageSpec can include one or two parent directories to help specify the package,
+       of which the last component is the packageName.
+       Ex. ioc/amo/gigECam, extensions/caqtdm'''
+    release = None
+    repo = None
+    ( packagePath, packageVersion ) = os.path.split( packageSpec )
+    packageName = os.path.split(packagePath)[1]
+    (git_url, git_tag) = gitFindPackageRelease( packagePath, packageVersion, debug=False, verbose=verbose )
+    if git_url is not None:
+        repo = gitRepo.gitRepo( git_url, None, packageName, git_tag )
+        release = Releaser( repo, packagePath, None, git_tag, verbose=verbose )
+    if release is None:
+        (svn_url, svn_branch, svn_tag) = svnFindPackageRelease( packagePath, packageVersion, debug=False, verbose=verbose )
+        if svn_url is not None:
+            if verbose:
+                print "find_release: Found svn_url=%s, svn_path=%s, svn_tag=%s" % ( svn_url, svn_branch, svn_tag )
+            repo = svnRepo.svnRepo( svn_url, svn_branch, packageName, svn_tag )
+            release = Releaser( repo, packagePath, verbose=verbose )
+    if verbose:
+        if repo is not None:
+            repo.ShowRepo( titleLine="find_release found: " + packageSpec, prefix=" " )
+        else:
+            print "find_release: Could not find packageSpec: %s" % packageSpec
+    return release
+
 class Releaser(object):
     '''class Releaser( repo, package )
     repo must be a repo object that knows the URL, branch, tag, etc needed to checkout
@@ -403,30 +430,3 @@ class Releaser(object):
             print "InstallPackage: %s CalledProcessError from BuildRelease in %s" % ( self._packageName, os.path.realpath(self._installDir) )
             print e
             pass
-
-def find_release( packageSpec, verbose=False ):
-    '''packageSpec should be packageName/Version.  Ex: ADCore/R2.6-0.1.0
-       packageSpec can include one or two parent directories to help specify the package,
-       of which the last component is the packageName.
-       Ex. ioc/amo/gigECam, extensions/caqtdm'''
-    release = None
-    repo = None
-    ( packagePath, packageVersion ) = os.path.split( packageSpec )
-    packageName = os.path.split(packagePath)[1]
-    (git_url, git_tag) = gitFindPackageRelease( packagePath, packageVersion, debug=False, verbose=verbose )
-    if git_url is not None:
-        repo = gitRepo.gitRepo( git_url, None, packageName, git_tag )
-        release = Releaser( repo, packagePath, None, git_tag, verbose=verbose )
-    if release is None:
-        (svn_url, svn_branch, svn_tag) = svnFindPackageRelease( packagePath, packageVersion, debug=False, verbose=verbose )
-        if svn_url is not None:
-            if verbose:
-                print "find_release: Found svn_url=%s, svn_path=%s, svn_tag=%s" % ( svn_url, svn_branch, svn_tag )
-            repo = svnRepo.svnRepo( svn_url, svn_branch, packageName, svn_tag )
-            release = Releaser( repo, packagePath, verbose=verbose )
-    if verbose:
-        if repo is not None:
-            repo.ShowRepo( titleLine="find_release found: " + packageSpec, prefix=" " )
-        else:
-            print "find_release: Could not find packageSpec: %s" % packageSpec
-    return release
