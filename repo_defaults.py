@@ -2,8 +2,8 @@
 Defaults for release paths, repo urls and repo paths'''
 # repo_defaults.py
 # Default string variables for cvs, svn, and git repo paths
-DEF_CVS_ROOT		= '/afs/slac.stanford.edu/g/lcls/cvs'
-DEF_SVN_REPO		= "file:///afs/slac.stanford.edu/g/pcds/vol2/svn/pcds"
+DEF_CVS_ROOT		= '/afs/slac/g/lcls/cvs'
+DEF_SVN_REPO		= "file:///afs/slac/g/pcds/vol2/svn/pcds"
 DEF_SVN_REPOS		= [ DEF_SVN_REPO ]
 DEF_SVN_STUB1		= "epics/trunk"
 DEF_SVN_STUB2		= "trunk/pcds/epics"
