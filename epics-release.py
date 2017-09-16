@@ -230,9 +230,6 @@ try:
             print "git_url:    %s" % git_url
             print "git_branch: %s" % git_branch
         # Create a git release handler
-        if git_tag == opt.release:
-            opt.noTag = True
-            opt.noTestBuild	= True
         ( urlPath, packageGitDir ) = os.path.split( git_url )
 
         # Find the packageName
@@ -257,6 +254,11 @@ try:
 
         # Create a gitRepo for this url
         repo = gitRepo.gitRepo( git_url, git_branch, packageName, opt.release )
+        if git_tag == opt.release:
+            opt.noTag = True
+            opt.noTestBuild	= True
+            # Make sure the tag has been pushed
+            repo.PushTag( opt.release )
     else:
         # See if this is an svn working dir
         ( svn_url, svn_branch, svn_tag ) = svnGetWorkingBranch()
