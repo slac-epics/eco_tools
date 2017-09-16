@@ -373,6 +373,11 @@ def gitGetWorkingBranch( debug = False, verbose = False ):
             if tokens[0] == 'origin':
                 repo_url = tokens[1]
                 break
+        if repo_url:
+            # Remove any trailing path separator
+            ( repoPath, repoPkg ) = os.path.split( repo_url )
+            if not repoPkg:
+                repo_url = repoPath
 
         # See if HEAD corresponds to any tags
         statusInfo = subprocess.check_output( [ 'git', 'name-rev', '--name-only', '--tags', 'HEAD' ], stderr=subprocess.STDOUT )
