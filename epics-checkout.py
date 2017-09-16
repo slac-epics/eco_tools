@@ -284,7 +284,7 @@ def checkOutModule(packageName, tag, destinationPath, options, from_file=False )
 
     parent_dir = os.path.dirname( destinationPath )
     if len(parent_dir) > 0 and parent_dir != '.' and not os.path.exists(parent_dir):
-        os.makedirs(parent_dir)
+        os.makedirs(parent_dir, 0775)
 
     # Remember current dir
     curDir = os.getcwd()
