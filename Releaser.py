@@ -337,13 +337,20 @@ class Releaser(object):
             # Check Dependendents
             print "\nChecking dependents for %s ..." % ( buildDir )
             buildDep = getEpicsPkgDependents( buildDir, verbose=self._verbose )
-            for dep in buildDep:
-                if dep == 'base':
-                    continue	# Just check module dependents
-                package = "%s/%s" % ( dep, buildDep[dep] )
-                release = find_release( package, verbose=self._verbose )
-                if release is not None:
-                    release.InstallPackage( )
+            if 'base' in buildDep:
+                epics_site_top = determine_epics_site_top()
+                epics_base_ver = buildDep['base']
+                if VersionToRelNumber(epics_base_ver) > 3.141205:
+                    epics_modules_top = os.path.join( epics_site_top, epics_base_ver, 'modules'	)
+                else:
+                    epics_modules_top = os.path.join( epics_site_top, 'modules'	)
+                for dep in buildDep:
+                    if dep == 'base':
+                        continue	# Just check module dependents
+                    package = "%s/%s" % ( dep, buildDep[dep] )
+                    release = find_release( package, verbose=self._verbose )
+                    if release is not None:
+                        release.InstallPackage( epics_modules_top )
 
             print "\nBuilding Release in %s ..." % ( buildDir )
             sys.stdout.flush()
