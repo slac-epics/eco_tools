@@ -7,8 +7,8 @@
 #    epics-build -p iocAdmin/R3.1.15-1.0.0 -m autosave/R5.6.2-2.2.0
 #
 #  Supports smart defaults and overrides for:
-#		* EPICS_MODULES - path to top of EPICS modules directory
-#		* EPICS_TOP or EPICS_SITE_TOP - path to top of EPICS release area
+#       * EPICS_MODULES - path to top of EPICS modules directory
+#       * EPICS_TOP or EPICS_SITE_TOP - path to top of EPICS release area
 #
 #  Auth: 13-Dec-2016, Bruce Hill          (bhill)
 #  Rev:  dd-mmm-yyyy, Reviewer's Name     (USERNAME)
@@ -32,6 +32,7 @@ import svnRepo
 import Releaser 
 from git_utils import *
 from svn_utils import *
+from version_utils import *
 from eco_version import eco_tools_version
 
 # from cram_utils import *
@@ -72,6 +73,18 @@ def find_releases( options ):
             releases += [ release ]
     return releases
 
+def buildDependencies( pkgTop, verbose=False ):
+    # Check Dependendents
+    print "\nChecking dependents for %s ..." % ( pkgTop )
+    buildDep = getEpicsPkgDependents( pkgTop, verbose=verbose )
+    for dep in buildDep:
+        if dep == 'base':
+            continue    # Just check module dependents
+        package = "%s/%s" % ( dep, buildDep[dep] )
+        release = Releaser.find_release( package, verbose=verbose )
+        if release is not None:
+            release.InstallPackage( )
+
 def process_options(argv):
     if argv is None:
         argv = sys.argv[1:]
@@ -91,13 +104,14 @@ def process_options(argv):
     parser = argparse.ArgumentParser( description=description, formatter_class=argparse.RawDescriptionHelpFormatter, epilog=epilog )
     parser.add_argument( '-p', '--package',   dest='packages', action='append', \
                         help='EPICS module-name/release-version. Ex: asyn/R4.30-1.0.1', default=[] )
-#	parser.add_argument( '-b', '--base',     action='store',  help='Use to set EPICS_BASE in RELEASE_SITE' )
+#   parser.add_argument( '-b', '--base',     action='store',  help='Use to set EPICS_BASE in RELEASE_SITE' )
     parser.add_argument( '-f', '--input_file_path', action='store', help='Read list of module releases from this file' )
     parser.add_argument( '-r', '--repo',     action='store',  help='repo url' )
     parser.add_argument( '-t', '--top',      action='store',  help='Top of release area.' )
+    parser.add_argument( '--dep',            action='store',  help='Build dependencies for directory.' )
     parser.add_argument( '--force',          action='store_true',  help='Force rebuild.' )
     parser.add_argument( '-v', '--verbose',  action="store_true", help='show more verbose output.' )
-    parser.add_argument( '--version',  		 action="version", version=eco_tools_version )
+    parser.add_argument( '--version',        action="version", version=eco_tools_version )
 
     options = parser.parse_args( )
 
@@ -130,7 +144,9 @@ def main(argv=None):
 
         in_file.close()
 
-    if len( options.packages ) == 0:
+    if options.dep:
+        buildDependencies( options.dep, verbose=options.verbose )
+    elif len( options.packages ) == 0:
         print 'Error: No module/release packages specified!'
         return -1
 
