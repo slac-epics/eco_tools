@@ -1,2 +1,2 @@
 #!/usr/bin/env python
-eco_tools_version = "eco_tools 2.1"
+eco_tools_version = "eco_tools 2.2"
