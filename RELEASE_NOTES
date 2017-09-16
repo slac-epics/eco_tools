@@ -1,4 +1,12 @@
-R2.1	2017-09-16 Bruce Hill
+R2.2	2017-09-09 Bruce Hill
+	Added recursive build of dependencies to Releaser.BuildRelease()
+		Now epics-build can build multiple packages w/o needing them sorted by dependency order
+	Made epics-versions and epics-build more robust w/ additional checks
+	tee output to build.log
+	Added check for target dir already existing
+	Fixed how Releaser handles making soft links read-only.
+
+R2.1	2017-08-16 Bruce Hill
 	Added check for valid --top in epics-build.py
 	Made eco_tools not require CVSROOT in env as we're moving away from CVS and not everyone will have it.
 	Added a few more special case MACRO names
