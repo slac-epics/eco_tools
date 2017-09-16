@@ -174,6 +174,15 @@ class gitRepo( Repo.Repo ):
         subprocess.check_call( cmdList )
         print "Successfully removed %s release tag %s." % ( package, tag )
 
+    def PushTag( self, release, verbose=True, dryRun=False ):
+        if dryRun:
+            print "--dryRun-- Push tag %s" % ( release )
+            return
+
+        if verbose:
+            print "Pushing tag %s ..." % ( release )
+        subprocess.check_call( [ 'git', 'push', 'origin', release ] )
+
     def TagRelease( self, packagePath=None, release=None, branch=None, message="", verbose=True, dryRun=False ):
         if release is None:
             release = self._tag
