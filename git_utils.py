@@ -9,33 +9,41 @@ from repo_defaults import *
 
 import gc
 
-# TODO: Need to do a better job of handling differences in LCLS vs PCDS env
-if 'TOOLS' not in os.environ:
-    if os.path.exists( '/afs/slac.stanford.edu/g/lcls/tools' ):
-        os.environ['TOOLS'] = '/afs/slac.stanford.edu/g/lcls/tools' 
-sys.path.append( "%s/cvs2git/current" % os.environ['TOOLS'] )
+DEF_GIT_REPOS		= "/afs/slac/g/cd/swe/git/repos"
+#DEF_GIT_REPOS		= "git@code.stanford.edu:slac-epics"
+DEF_GIT_MODULES		= DEF_GIT_REPOS + "/package/epics/modules"
+LCLS_TOOLS			= '/afs/slac/g/lcls/tools'
+if 'TOOLS' in os.environ:
+    TOOLS_SITE_TOP	= os.environ['TOOLS']
+else:
+    TOOLS_SITE_TOP	= LCLS_TOOLS
+    os.environ['TOOLS'] = TOOLS_SITE_TOP
 
-from cvs2svn_lib.git_run_options import GitRunOptions
-from cvs2svn_lib.context import Ctx
-from cvs2svn_lib.pass_manager import PassManager
-from cvs2svn_lib.passes import passes
-from cvs2svn_lib.main import main
-from cvs2svn_lib.symbol_strategy import ExcludeTrivialImportBranchRule
-from cvs2svn_lib.symbol_strategy import UnambiguousUsageRule
-from cvs2svn_lib.symbol_strategy import BranchIfCommitsRule
-from cvs2svn_lib.symbol_strategy import HeuristicStrategyRule
-from cvs2svn_lib.symbol_strategy import AllBranchRule
-from cvs2svn_lib.symbol_strategy import HeuristicPreferredParentRule
+cvs2git_dir = os.path.join( TOOLS_SITE_TOP, "cvs2git", "current" )
+if not os.path.isdir(cvs2git_dir):
+    cvs2git_dir = None
 
-TOOLS_SITE_TOP      = os.environ['TOOLS']
-if  TOOLS_SITE_TOP is None:
-    TOOLS_SITE_TOP  = DEF_LCLS_TOOLS
-
+if cvs2git_dir:
+    # TODO: Move cvs2svn elsewhere as we may not need it for long
+    sys.path.append( cvs2git_dir )
+    from cvs2svn_lib.git_run_options import GitRunOptions
+    from cvs2svn_lib.context import Ctx
+    from cvs2svn_lib.pass_manager import PassManager
+    from cvs2svn_lib.passes import passes
+    from cvs2svn_lib.main import main
+    from cvs2svn_lib.symbol_strategy import ExcludeTrivialImportBranchRule
+    from cvs2svn_lib.symbol_strategy import UnambiguousUsageRule
+    from cvs2svn_lib.symbol_strategy import BranchIfCommitsRule
+    from cvs2svn_lib.symbol_strategy import HeuristicStrategyRule
+    from cvs2svn_lib.symbol_strategy import AllBranchRule
+    from cvs2svn_lib.symbol_strategy import HeuristicPreferredParentRule
 
 gitModulesTxtFile   = os.path.join( TOOLS_SITE_TOP, 'eco_modulelist', 'modulelist.txt' )
 
 def parseGitModulesTxt():
     '''Parse the GIT modules txt file and return a dict of packageName -> location'''
+    if not os.path.isfile( gitModulesTxtFile ):
+        return {}
     package2Location = {}
     with open(gitModulesTxtFile, 'r') as f:
         lines = f.readlines()
@@ -228,6 +236,10 @@ def addPackageToEcoModuleList(packageName, gitMasterRepo):
     '''Add the package with the given master repo to eco's modulelist'''
     curDir = os.getcwd()
     print "Adding package", packageName, "to eco_modulelist"
+    tools_dir = os.environ['TOOLS']
+    if not tools_dir:
+        print 'addPackageToEcoModuleList Error: TOOLS env not defined.'
+        return
     gitModulesTxtFolder = os.path.join(os.environ['TOOLS'], 'eco_modulelist')
     os.chdir(gitModulesTxtFolder)
     subprocess.check_call(['git', 'pull', '--rebase'])
@@ -426,8 +438,10 @@ def gitFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
 
 def parseGitModulesTxt():
     '''Parse the GIT modules txt file and return a dict of packageName -> location'''
-    package2Location = {}
     gitModulesTxtFile = os.path.join(os.environ['TOOLS'], 'eco_modulelist', 'modulelist.txt')
+    if not os.path.isfile(gitModulesTxtFile):
+        return {}
+    package2Location = {}
     with open(gitModulesTxtFile, 'r') as f:
         lines = f.readlines()
     for line in lines:
