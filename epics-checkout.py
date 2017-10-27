@@ -107,7 +107,6 @@ from git_utils import *
 from version_utils import *
 
 
-GIT_REPO_MODULES = '/afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/modules'
 from eco_version import eco_tools_version
 
 git_package2Location = parseGitModulesTxt()
