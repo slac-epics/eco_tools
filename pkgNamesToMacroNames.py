@@ -49,6 +49,16 @@ if os.path.isdir( DEF_GIT_MODULES_PATH ):
             continue
         pkgName = string.replace( d, '.git', '' )
         pkgNameAddMacroName( pkgName, pkgName.upper() )
+else:
+    # For systems w/o AFS
+    pkgNameAddMacroName( 'ADCore',			'ADCORE' )
+    pkgNameAddMacroName( 'ADProsilica',		'ADPROSILICA' )
+    pkgNameAddMacroName( 'ADSimDetector',	'ADSIMDETECTOR' )
+    pkgNameAddMacroName( 'ADStream',		'ADSTREAM' )
+    pkgNameAddMacroName( 'ADSupport',		'ADSUPPORT' )
+    pkgNameAddMacroName( 'aravisGigE',		'ARAVISGIGE' )
+    pkgNameAddMacroName( 'ffmpegServer',	'FFMPEGSERVER' )
+    pkgNameAddMacroName( 'iocAdmin',		'IOCADMIN' )
 
 # Add special cases
 pkgNameAddMacroName( 'areaDetector',	'AREA_DETECTOR' )
