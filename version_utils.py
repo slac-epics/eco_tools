@@ -5,6 +5,7 @@ import sys
 import json
 import dircache
 import fileinput
+import subprocess
 from repo_defaults import *
 from pkgNamesToMacroNames import *
 #
