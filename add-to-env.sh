@@ -17,7 +17,9 @@ eco_tools_dir=`readlink -f $(dirname $this_script)`
 
 # Make sure we have PSPKG_ROOT and SETUP_SITE_TOP
 if [ -z "$PSPKG_ROOT" -o -z "$SETUP_SITE_TOP" ]; then
-	if [    -f /reg/g/pcds/pyps/config/common_dirs.sh       ]; then
+	if [    -f /usr/local/controls/config/common_dirs.sh       ]; then
+		source /usr/local/controls/config/common_dirs.sh
+	elif [  -f /reg/g/pcds/pyps/config/common_dirs.sh       ]; then
 		source /reg/g/pcds/pyps/config/common_dirs.sh
 	elif [  -f /afs/slac/g/lcls/epics/config/common_dirs.sh ]; then
 		source /afs/slac/g/lcls/epics/config/common_dirs.sh

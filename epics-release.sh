@@ -1,6 +1,8 @@
 #!/bin/bash
 if [ -z "$PSPKG_ROOT" -o -z "$TOOLS_SITE_TOP" ]; then
-    if [ -f /reg/g/pcds/config/common_dirs.sh ]; then
+    if [    -f /usr/local/controls/config/common_dirs.sh ]; then
+        source /usr/local/controls/config/common_dirs.sh
+    elif [  -f /reg/g/pcds/config/common_dirs.sh ]; then
         source /reg/g/pcds/config/common_dirs.sh
     else
         source /afs/slac/g/pcds/config/common_dirs.sh
