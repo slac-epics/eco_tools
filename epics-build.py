@@ -82,8 +82,10 @@ def buildDependencies( pkgTop, verbose=False ):
             continue    # Just check module dependents
         package = "%s/%s" % ( dep, buildDep[dep] )
         release = Releaser.find_release( package, verbose=verbose )
-        if release is not None:
-            release.InstallPackage( )
+        if release is None:
+            print "Error: Could not find package %s" % package
+            continue
+        release.InstallPackage( )
 
 def process_options(argv):
     if argv is None:
