@@ -110,7 +110,7 @@ def process_options(argv):
     parser.add_argument( '-f', '--input_file_path', action='store', help='Read list of module releases from this file' )
     parser.add_argument( '-r', '--repo',     action='store',  help='repo url' )
     parser.add_argument( '-t', '--top',      action='store',  help='Top of release area.' )
-    parser.add_argument( '--dep',            action='store',  help='Build dependencies for directory.' )
+    parser.add_argument( '--dep',            action='store',  help='Build dependencies for current directory.' )
     parser.add_argument( '--force',          action='store_true',  help='Force rebuild.' )
     parser.add_argument( '-v', '--verbose',  action="store_true", help='show more verbose output.' )
     parser.add_argument( '--version',        action="version", version=eco_tools_version )

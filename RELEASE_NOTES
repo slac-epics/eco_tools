@@ -1,3 +1,9 @@
+R2.3	2017-12-15 Bruce Hill
+	Re-enable git-utils/0.2.0 env so epics-build works on rhel5 systems.
+	Added support for git URL's that end in a /, i.e. /path/to/bare-repo.git/
+	Improved error handling and disgnostics
+	Added --dep option to epics-build which builds dependencies for current dir.
+
 R2.2	2017-09-09 Bruce Hill
 	Added recursive build of dependencies to Releaser.BuildRelease()
 		Now epics-build can build multiple packages w/o needing them sorted by dependency order
