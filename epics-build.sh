@@ -9,8 +9,8 @@ if [ -z "$PSPKG_ROOT" -o -z "$TOOLS_SITE_TOP" ]; then
     fi
 fi
 
-#export PSPKG_RELEASE=git-utils-0.2.0
-#source $PSPKG_ROOT/etc/set_env.sh
+export PSPKG_RELEASE=git-utils-0.2.0
+source $PSPKG_ROOT/etc/set_env.sh
 
 this_script=`readlink -f $0`
 eco_tools_dir=`readlink -f $(dirname $this_script)`
