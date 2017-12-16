@@ -30,6 +30,8 @@ def find_release( packageSpec, verbose=False ):
        Ex. ioc/amo/gigECam, extensions/caqtdm'''
     release = None
     repo = None
+    if verbose:
+        print "find_release( packageSpec=%s" % ( packageSpec )
     ( packagePath, packageVersion ) = os.path.split( packageSpec )
     packageName = os.path.split(packagePath)[1]
     (git_url, git_tag) = gitFindPackageRelease( packagePath, packageVersion, debug=False, verbose=verbose )
@@ -259,7 +261,7 @@ class Releaser(object):
             pass
         return hasBuilt
 
-    def BuildRelease( self, buildBranch, buildDir, force=False, outputPipe = subprocess.PIPE ):
+    def BuildRelease( self, buildBranch, buildDir, force=False, verbose=False, outputPipe = subprocess.PIPE ):
         if not buildDir:
             raise BuildError, "Build dir not defined!"
         if self._verbose:
@@ -348,6 +350,8 @@ class Releaser(object):
                     if dep == 'base':
                         continue	# Just check module dependents
                     package = "%s/%s" % ( dep, buildDep[dep] )
+                    if verbose:
+                        print "BuildRelease: Checking dep: package=%s" % ( package )
                     release = find_release( package, verbose=self._verbose )
                     if release is not None:
                         release.InstallPackage( epics_modules_top )

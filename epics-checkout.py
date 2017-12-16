@@ -279,11 +279,15 @@ def checkOutModule(packageName, tag, destinationPath, options, from_file=False )
     # TODO: Can we update existing dir using repo?
     if os.path.exists(destinationPath):
         print 'Directory already exists!  Aborting.....'
-        sys.exit(0)
+        sys.exit(1)
 
     parent_dir = os.path.dirname( destinationPath )
     if len(parent_dir) > 0 and parent_dir != '.' and not os.path.exists(parent_dir):
-        os.makedirs(parent_dir, 0775)
+        try:
+            os.makedirs(parent_dir, 0775)
+        except OSError, e:
+            sys.stderr.write( 'Unable to create directory: %s\n' % parent_dir )
+            sys.exit(1)
 
     # Remember current dir
     curDir = os.getcwd()

@@ -161,6 +161,7 @@ def gitGetRemoteTag( url, tag, debug = False, verbose = False ):
     For a matching git remote, url must be a valid string and tag must be found.'''
     git_url     = None
     git_tag     = None
+    url_valid   = False
     if tag is None:
         tag         = 'HEAD'
         tag_spec    = tag
@@ -171,6 +172,7 @@ def gitGetRemoteTag( url, tag, debug = False, verbose = False ):
         for line in statusInfo.splitlines():
             if line is None:
                 break
+            url_valid = True
             tokens = line.split()
             if tokens[1] == tag_spec:
                 git_url = url
@@ -178,18 +180,20 @@ def gitGetRemoteTag( url, tag, debug = False, verbose = False ):
                 break
 
     except OSError, e:
-        if debug or verbose:
+        if debug:
             print e
         pass
     except subprocess.CalledProcessError, e:
-        if debug or verbose:
+        if debug:
             print e
         pass
     if verbose:
         if git_url:
-            print "gitGetRemoteTag: Found git_url=%s, git_tag=%s" % ( git_url, git_tag )
+            print "gitGetRemoteTag: Found git_tag=%s in git_url=%s" % ( git_url, git_tag )
+        elif url_valid:
+            print "gitGetRemoteTag: Unable to find tag=%s in git url=%s" % ( tag, url )
         else:
-            print "gitGetRemoteTag: Unable to find url=%s, tag=%s" % ( url, tag )
+            print "gitGetRemoteTag: Invalid git url=%s" % ( url )
     return ( git_url, git_tag )
 
 def initBareRepo(parentFolder, packageName):
@@ -410,11 +414,16 @@ def gitGetWorkingBranch( debug = False, verbose = False ):
 
 def gitFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
     (repo_url, repo_tag) = (None, None)
+    if verbose:
+        print "gitFindPackageRelease( packageSpec=%s, tag=%s" % ( packageSpec, tag )
     if tag:
         packagePath = packageSpec
     else:
         (packagePath, tag) = os.path.split( packageSpec )
     packageName = os.path.split( packagePath )[1]
+    if verbose:
+        print "gitFindPackageRelease: packageName=%s, packagePath=%s" % ( packageName, packagePath )
+
     # See if the package was listed in $TOOLS/eco_modulelist/modulelist.txt
     if packageName in git_package2Location:
         url_path = git_package2Location[packageName]
@@ -427,6 +436,8 @@ def gitFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
                 url_path = '%s/%s.git' % ( url_root, p )
                 (repo_url, repo_tag) = gitGetRemoteTag( url_path, tag, verbose=verbose )
                 if repo_url is not None:
+                    break
+                if packageName == packagePath:
                     break
 
     if verbose:

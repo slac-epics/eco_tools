@@ -216,6 +216,8 @@ try:
 
     # Parse the command line arguments
     ( opt, args ) = parser.parse_args()
+    if opt.verbose:
+        print "epics-release main: opt.message=%s, args=%s" % ( opt.message, args )
 
     repo         = None
     packageMatch = None
@@ -231,6 +233,8 @@ try:
             print "git_branch: %s" % git_branch
         # Create a git release handler
         ( urlPath, packageGitDir ) = os.path.split( git_url )
+        if packageGitDir is None:
+            ( urlPath, packageGitDir ) = os.path.split( urlPath )
 
         # Find the packageName
         packageMatch = re.match( r"(\S+).git", packageGitDir )
@@ -281,6 +285,8 @@ try:
         packagePath = packageSpec
         if opt.release:
             packageSpec = os.path.join( packageSpec, opt.release )
+        if opt.verbose:
+            print "epics-release main: packageSpec=%s, args=%s" % ( packageSpec, args )
         release = find_release( packageSpec, opt.verbose )
         if release:
             repo = release._repo
