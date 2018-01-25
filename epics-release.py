@@ -1,6 +1,13 @@
 #!/usr/bin/env python
 import re
 import sys
+
+# Check the python version
+if sys.version_info[0] < 2 or ( sys.version_info[0] == 2 and sys.version_info[1] < 7 ):
+    print >> sys.stderr, "Python version %d.%d not supported." % (sys.version_info[0], sys.version_info[1])
+    print >> sys.stderr, "Please use python 2.7 or newer for epics-release."
+    sys.exit(1)
+
 import shutil
 import optparse
 import traceback
