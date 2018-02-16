@@ -14,6 +14,25 @@ from git_utils import *
 from svn_utils import *
 from version_utils import *
 
+def makeDirsWritable( dirPathTop ):
+    userId  = os.geteuid()
+    for dirPath, dirs, files in os.walk(dirPathTop):
+        pathStatus = os.stat( dirPath )
+        if pathStatus.st_mode & stat.S_IWGRP:
+            continue
+        # See if user owns the directory
+        if userId != pathStatus.st_uid:
+            print "Error: %s does not own %s and cannot make it writable!"
+            return
+        
+        # Make it writable.
+        try:
+            os.chmod( dirPath, pathStatus.st_mode | (stat.S_IWUSR | stat.S_IWGRP) )
+        except e, OSError:
+            print "Error: Unable to make %s writable!" % buildDir
+            print e.strerror
+            raise
+
 class BuildError( Exception ):
     pass
 
@@ -165,26 +184,16 @@ class Releaser(object):
 
     def RemoveBuild( self, buildDir ):
         print "\nRemoving build dir: %s ..." % ( buildDir )
-
-        # TODO: Move this to a function that fixes permissions
-        # Enable write access to build directory
+        buildRemoved = FALSE
         try:
-            self.execute("chmod -R u+w %s" % ( buildDir ))
-        except OSError:
-            # Just pass till this is more robust
+            shutil.rmtree( buildDir )
+            buildRemoved = TRUE
+        except:
             pass
-            #raise BuildError, "Cannot make build dir writeable: %s" % ( buildDir )
-        except RuntimeError:
-            # Just pass till this is more robust
-            pass
-            #raise BuildError, "Build dir not found: %s" % ( buildDir )
 
-        try:
-            self.execute("/bin/rm -rf %s" % ( buildDir ))
-        except OSError:
-            raise BuildError, "Cannot remove build dir: %s" % ( buildDir )
-        except RuntimeError:
-            raise BuildError, "Build dir not found: %s" % ( buildDir )
+        if not buildRemoved:
+            makeDirsWritable( buildDir )
+            shutil.rmtree( buildDir )
         print "Successfully removed build dir: %s ..." % ( buildDir )
 
     # TODO: Move this to a standalone function usable
@@ -246,6 +255,15 @@ class Releaser(object):
         self.execute( "touch %s" % self.built_cookie_path() )
         self._CookieJarPath = cookieJarPath
 
+    def remove_built_cookie( self ):
+        if not os.path.isfile( self.built_cookie_path() ):
+            return
+        cookieJarPath = self.getCookieJarPath()
+        pathStatus = os.stat( cookieJarPath )
+        if not (pathStatus.st_mode & stat.S_IWGRP):
+            os.chmod( cookieJarPath, pathStatus.st_mode | (stat.S_IWUSR | stat.S_IWGRP) )
+        self.execute("/bin/rm -f %s" % ( self.built_cookie_path() ))
+
     def built_cookie_path( self ):
         cookieJarPath = self.getCookieJarPath()
         return os.path.join( cookieJarPath, ".is_built" )
@@ -278,20 +296,6 @@ class Releaser(object):
             except OSError:
                 raise BuildError, "Cannot create build dir: %s" % ( buildDir )
 
-        # TODO: Move this to a function that fixes permissions
-        # If user owns the build directory, make it writable.
-        # Shouldn't have to do this now that we leave directories writable
-        try:
-            self.execute( "chmod -R u+w %s" % ( buildDir ) )
-        except OSError:
-            # Just pass till this is more robust
-            pass
-            #raise BuildError, "Cannot make build dir writeable: %s" % ( buildDir )
-        except RuntimeError:
-            # Just pass till this is more robust
-            pass
-            #raise BuildError, "Cannot make build dir writeable: %s" % ( buildDir )
-
         if	self._ReleasePath != buildDir:
             self._ReleasePath =  buildDir
 
@@ -299,7 +303,7 @@ class Releaser(object):
             print "BuildRelease: Checking built cookie %s" % ( self.built_cookie_path() )
         if os.path.isfile( self.built_cookie_path() ):
             if force:
-                self.execute("/bin/rm -f %s" % ( self.built_cookie_path() ))
+                self.remove_built_cookie()
             else:
                 #if self._verbose:
                 print "BuildRelease %s: Already built!" % ( buildDir )
@@ -309,7 +313,6 @@ class Releaser(object):
         sys.stdout.flush()
         sys.stderr.flush()
         try:
-            self.execute("/bin/rm -f %s" % ( self.built_cookie_path() ))
             if self._repo._url.find( 'extensions' ) > 0:
                 # For extensions, we first checkout extensions-top
                 topRepo = gitRepo.gitRepo( DEF_GIT_EXT_TOP_URL, None, "extensions-top", DEF_GIT_EXT_TOP_TAG )
@@ -323,10 +326,10 @@ class Releaser(object):
                 self._repo.CheckoutRelease( buildDir, verbose=self._verbose, dryRun=self._dryRun )
         except RuntimeError, e:
             print e
-            raise BuildError, "BuildRelease %s: FAILED" % buildDir
+            raise BuildError, "BuildRelease %s: Checkout FAILED" % buildDir
         except gitRepo.gitError, e:
             print e
-            raise BuildError, "BuildRelease %s: FAILED" % buildDir
+            raise BuildError, "BuildRelease %s: Checkout FAILED" % buildDir
 
         # See if it's built for any architecture
         hasBuilt = self.hasBuilt()
