@@ -189,11 +189,11 @@ def gitGetRemoteTag( url, tag, debug = False, verbose = False ):
         pass
     if verbose:
         if git_url:
-            print "gitGetRemoteTag: Found git_tag=%s in git_url=%s" % ( git_url, git_tag )
+            print "gitGetRemoteTag: Found git_tag %s in git_url %s" % ( git_tag, git_url )
         elif url_valid:
-            print "gitGetRemoteTag: Unable to find tag=%s in git url=%s" % ( tag, url )
+            print "gitGetRemoteTag: Unable to find tag %s in git url %s" % ( tag, url )
         else:
-            print "gitGetRemoteTag: Invalid git url=%s" % ( url )
+            print "gitGetRemoteTag: Invalid git url %s" % ( url )
     return ( git_url, git_tag )
 
 def initBareRepo(parentFolder, packageName):
@@ -418,7 +418,7 @@ def gitGetWorkingBranch( debug = False, verbose = False ):
 def gitFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
     (repo_url, repo_tag) = (None, None)
     if verbose:
-        print "gitFindPackageRelease( packageSpec=%s, tag=%s" % ( packageSpec, tag )
+        print "gitFindPackageRelease( packageSpec=%s, tag=%s )" % ( packageSpec, tag )
     if tag:
         packagePath = packageSpec
     else:
