@@ -311,7 +311,10 @@ def importHistoryFromCVS(tpath, gitRepoPath, CVSpackageLocation, gitFolder=None,
         if not gitFolder:
             print "git repo path and import folder are not defined!"
             return
-        gitRepoPath = os.path.join( gitFolder, module+".git")
+        if gitFolder.endswith(".git"):
+            gitRepoPath = gitFolder
+        else:
+            gitRepoPath = os.path.join( gitFolder, module+".git")
     if os.path.exists(gitRepoPath):
         print "cvs import of repo already exists:", gitRepoPath
         return
