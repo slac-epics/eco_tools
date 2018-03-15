@@ -18,7 +18,8 @@ git_modules2Location = parseGitModulesTxt()
 # the proper definition of moduleType for the importModule function.
 moduleTypePaths = {
     'epics_module': {'cvs': 'epics/site/src', 'git': 'epics/modules'},
-    'kernel_module': {'cvs': 'linuxKernel_Modules', 'git': 'linux/drivers/kernel'}
+    'kernel_module': {'cvs': 'linuxKernel_Modules', 'git': 'linux/drivers/kernel'},
+    'epics_extension': {'cvs': 'epics/extensions/src', 'git': 'epics/extensions'}
 }
 
 
@@ -48,6 +49,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser( description='''This script creates a git repo for each specified CVS module....
 ''')
     parser.add_argument( '-m', '--module', action='append', required=True, help='Module name to import.' )
+    parser.add_argument( '-e', '--extension', action='store_true', default=False, required=False, help='Indicates if this is a EPICS Extension.' )
     parser.add_argument( '-k', '--kernel', action='store_true', default=False, required=False, help='Indicates if this is a Kernel Module.' )
     parser.add_argument( '--repoPath',  action='store', default=None, help='CVS repo path to import.' )
     parser.add_argument( '--gitFolder', action='store', default=None, help='Folder to create git repo in.' )
@@ -62,6 +64,8 @@ if __name__ == '__main__':
     moduleType = 'epics_module'
     if args.kernel:
         moduleType = 'kernel_module'
+    elif args.extension:
+        moduleType = 'epics_extension'
 
     for m in args.module:
         importModule( m, moduleType, repoPath=args.repoPath, gitFolder=args.gitFolder )
