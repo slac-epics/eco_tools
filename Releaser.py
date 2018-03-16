@@ -244,7 +244,7 @@ class Releaser(object):
             return self._CookieJarPath 
         # TODO: Derive _EpicsHostArch from the module's RELEASE_SITE file instead of env
         if os.path.isdir( os.path.join( self._ReleasePath, "build" ) ):
-            return os.path.join( self._ReleasePath, "build", "O." + self._EpicsHostArch )
+            return os.path.join( self._ReleasePath, "build", "configure", "O." + self._EpicsHostArch )
         else:
             return os.path.join( self._ReleasePath, "configure", "O." + self._EpicsHostArch )
 
@@ -418,9 +418,17 @@ class Releaser(object):
             if not installTop and not epics_site_top:
                 print "InstallPackage Error: Need valid installTop to determine installDir!"
                 return
-            if not installTop:
-                if		os.path.split( self._packagePath )[0] == 'modules' \
-                     or	self._repo.GetUrl().find('modules') >= 0:
+            if	os.path.split( self._packagePath )[0] == 'modules' \
+            or  self._repo.GetUrl().find('modules') >= 0:
+                # Package is a module
+                if installTop is not None:
+                    if not installTop.endswith( '/' + self._packageName ):
+                        if not installTop.endswith( '/modules' ):
+                            installTop += '/modules'
+                    if not os.path.isdir( installTop ):
+                        print "Invalid top %s" % installTop
+                        installTop = None
+                if installTop is None:
                     epics_modules_top = determine_epics_modules_top()
                     if not epics_modules_top:
                         print "InstallPackage Error: Unable to determine EPICS modules installTop!"
@@ -435,15 +443,19 @@ class Releaser(object):
             if not installTop:
                 print "InstallPackage Error: Unable to determine installTop!"
                 return
+            if not os.path.isdir( installTop ):
+                print "InstallPackage Error: Invalid installTop:", installTop
+                return
+            # Canonicalize installTop
             cmdList = [ "readlink", "-e", installTop ]
             cmdOutput = subprocess.check_output( cmdList ).splitlines()
             if len(cmdOutput) == 1:
                 installTop = cmdOutput[0]
-            if not os.path.isdir( installTop ):
-                print "InstallPackage Error: Invalid installTop:", installTop
-                return
 
-            self._installDir = os.path.join( installTop, self._packageName, self._repo.GetTag() )
+            if installTop.endswith( '/' + self._packageName ):
+                self._installDir = os.path.join( installTop, self._repo.GetTag() )
+            else:
+                self._installDir = os.path.join( installTop, self._packageName, self._repo.GetTag() )
 
         if self._installDir.startswith( DEF_EPICS_TOP_PCDS ):
             self._grpOwner = DEF_PCDS_GROUP_OWNER
