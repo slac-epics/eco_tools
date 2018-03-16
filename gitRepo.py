@@ -70,14 +70,10 @@ class gitRepo( Repo.Repo ):
 
             except RuntimeError, e:
                 print e
-                os.chdir(curDir)
-                shutil.rmtree( buildDir )
                 pass
 
             except subprocess.CalledProcessError, e:
                 print e
-                os.chdir(curDir)
-                shutil.rmtree( buildDir )
                 pass
 
         if not os.path.isdir( os.path.join( buildDir, '.git' ) ):
