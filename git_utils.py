@@ -197,7 +197,10 @@ def gitGetRemoteTag( url, tag, debug = False, verbose = False ):
     return ( git_url, git_tag )
 
 def initBareRepo(parentFolder, packageName):
-    gitMasterRepo = os.path.join(parentFolder, packageName+".git")
+    if parentFolder.endswith( packageName + ".git" ):
+        gitMasterRepo = parentFolder
+    else:
+        gitMasterRepo = os.path.join(parentFolder, packageName+".git")
     print "Checking to see if git master repo exists at", gitMasterRepo
     if os.path.exists(gitMasterRepo):
         subprocess.check_call(["zenity", "--error", "--title", "Error", "--text", "Git master repo for package " + packageName + " already exists at " + gitMasterRepo])
