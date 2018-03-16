@@ -216,17 +216,17 @@ def ReportRelease( moduleTop, release, priorModule, opt ):
         if "screens" in release or module == "base":
             baseVerPrompt = ""
         elif opt.wide:
-            baseVerPrompt = " base=" + baseVer
+            baseVerPrompt = " base/" + baseVer
         else:
-            baseVerPrompt = "%-18s = %s" % ( "base", baseVer )
+            baseVerPrompt = "%18s/%s" % ( "base", baseVer )
 
     # Print the module and version, along with base version if any
     if opt.wide:
-        print "%s %s" % ( release, baseVerPrompt ),
+        print "%s/%s" % ( release, baseVerPrompt ),
     elif module.startswith('/'):
-        print "%-43s %s" % ( release, baseVerPrompt )
+        print "%43s/%s" % ( release, baseVerPrompt )
     else:
-        print "%-24s %-18s %s" % ( module, moduleVersion, baseVerPrompt )
+        print "%24s/%-18s %s" % ( module, moduleVersion, baseVerPrompt )
 
     # Show pkgDependents for --verbose
     if opt.verbose:
@@ -240,9 +240,9 @@ def ReportRelease( moduleTop, release, priorModule, opt ):
             # Print dependent info w/o newline (trailing ,)
             if opt.wide:
                 # Don't print newline in wide mode 
-                print " %s=%s" % ( depRoot, pkgDependents[ dep ] ),
+                print " %s/%s" % ( depRoot, pkgDependents[ dep ] ),
             else:
-                print "%-24s %-18s %-18s = %s" % ( "", "", depRoot, pkgDependents[ dep ] )
+                print "%-18s %19s/%s" % ( "", depRoot, pkgDependents[ dep ] )
     if opt.wide:
         print
 
@@ -267,9 +267,9 @@ def ReportRelease( moduleTop, release, priorModule, opt ):
                         parentRelease = os.path.join( parentTail, parentRelease ) 
                     if opt.wide:
                         # Don't print newline in wide mode 
-                        print " %s=%s" % ( iocName, parentRelease ),
+                        print " %s/%s" % ( iocName, parentRelease ),
                     else:
-                        print "%-4s %-20s %s" % ( '', iocName, parentRelease )
+                        print "%-4s %20s/%s" % ( '', iocName, parentRelease )
         if opt.wide:
             print
 
