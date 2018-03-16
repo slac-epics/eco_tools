@@ -51,10 +51,6 @@ def build_modules( options ):
     if options.top:
         if not os.path.isdir( options.top ):
             print "Invalid --top %s" % options.top
-        if not options.top.endswith( '/modules' ):
-            options.top += '/modules'
-        if not os.path.isdir( options.top ):
-            print "Invalid top %s" % options.top
     try:
         releases = find_releases( options )
         for release in releases:
@@ -75,7 +71,7 @@ def find_releases( options ):
 
 def buildDependencies( pkgTop, verbose=False ):
     # Check Dependendents
-    print "\nChecking dependents for %s ..." % ( pkgTop )
+    print "Checking dependents for %s" % ( pkgTop )
     buildDep = getEpicsPkgDependents( pkgTop, verbose=verbose )
     for dep in buildDep:
         if dep == 'base':
