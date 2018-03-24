@@ -1,3 +1,14 @@
+R2.4	2018-03-24 Bruce Hill
+	Added support for reading .versionFile soft link to find the versionFileName
+	Reworked getEpicsPkgDependents for more accurate dependencies.
+	Fix checkoutRelease to not remove build dir if git rev-parse can't find tag.  Just need to do new fetch.
+	Fixed initBareRepo to check if folder name already includes PACKAGENAME.git
+	Modify epics-versions output to use MODNAME/VERSION notation for easier cut and paste
+	Added checks in Releaser for writable dirs and fix as needed if user owns dir
+	First version of installLinks.py.  Use to create links for extensions release collections or other release management.
+	Add the option to import EPICS Extensions to cvsModuleToGit.py.
+	Fix the issue of creating the from_cvs repo inside the repo.git folder.
+
 R2.3	2017-12-15 Bruce Hill
 	Re-enable git-utils/0.2.0 env so epics-build works on rhel5 systems.
 	Added support for git URL's that end in a /, i.e. /path/to/bare-repo.git/
