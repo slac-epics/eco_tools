@@ -9,6 +9,21 @@ from repo_defaults import *
 _macroNameToPkgName  = {}
 _pkgNameToMacroNames = {}
 
+# These macroNames are never mapped to pkgNames
+_macroNameToPkgName[ 'ALARM_CONFIGS_TOP' ] = None
+_macroNameToPkgName[ 'BASE_SITE_TOP' ] = None
+_macroNameToPkgName[ 'CONFIG' ] = None
+_macroNameToPkgName[ 'CONFIG_SITE_TOP' ] = None
+_macroNameToPkgName[ 'EPICS_MODULES' ] = None
+_macroNameToPkgName[ 'EPICS_SITE_TOP' ] = None
+_macroNameToPkgName[ 'IOC_SITE_TOP' ] = None
+_macroNameToPkgName[ 'MY_MODULES' ] = None
+_macroNameToPkgName[ 'PACKAGE_SITE_TOP' ] = None
+_macroNameToPkgName[ 'PSPKG_ROOT' ] = None
+_macroNameToPkgName[ 'RULES' ] = None
+_macroNameToPkgName[ 'TOOLS_SITE_TOP' ] = None
+_macroNameToPkgName[ 'TOP' ] = None
+
 def macroNameToPkgName( macroName ):
     if macroName in _macroNameToPkgName:
         pkgName = _macroNameToPkgName[ macroName ]
@@ -38,8 +53,12 @@ def pkgNameAddMacroName( pkgName, macroName ):
         _macroNameToPkgName[macroName]	= pkgName
     else:
         if _macroNameToPkgName[macroName] != pkgName:
-            print	"pkgNameAddMacroName Error: Pkg %s Macro %s already mapped to %s" % \
-                    ( pkgName, macroName, _macroNameToPkgName[macroName] )
+            if _macroNameToPkgName[macroName] is None:
+                print	"pkgNameAddMacroName Error: Pkg %s Macro %s is not a valid pkgName" % \
+                        ( pkgName, macroName )
+            else:
+                print	"pkgNameAddMacroName Error: Pkg %s Macro %s already mapped to %s" % \
+                        ( pkgName, macroName, _macroNameToPkgName[macroName] )
 
 # Automatically populate most of our macro names for packages
 # by converting the git directory name to uppercase
@@ -63,6 +82,8 @@ else:
 # Add special cases
 pkgNameAddMacroName( 'areaDetector',	'AREA_DETECTOR' )
 pkgNameAddMacroName( 'base',			'BASE' )
+pkgNameAddMacroName( 'base',			'BASE_MODULE_VERSION' )
+pkgNameAddMacroName( 'base',			'EPICS_BASE' )
 pkgNameAddMacroName( 'BergozBCM-RF-asyn','BERGOZBCM_RF_ASYN' )
 pkgNameAddMacroName( 'Bk9000_MBT',		'BK9000_MBT' )
 pkgNameAddMacroName( 'bldClient',		'BLD_CLIENT' )
