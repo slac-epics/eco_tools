@@ -481,9 +481,19 @@ def git_get_versionFileName():
     this routine returns it.  If not, returns None'''
     versionFileName = None
     try:
-        git_output = git_check_output( "git config --get ecotools.versionfile" ).splitlines()
+        git_output = git_check_output( "git rev-parse --show-toplevel" ).splitlines()
         if len(git_output) >= 1:
-            versionFileName = git_output[0]
+            # Try reading versionFileName from the new softlink .versionFile
+            versionFileName = os.readlink( os.path.join( git_output[0], '.versionFile' ) )
+    except:
+        pass
+
+    # Backup versionFileName is original git config setting ecotools.versionfile
+    try:
+        if versionFileName is None:
+            git_output = git_check_output( "git config --get ecotools.versionfile" ).splitlines()
+            if len(git_output) >= 1:
+                versionFileName = git_output[0]
     except:
         pass
     return versionFileName
