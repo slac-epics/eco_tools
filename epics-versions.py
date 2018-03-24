@@ -180,20 +180,14 @@ def ReportRelease( moduleTop, release, priorModule, opt ):
         moduleTop = cmdOutput[0]
     #relPath = relPath.replace( "slac.stanford.edu", "slac" )
     relPath = relPath.replace( moduleTop + "/", "" )
-    # If that didn't work, just show the last 3 directory levels
-    dirCount = relPath.count( "/" )
-    if dirCount > 3:
-        dir1Index = relPath.rfind( "/" )
-        dir2Index = relPath.rfind( "/", 0, dir1Index )
-        dir3Index = relPath.rfind( "/", 0, dir2Index )
-        relPath   = relPath[dir3Index+1:]
-    module = relPath
-    if opt.debug:
-        print "ReportRelease: %s, priorModule = %s" % ( module, priorModule )
+
+    # At most just show the last 3 directory levels
+    relPath = '/'.join( relPath.split('/')[-3:] )
+    module  = relPath
     if module == priorModule and not opt.showAll:
         return None
 
-    pkgDependents	= getEpicsPkgDependents( release, debug=opt.debug, verbose=opt.verbose )
+    pkgDependents	= getEpicsPkgDependents( release, debug=opt.debug )
     baseVer = "?"
     # We should always get a base version if there is one
     if 'base' in pkgDependents:
@@ -222,27 +216,24 @@ def ReportRelease( moduleTop, release, priorModule, opt ):
 
     # Print the module and version, along with base version if any
     if opt.wide:
-        print "%s/%s" % ( release, baseVerPrompt ),
-    elif module.startswith('/'):
-        print "%43s/%s" % ( release, baseVerPrompt )
+        print "%s/%s %s" % ( module, moduleVersion, baseVerPrompt ),
+    #elif module.startswith('/'):
+    #	print "%-37/%s" % ( release, baseVerPrompt )
     else:
-        print "%24s/%-18s %s" % ( module, moduleVersion, baseVerPrompt )
+        print "%18s/%-20s %s" % ( module, moduleVersion, baseVerPrompt )
 
     # Show pkgDependents for --verbose
     if opt.verbose:
-        for dep in sorted( pkgDependents.keys() ):
-            # Convert *_MODULE_VERSION dependencies to pkgNames
-            if dep.endswith( '_MODULE_VERSION' ):
-                depRoot = dep.replace( "_MODULE_VERSION", "" )
-                depRoot = macroNameToPkgName(depRoot)
-            else:
-                depRoot = dep
+        for depRoot in sorted( pkgDependents.keys() ):
             # Print dependent info w/o newline (trailing ,)
+            depVersion = pkgDependents[ depRoot ]
             if opt.wide:
                 # Don't print newline in wide mode 
-                print " %s/%s" % ( depRoot, pkgDependents[ dep ] ),
+                print " %s/%s" % ( depRoot, depVersion ),
+            elif '/' in depVersion:
+                print "%20s%18s %s" % ( '', depRoot, depVersion )
             else:
-                print "%-18s %19s/%s" % ( "", depRoot, pkgDependents[ dep ] )
+                print "%20s%18s %19s/%s" % ( '', depRoot, depRoot, depVersion )
     if opt.wide:
         print
 
@@ -302,14 +293,11 @@ def ExpandPackagesForTop( topDir, packages, opt ):
     for package in packages:
         # If the package is a directory, assume it's a release dir
         if os.path.isdir( package ) and isEpicsPackage( package ):
-            if False:
-                releases += package
+            if not ReportRelease( topDir, package, None, opt ):
+                print "%s: No releases found.\n" % ( package )
             else:
-                if not ReportRelease( topDir, package, None, opt ):
-                    print "%s: No releases found.\n" % ( package )
-                else:
-                    numReleasesForTop += 1
-                continue
+                numReleasesForTop += 1
+            continue
         elif package not in defEpicsTopVariants:
             releases += ExpandModulePath( topDir, package, opt )
         #elif isEpicsTopVariant( topDir ):

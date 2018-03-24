@@ -4,7 +4,7 @@ import re
 import sys
 import json
 import dircache
-import fileinput
+import glob
 import subprocess
 from repo_defaults import *
 from pkgNamesToMacroNames import *
@@ -19,25 +19,17 @@ from pkgNamesToMacroNames import *
 # Released under the GPLv2 licence <http://www.gnu.org/licenses/gpl-2.0.html>
 #
 
-# Raw string regular expression patterns
-numberRawStr        = r"(\d+)"
-releaseRawStr       = r"(|[a-zA-Z0-9_-]*-)R(\d+)[-_.](\d+)(.*)"
-macroNameRawStr     = r"^\s*([a-zA-Z0-9_]*)\s*=\s*(\S*)\s*$"
-moduleVersionRawStr = r"^\s*([a-zA-Z0-9_]*)_MODULE_VERSION\s*=\s*(\S*)\s*$"
-epicsBaseVerRawStr  = r"^\s*([A-Za-z0-9_-]*BASE[A-Za-z0-9_-]*VER[SION]*)\s*=\s*(\S*)\s*$"
-epicsModulesRawStr  = r"^\s*EPICS_MODULES\s*=\s*(\S*\s*)$"
-modulesSiteTopRawStr= r"^\s*MODULES_SITE_TOP\s*=\s*(\S*\s*)$"
-versionRawStr       = r"^\s*([A-Za-z0-9_-]*VERSION)\s*=\s*(\S*)\s*$"
 
 # Pre-compile regular expressions for speed
-numberRegExp        = re.compile( numberRawStr )
-releaseRegExp       = re.compile( releaseRawStr )
-macroNameRegExp     = re.compile( macroNameRawStr )
-moduleVersionRegExp = re.compile( moduleVersionRawStr )
-epicsBaseVerRegExp  = re.compile( epicsBaseVerRawStr )
-epicsModulesRegExp  = re.compile( epicsModulesRawStr )
-modulesSiteTopRegExp= re.compile( modulesSiteTopRawStr )
-versionRegExp       = re.compile( versionRawStr )
+numberRegExp        = re.compile( r"(\d+)" )
+releaseRegExp       = re.compile( r"(|[a-zA-Z0-9_-]*-)R(\d+)[-_.](\d+)(.*)" )
+macroNameRegExp     = re.compile( r"^\s*([a-zA-Z0-9_]*)\s*=\s*(\S*)\s*$" )
+macroRefRegExp      = re.compile( r"^(.*)\$\(([a-zA-Z0-9_]+)\)(.*)$" )
+moduleVersionRegExp = re.compile( r"^\s*([a-zA-Z0-9_]*)_MODULE_VERSION\s*=\s*(\S*)\s*$" )
+epicsBaseVerRegExp  = re.compile( r"^\s*([A-Za-z0-9_-]*BASE[A-Za-z0-9_-]*VER[SION]*)\s*=\s*(\S*)\s*$" )
+epicsModulesRegExp  = re.compile( r"^\s*EPICS_MODULES\s*=\s*(\S*\s*)$" )
+modulesSiteTopRegExp= re.compile( r"^\s*MODULES_SITE_TOP\s*=\s*(\S*\s*)$" )
+versionRegExp       = re.compile( r"^\s*([A-Za-z0-9_-]*VERSION)\s*=\s*(\S*)\s*$" )
 
 def VersionToRelNumber( version, debug=False ):
     relNumber = 0.0
@@ -366,6 +358,20 @@ def assemble_release_site_inputs( batch=False ):
 
     return input_dict
 
+def expandMacros( strWithMacros, macroDict ):
+    while True:
+        macroMatch = macroRefRegExp.search( strWithMacros )
+        if not macroMatch:
+            break
+        macroName = macroMatch.group(2)
+        if not macroName in macroDict:
+            # No need to expand other macros in the string once one has failed
+            break
+        # Expand this macro and continue
+        strWithMacros = macroMatch.group(1) + macroDict[macroName] + macroMatch.group(3)
+
+    return strWithMacros
+
 def getPkgReleaseList( top, pkgName ):
     '''For a given top directory, add pkgName to top and look
     for EPICS releases in that directory.
@@ -417,45 +423,95 @@ def getPkgReleaseList( top, pkgName ):
             releaseList += [ releaseSet[ release ] ]
     return releaseList
 
-def getVersionsFromFile( releaseFile ):
-    '''Find and return a dictionary of EPICS module and base versions
-    found in a release file.  Ex. releaseVersions['base'] = 'R3.15.5-1.0'
+def getMacrosFromFile( filePath, macroDict, debug = False ):
+    '''Find and return a dictionary of gnu make style macros
+    found in a file.  Ex. macroDict['BASE_MODULE_VERSION'] = 'R3.15.5-1.0'
     '''
-    if not os.path.isfile( releaseFile ):
-        print "Error: unable to open %s" % releaseFile 
+    if not os.path.isfile( filePath ):
+        print "getMacrosFromFile Error: unable to open %s" % filePath 
         return -1
-    releaseVersions = {}
-    for line in fileinput.input( releaseFile ):
+    if debug:
+        print "getMacrosFromFile %s: %d versions on entry" % ( filePath, len(macroDict) )
+    in_file = open( filePath, "r" )
+    for line in in_file:
         line = line.strip()
         if line.startswith( '#' ) or len(line) == 0:
             continue
-        for regExp in [ versionRegExp, epicsBaseVerRegExp ]:
+        if line.startswith( 'include' ) or line.startswith( '-include' ):
+            includeFileRefs = line.split()[1:]
+            includeFiles = []
+            # Expand macros and glob include file references
+            for ref in includeFileRefs:
+                ref = expandMacros( ref, macroDict )
+                includeFiles += glob.glob( ref )
+            # Recursively call getMacrosFromFile for each includeFile
+            for includeFile in includeFiles:
+                macroDict = getMacrosFromFile( includeFile, macroDict, debug )
+            continue
+
+        for regExp in [ macroNameRegExp, versionRegExp, epicsBaseVerRegExp ]:
             macroMatch = regExp.search( line )
             if not macroMatch:
                 continue
-            macroName  = macroMatch.group(1).replace( '_MODULE_VERSION', '' )
-            pkgName    = macroNameToPkgName(macroName)
+            macroName  = macroMatch.group(1)
             macroValue = macroMatch.group(2)
-            pkgVersion = os.path.split( macroValue )[-1]
-            if pkgName and pkgVersion and not '$' in pkgVersion:
-                releaseVersions[ pkgName ] = pkgVersion
-    return releaseVersions
+            if macroName and macroValue:
+                if debug:
+                    print "getMacrosFromFile: %s = %s" % ( macroName, macroValue )
+                macroDict[ macroName ] = macroValue
+                break
 
-def getEpicsPkgDependents( topDir, debug=False, verbose=False ):
-    pkgDependents    = {}
+    # Expand macro values
+    for macroName in macroDict:
+        macroValue = macroDict[macroName]
+        macroDict[macroName] = expandMacros( macroValue, macroDict )
+
+    if debug:
+        print "getMacrosFromFile %s: %d versions on exit" % ( filePath, len(macroDict) )
+    return macroDict
+
+def getEpicsPkgDependents( topDir, debug=False ):
+    '''Find and return a dictionary of EPICS package (modules and base) versions
+    found in a release file.  Ex. pkgDependents['base'] = 'R3.15.5-1.0'
+    '''
+    macroDict = {}
+    macroDict['TOP'] = topDir
     # Get the base and dependent modules from RELEASE files
-    releaseFiles = []
-    releaseFiles += [ os.path.join( topDir, "..", "..", "RELEASE_SITE" ) ]
-    releaseFiles += [ os.path.join( topDir, "RELEASE_SITE" ) ]
-    releaseFiles += [ os.path.join( topDir, "configure", "RELEASE" ) ]
-    releaseFiles += [ os.path.join( topDir, "configure", "RELEASE.local" ) ]
+    releaseFiles = [ os.path.join( topDir, "configure", "RELEASE" ) ]
+    #releaseFiles += [ os.path.join( topDir, "..", "..", "RELEASE_SITE" ) ]
+    #releaseFiles += [ os.path.join( topDir, "RELEASE_SITE" ) ]
+    #releaseFiles += [ os.path.join( topDir, "configure", "RELEASE.local" ) ]
     for releaseFile in releaseFiles:
         if debug:
-            print "Checking release file: %s" % ( releaseFile )
+            print "getEpicsPkgDependents: Checking release file: %s" % ( releaseFile )
         if not os.path.isfile( releaseFile ):
             continue
-        releaseVersions = getVersionsFromFile( releaseFile )
-        pkgDependents.update( releaseVersions )
+        macroDict = getMacrosFromFile( releaseFile, macroDict, debug=debug )
+        #pkgDependents.update( releaseVersions )
+    pkgDependents = {}
+    epicsModules = None
+    if 'EPICS_MODULES' in macroDict:
+        epicsModules = macroDict[ 'EPICS_MODULES' ]
+    for macroName in macroDict:
+        if macroName.endswith( '_MODULE_VERSION' ):
+            continue
+        macroValue = macroDict[macroName]
+        pkgName    = macroNameToPkgName(macroName)
+        if not pkgName:
+            continue
+        if pkgName == 'base':
+            pkgVersion = os.path.split( macroValue )[-1]
+        elif epicsModules and macroValue.startswith( epicsModules ):
+            macroValue = macroValue.replace( epicsModules, '' )
+            pkgVersion = os.path.split( macroValue )[-1]
+        else:
+            # Just show the last 4 levels of arbitrary paths:w
+            pkgVersion = '/'.join( macroValue.split('/')[-3:] )
+        if pkgName and pkgVersion:
+            if debug:
+                print "getEpicsPkgDependents: %s = %s" % ( pkgName, pkgVersion )
+            pkgDependents[ pkgName ] = pkgVersion
+
     return pkgDependents
 
 def pkgSpecToMacroVersions( pkgSpec, verbose=False ):
@@ -523,6 +579,8 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
         oldVersionPath = match.group(2)
         if macroName in newMacroVersions:
             pkgName = macroNameToPkgName(macroName)
+            if not pkgName:
+                continue
             macroName_MODULE_VERSION = "%s_MODULE_VERSION" % macroName
             if using_MODULE_VERSION.get( macroName, False ):
                 newVersionPath = "$(EPICS_MODULES)/%s/$(%s_MODULE_VERSION)" % ( pkgName, macroName )
@@ -614,7 +672,7 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
     print "%s, UPDATED" %  filePath
     return 1
 
-def update_pkg_dependency( topDir, pkgSpecs, verbose=False ):
+def update_pkg_dependency( topDir, pkgSpecs, debug=False, verbose=False ):
     """
     update_pkg_dependency(
         topDir,			#  path to top directory of epics package
@@ -635,7 +693,7 @@ def update_pkg_dependency( topDir, pkgSpecs, verbose=False ):
         print "update_pkg_dependency: %s" % topDir
 
     # Get current pkgSpecs
-    oldPkgDependents = getEpicsPkgDependents( topDir, verbose=verbose )
+    oldPkgDependents = getEpicsPkgDependents( topDir, debug=debug )
     oldMacroVersions = {}
     for pkgName in oldPkgDependents:
         pkgSpec = pkgName + "/" + oldPkgDependents[pkgName]
