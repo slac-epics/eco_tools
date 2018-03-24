@@ -72,7 +72,7 @@ def find_releases( options ):
 def buildDependencies( pkgTop, verbose=False ):
     # Check Dependendents
     print "Checking dependents for %s" % ( pkgTop )
-    buildDep = getEpicsPkgDependents( pkgTop, verbose=verbose )
+    buildDep = getEpicsPkgDependents( pkgTop )
     for dep in buildDep:
         if dep == 'base':
             continue    # Just check module dependents

@@ -341,7 +341,7 @@ class Releaser(object):
         try:
             # Check Dependendents
             print "\nChecking dependents for %s ..." % ( buildDir )
-            buildDep = getEpicsPkgDependents( buildDir, verbose=self._verbose )
+            buildDep = getEpicsPkgDependents( buildDir )
             if 'base' in buildDep:
                 epics_site_top = determine_epics_site_top()
                 epics_base_ver = buildDep['base']

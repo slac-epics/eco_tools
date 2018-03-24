@@ -339,7 +339,7 @@ try:
     if not opt.installDir:
         # See if we can derive the releaseDir from the packagePath
         epics_base_ver = None
-        topDirDependents = getEpicsPkgDependents( os.getcwd(), verbose=opt.verbose )
+        topDirDependents = getEpicsPkgDependents( os.getcwd(), debug=debugScript )
         if 'base' in topDirDependents:
             epics_base_ver = topDirDependents['base']
         if not packageName:
