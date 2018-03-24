@@ -109,7 +109,7 @@ class gitRepo( Repo.Repo ):
         try:
             # Refresh the tags
             # TODO: May fail if git repo is read-only
-            cmdList = [ "git", "fetch", "origin", "--tags" ]
+            cmdList = [ "git", "fetch", "origin", self._tag ]
             subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
 
             # Get the tagSha
