@@ -105,6 +105,7 @@ from cram_utils import *
 from cvs_utils import *
 from git_utils import *
 from version_utils import *
+import cvs2git_utils
 
 
 from eco_version import eco_tools_version
@@ -451,7 +452,7 @@ def initGitBareRepo():
 def importFromCVS():
     '''Import package from CVS and place into new git repo. Uses ${TOOLS}/cvs2git/current/cvs2git to do the actual importing'''
     gitRoot = determineGitRoot()
-    checkCVS2GitPresent()
+    cvs2git_utils.checkCVS2GitPresent()
  
     # Ask the user for the name of the package
     packageName = subprocess.check_output(["zenity", "--entry", "--title", "Package Name", "--text", "Please enter the name of the package"]).strip()
@@ -476,7 +477,7 @@ def importFromCVS():
     curDir = os.getcwd()
     tpath = tempfile.mkdtemp()
 
-    importHistoryFromCVS(tpath, gitMasterRepo, CVSpackageLocation)
+    cvs2git_utils.importHistoryFromCVS(tpath, gitMasterRepo, CVSpackageLocation)
     print "CVS history for ", packageName, " imported to ", gitMasterRepo
 
     # Add .gitignore
@@ -490,7 +491,7 @@ def importFromCVS():
     os.chdir(curDir)
 
     addPackageToEcoModuleList(packageName, gitMasterRepo)
-    removeModuleFromCVS(tpath, packageName, CVSpackageLocation)
+    cvs2git_utils.removeModuleFromCVS(tpath, packageName, CVSpackageLocation)
 
     os.chdir(curDir)
     shutil.rmtree(tpath)

@@ -7,6 +7,7 @@ import shutil
 import tempfile
 from cvs_utils import *
 from git_utils import *
+import cvs2git_utils
 
 gitDefaultDirFormat = "/afs/slac.stanford.edu/g/cd/swe/git/repos/package/{}/from-cvs"
 cvsRoot = "/afs/slac.stanford.edu/g/lcls/cvs"
@@ -42,7 +43,7 @@ def importModule( module, module_type, gitFolder=None, repoPath=None ):
  
     # Import the CVS history using a tmp folder
     tpath = tempfile.mkdtemp()
-    importHistoryFromCVS( tpath, gitFolder, repoPath, module=module )
+    cvs2git_utils.importHistoryFromCVS( tpath, gitFolder, repoPath, module=module )
     shutil.rmtree(tpath)
 
 if __name__ == '__main__':
