@@ -184,10 +184,10 @@ class Releaser(object):
 
     def RemoveBuild( self, buildDir ):
         print "\nRemoving build dir: %s ..." % ( buildDir )
-        buildRemoved = FALSE
+        buildRemoved = False
         try:
             shutil.rmtree( buildDir )
-            buildRemoved = TRUE
+            buildRemoved = True
         except:
             pass
 
