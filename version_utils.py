@@ -24,8 +24,9 @@ from pkgNamesToMacroNames import *
 numberRegExp        = re.compile( r"(\d+)" )
 releaseRegExp       = re.compile( r"(|[a-zA-Z0-9_-]*-)R(\d+)[-_.](\d+)(.*)" )
 macroNameRegExp     = re.compile( r"^\s*([a-zA-Z0-9_]*)\s*=\s*(\S*)\s*$" )
+condMacroRegExp     = re.compile( r"^(#*)\s*([a-zA-Z0-9_]+)\s*=\s*(\S*)\s*$" )
 macroRefRegExp      = re.compile( r"^(.*)\$\(([a-zA-Z0-9_]+)\)(.*)$" )
-moduleVersionRegExp = re.compile( r"^\s*([a-zA-Z0-9_]*)_MODULE_VERSION\s*=\s*(\S*)\s*$" )
+moduleVersionRegExp = re.compile( r"^\s*([a-zA-Z0-9_]+)_MODULE_VERSION\s*=\s*(\S*)\s*$" )
 epicsBaseVerRegExp  = re.compile( r"^\s*([A-Za-z0-9_-]*BASE[A-Za-z0-9_-]*VER[SION]*)\s*=\s*(\S*)\s*$" )
 epicsModulesRegExp  = re.compile( r"^\s*EPICS_MODULES\s*=\s*(\S*\s*)$" )
 modulesSiteTopRegExp= re.compile( r"^\s*MODULES_SITE_TOP\s*=\s*(\S*\s*)$" )
@@ -540,6 +541,7 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
     Returns 1 if modified, else 0
     """
     using_MODULE_VERSION = {}
+    definedModules = {}
     using_BASE_MODULE_VERSION = False
     using_EPICS_BASE_VER = False
     modified   = False
@@ -547,7 +549,7 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
     in_file = open( filePath, "r" )
     for line in in_file:
         strippedLine = line.strip()
-        if strippedLine.startswith( '#' ) or len(strippedLine) == 0:
+        if len(strippedLine) == 0:
             lineCache += line
             continue
 
@@ -568,27 +570,40 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
             lineCache += line
             continue
 
-        # XXX = YYYYYYYYYYYYYYYYYYYYYYYYYYYY
-        # Matches any macro definition
-        match = macroNameRegExp.search( line )
+        # #* XXX = YYYYYYYYYYYYYYYYYYYYYYYYYYYY
+        # Matches any macro definition, even if commented out
+        match = condMacroRegExp.search( line )
         if not match:
             lineCache += line
             continue
 
-        macroName      = match.group(1)
-        oldVersionPath = match.group(2)
+        originalLine   = match.group(0)
+        commentedOut   = match.group(1).startswith('#')
+        macroName      = match.group(2)
+        oldVersionPath = match.group(3)
         if macroName in newMacroVersions:
             pkgName = macroNameToPkgName(macroName)
             if not pkgName:
                 continue
-            macroName_MODULE_VERSION = "%s_MODULE_VERSION" % macroName
             if using_MODULE_VERSION.get( macroName, False ):
                 newVersionPath = "$(EPICS_MODULES)/%s/$(%s_MODULE_VERSION)" % ( pkgName, macroName )
             else:
                 newVersionPath = "$(EPICS_MODULES)/%s/%s" % ( pkgName, newMacroVersions[macroName] )
-            if oldVersionPath != newVersionPath:
-                line = string.replace( line, oldVersionPath, newVersionPath )
-                modified = True
+            if macroName in definedModules:
+                # We've already defined this macroName
+                if not commentedOut:
+                    # Comment out subsequent definitions
+                    line = string.replace( line, originalLine, '#' + originalLine )
+                    modified = True
+            else:
+                definedModules[macroName] = newVersionPath
+                if commentedOut:
+                    # Uncomment the line
+                    line = string.strip( line, '# ' )
+                    modified = True
+                if oldVersionPath != newVersionPath:
+                    line = string.replace( line, oldVersionPath, newVersionPath )
+                    modified = True
 
         if not "BASE" in newMacroVersions:
             lineCache += line
