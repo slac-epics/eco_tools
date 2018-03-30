@@ -6,7 +6,7 @@ import fileinput
 import subprocess
 import sys
 from repo_defaults import *
-
+from git_utils import *
 import gc
 
 if 'TOOLS' in os.environ:
