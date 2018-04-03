@@ -94,7 +94,7 @@ def main(argv=None):
     if len( options.packages ) > 0:
         count += update_pkg_dependency( options.top, options.packages, verbose=options.verbose )
 
-    print "Done: Updated %d RELEASE files." % count
+    print "Done: Updated %d RELEASE file%s." % ( count, "" if count == 1 else "s" )
     return 0
 
 if __name__ == '__main__':
