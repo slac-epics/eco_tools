@@ -1,3 +1,10 @@
+R2.5	2018-04-05 Bruce Hill
+	Added display of old and new lines when epics-update changes release files.
+	Fix missed import of git_utils at cvs2git_utils.py
+	Modified update_pkg_dep_file() to handle commented out macros intelligently.
+	Split out CVS related code from git_utils.py to cvs2git_utils.py
+	Fix booleans in Releaser.py: False instead of FALSE
+
 R2.4	2018-03-24 Bruce Hill
 	Added support for reading .versionFile soft link to find the versionFileName
 	Reworked getEpicsPkgDependents for more accurate dependencies.
