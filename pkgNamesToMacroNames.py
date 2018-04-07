@@ -14,6 +14,7 @@ _macroNameToPkgName[ 'ALARM_CONFIGS_TOP' ] = None
 _macroNameToPkgName[ 'BASE_SITE_TOP' ] = None
 _macroNameToPkgName[ 'CONFIG' ] = None
 _macroNameToPkgName[ 'CONFIG_SITE_TOP' ] = None
+_macroNameToPkgName[ 'EPICS_EXTENSIONS' ] = None
 _macroNameToPkgName[ 'EPICS_MODULES' ] = None
 _macroNameToPkgName[ 'EPICS_SITE_TOP' ] = None
 _macroNameToPkgName[ 'IOC_SITE_TOP' ] = None
@@ -90,9 +91,13 @@ pkgNameAddMacroName( 'bldClient',		'BLD_CLIENT' )
 pkgNameAddMacroName( 'Bx9000_MBT',		'BX9000' )
 pkgNameAddMacroName( 'Bx9000_MBT',		'BX9000_MBT' )
 pkgNameAddMacroName( 'Bx9000_MBT',		'BX9000MBT' )
+pkgNameAddMacroName( 'Camcom',			'CAMCOM' )
+pkgNameAddMacroName( 'caSnooper',		'CASNOOPER' )
+pkgNameAddMacroName( 'ChannelWatcher',	'CHANNELWATCHER' )
 pkgNameAddMacroName( 'diagTimer',		'DIAG_TIMER' )
 pkgNameAddMacroName( 'etherPSC',		'EPSC' )
 pkgNameAddMacroName( 'ethercat',		'ECASYN' )
+pkgNameAddMacroName( 'fwdCliS',			'FWDCLIS' )
 pkgNameAddMacroName( 'gtr',				'GTR_VERSION' )
 pkgNameAddMacroName( 'ip231-asyn',		'IP231_ASYN' )
 pkgNameAddMacroName( 'ip330-asyn',		'IP330_ASYN' )
@@ -103,6 +108,7 @@ pkgNameAddMacroName( 'ip445-asyn',		'IP445_ASYN' )
 pkgNameAddMacroName( 'LeCroy_ENET',		'LECROY' )
 pkgNameAddMacroName( 'normativeTypesCPP','NORMATIVE' )
 pkgNameAddMacroName( 'normativeTypesCPP','NORMATIVETYPES' )
+pkgNameAddMacroName( 'procServ',		'PROCSERV' )
 pkgNameAddMacroName( 'PSCD_Camac',		'PSCDCAMAC' )
 pkgNameAddMacroName( 'pvAccessCPP',		'PVACCESS' )
 pkgNameAddMacroName( 'pvAccessCPP',		'pvAccessCPP' )
@@ -117,8 +123,10 @@ pkgNameAddMacroName( 'pvIOCCPP',		'PVIOC' )
 pkgNameAddMacroName( 'seq',				'SNCSEQ' )
 pkgNameAddMacroName( 'sscan',			'SSCAN' )
 pkgNameAddMacroName( 'sSubRecord',		'SSUBRECORD' )
+pkgNameAddMacroName( 'StripTool',		'STRIPTOOL' )
 pkgNameAddMacroName( 'timingApi',		'TIMING_API' )
 pkgNameAddMacroName( 'VHQx0x',			'VHQX0X' )
 pkgNameAddMacroName( 'VHSx0x',			'VHSX0X' )
+pkgNameAddMacroName( 'VisualDCT',		'VISUALDCT' )
 pkgNameAddMacroName( 'vmeCardRecord',	'VME_CARD_RECORD' )
 
