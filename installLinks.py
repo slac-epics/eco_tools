@@ -41,6 +41,7 @@ import os
 import filecmp
 import traceback
 import glob
+from version_utils import *
 
 def make_links( buildTop, installTop, subdir, arch=None, force=False, is_site_packages = False, is_pyinc = False, python='python2.7'):
     if not os.path.exists(buildTop):
@@ -63,6 +64,10 @@ def make_links( buildTop, installTop, subdir, arch=None, force=False, is_site_pa
         if subdir == 'include' and target_base == python:
             continue
 
+        # Make sure the sub-directory path exists
+        if not os.path.isdir( os.path.join( installTop, subdir ) ):
+            os.makedirs( os.path.join( installTop, subdir ) )
+
         # Create symlink filename
         if ( subdir == 'bin' or subdir == 'lib' ) and arch is not None:
             symlink = os.path.join( installTop, subdir, arch, target_base )
@@ -79,6 +84,10 @@ def make_links( buildTop, installTop, subdir, arch=None, force=False, is_site_pa
             make_links( target_path, symlink_path, symlink_subdir )
             continue
 
+        # Skip build files
+        if os.path.basename( target ) in [ 'Makefile' ]:
+            continue
+
         if os.path.islink(symlink) and os.path.exists(symlink):
             existing_target = os.readlink(symlink)
             if existing_target == target:
@@ -90,14 +99,14 @@ def make_links( buildTop, installTop, subdir, arch=None, force=False, is_site_pa
                     continue # same attributes (including inode, etc)
                 if filecmp.cmp(target, existing_target):
                     continue # same contents
-            msg = "Symbolic link %s has two possible targets:\n"
+            msg = "Symbolic link has two possible targets:\n"
             msg += "    %s\n" % existing_target
             msg += "    %s" % target
             print msg
             # self.warnings.append(msg)
             print "Skipping link %s ..." % symlink
             continue
-        
+
         if not force and not os.path.islink(symlink) and os.path.exists(symlink):
             print "Skipping pre-existing %s ..." % symlink
             continue
@@ -111,21 +120,49 @@ def make_links( buildTop, installTop, subdir, arch=None, force=False, is_site_pa
         os.symlink( target, symlink )
     return
 
+def make_release_links( buildTop, installTop, arch=None, force=False ):
+    for subdir in [ 'bin', 'doc', 'documentation', 'helpFiles', 'html', 'javalib', 'jca', 'lib', 'share', 'include' ]:
+        make_links( buildTop, installTop, subdir, arch=arch, force=force )
+
+def installLinksFromFile( releaseFile, installTop, debug=False, force=False ):
+    macroDict = {}
+    macroDict['TOP'] = installTop
+    # Get the base and dependent modules from RELEASE files
+    if not os.path.isfile( releaseFile ):
+        print "installLinksFromFile Error - Unable to open releaseFile: %s" % releaseFile
+        return
+
+    macroDict = getMacrosFromFile( releaseFile, macroDict, debug=debug )
+    for macroName in macroDict:
+        buildTop = macroDict[macroName]
+        pkgName  = macroNameToPkgName(macroName)
+        if not pkgName:
+            continue
+        if not isReleaseCandidate(buildTop):
+            print "installLinksFromFile Error - Not an EPICS release: %s" % buildTop
+        else:
+            make_release_links( buildTop, installTop, force=False )
+
+
 def main():
     #
     # Parse the arguments.
     #
     parser = argparse.ArgumentParser()
     parser.add_argument( '-i', '--installTop', default='.', help='Install top.  Soft links created to make buildTop files accessible via paths w/ installTop.  Defaults to current dir.' )
-    parser.add_argument( '-b', '--buildTop',   required=True, help='Build top.  Soft links created to bin executables, libs, etc under build top.' )
+    parser.add_argument( '-f', '--file',   help='Read release macros from a file.' )
+    parser.add_argument( '-b', '--buildTop',   help='Build top.  Soft links created to bin executables, libs, etc under build top.' )
     parser.add_argument( '-a', '--arch', default=None, help='Target architecture.  If used, adds a target directory under bin, and lib subdirs.' )
     parser.add_argument( '--force', action='store_true', help='Use --force to remove conflicting files under installTop.' )
     options = parser.parse_args()
 
-    make_links( options.buildTop, options.installTop, 'bin',     arch=options.arch, force=options.force )
-    make_links( options.buildTop, options.installTop, 'lib',     arch=options.arch, force=options.force )
-    make_links( options.buildTop, options.installTop, 'share',   arch=options.arch, force=options.force )
-    make_links( options.buildTop, options.installTop, 'include', arch=options.arch, force=options.force )
+    if options.file:
+        installLinksFromFile( options.file, options.installTop, force=options.force )
+    elif options.buildTop:
+        make_release_links( options.buildTop, options.installTop, arch=options.arch, force=options.force )
+    else:
+        print "No release builds specified.  Try using -f or -b options."
+        parser.print_usage()
 
 if __name__ == '__main__':
     main()
