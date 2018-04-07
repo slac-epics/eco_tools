@@ -104,7 +104,13 @@ def getEnv( envVar ):
 
 def determine_epics_base_ver():
     '''Returns EPICS base version string, or None if unable to derive.'''
-    # First look for EPICS_BASE_VER in the environment
+    # If we have EPICS_BASE, work back from there
+    epics_base = getEnv('EPICS_BASE')
+    if epics_base != '?':
+        epics_base_ver = os.path.basename( os.path.normpath(epics_base) )
+        return epics_base_ver
+
+    # If not, look for EPICS_BASE_VER in the environment
     epics_base_ver = getEnv('EPICS_BASE_VER')
     # Then EPICS_VER
     if epics_base_ver == '?':
@@ -112,12 +118,7 @@ def determine_epics_base_ver():
     # Then BASE_MODULE_VERSION
     if epics_base_ver == '?':
         epics_base_ver = getEnv('BASE_MODULE_VERSION')
-    if epics_base_ver == '?':
-        # If we have EPICS_BASE, work back from there
-        epics_base = getEnv('EPICS_BASE')
-        if epics_base != '?':
-            epics_base_ver = os.path.basename( epics_base )
-        else:
+        if epics_base_ver == '?':
             # Returns None if not found
             epics_base_ver = None
     return epics_base_ver
