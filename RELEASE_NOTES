@@ -1,3 +1,10 @@
+R2.6	2018-04-07 Bruce Hill
+	Added support in installLinks.py for reading buildTop's from a configure/RELEASE file
+	Make EPICS_BASE env var, if defined, first priority when deriving base version
+	Fixed epics-versions for extensions and patterns like ioc/mec
+	Add extension macros to pkgNamesToMacroNames.py
+	Add installLinks soft link
+
 R2.5	2018-04-05 Bruce Hill
 	Added display of old and new lines when epics-update changes release files.
 	Fix missed import of git_utils at cvs2git_utils.py
