@@ -113,8 +113,9 @@ def ExpandModulePath( topDir, module, opt ):
         releases = [ ]
         dirs.sort()
         for dir in dirs[:]:
-            # Remove from list so we don't search recursively
-            dirs.remove( dir )
+            if dirPath != modPath:
+                # Remove from list so we don't search recursively beyond one level
+                dirs.remove( dir )
             if not isReleaseCandidate(dir):
                 continue
             release = os.path.join( dirPath, dir )
@@ -270,7 +271,7 @@ def ExpandPackageForTopVariants( siteTop, package, opt ):
     if "modules" in siteTop or "modules" in package:
         # All modules already checked for
         return []
-    topVariants = []
+    topVariants = [ siteTop ]
     for topVariant in defEpicsTopVariants:
         topVariants.append( os.path.join( siteTop, topVariant ) )
 
