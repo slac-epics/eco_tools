@@ -43,7 +43,7 @@ import traceback
 import glob
 from version_utils import *
 
-def make_links( buildTop, installTop, subdir, arch=None, force=False, is_site_packages = False, is_pyinc = False, python='python2.7'):
+def make_links( buildTop, installTop, subdir, arch=None, force=False, is_site_packages = False, is_pyinc = False, python='python2.7', verbose=False ):
     if not os.path.exists(buildTop):
         print "Error: buildTop %s does not exist!" % buildTop
         return
@@ -81,7 +81,7 @@ def make_links( buildTop, installTop, subdir, arch=None, force=False, is_site_pa
                 os.makedirs( symlink, 0775 )
             [ symlink_path, symlink_subdir ] = os.path.split( symlink )
             [ target_path, target_subdir ] = os.path.split( target )
-            make_links( target_path, symlink_path, symlink_subdir )
+            make_links( target_path, symlink_path, symlink_subdir, arch=arch, force=force, is_site_packages=is_site_packages, is_pyinc=is_pyinc, python=python, verbose=verbose )
             continue
 
         # Skip build files
@@ -99,13 +99,20 @@ def make_links( buildTop, installTop, subdir, arch=None, force=False, is_site_pa
                     continue # same attributes (including inode, etc)
                 if filecmp.cmp(target, existing_target):
                     continue # same contents
-            msg = "Symbolic link has two possible targets:\n"
-            msg += "    %s\n" % existing_target
-            msg += "    %s" % target
-            print msg
+            
+            if verbose:
+                msg = "Symbolic link has two possible targets:\n"
+                msg += "    %s\n" % existing_target
+                msg += "    %s" % target
+                print msg
+
             # self.warnings.append(msg)
-            print "Skipping link %s ..." % symlink
-            continue
+            #print "Skipping link %s ..." % symlink
+            #continue
+
+            # Remove the prior value
+            print "Removing prior link %s ..." % symlink
+            os.remove( symlink )
 
         if not force and not os.path.islink(symlink) and os.path.exists(symlink):
             print "Skipping pre-existing %s ..." % symlink
@@ -120,11 +127,11 @@ def make_links( buildTop, installTop, subdir, arch=None, force=False, is_site_pa
         os.symlink( target, symlink )
     return
 
-def make_release_links( buildTop, installTop, arch=None, force=False ):
+def make_release_links( buildTop, installTop, arch=None, force=False, verbose=False ):
     for subdir in [ 'bin', 'doc', 'documentation', 'helpFiles', 'html', 'javalib', 'jca', 'lib', 'share', 'include' ]:
-        make_links( buildTop, installTop, subdir, arch=arch, force=force )
+        make_links( buildTop, installTop, subdir, arch=arch, force=force, verbose=verbose )
 
-def installLinksFromFile( releaseFile, installTop, debug=False, force=False ):
+def installLinksFromFile( releaseFile, installTop, debug=False, force=False, verbose=False ):
     macroDict = {}
     macroDict['TOP'] = installTop
     # Get the base and dependent modules from RELEASE files
@@ -153,13 +160,14 @@ def main():
     parser.add_argument( '-f', '--file',   help='Read release macros from a file.' )
     parser.add_argument( '-b', '--buildTop',   help='Build top.  Soft links created to bin executables, libs, etc under build top.' )
     parser.add_argument( '-a', '--arch', default=None, help='Target architecture.  If used, adds a target directory under bin, and lib subdirs.' )
+    parser.add_argument( '-v', '--verbose', default=False, help='Print more status output.' )
     parser.add_argument( '--force', action='store_true', help='Use --force to remove conflicting files under installTop.' )
     options = parser.parse_args()
 
     if options.file:
-        installLinksFromFile( options.file, options.installTop, force=options.force )
+        installLinksFromFile( options.file, options.installTop, force=options.force, verbose=options.verbose )
     elif options.buildTop:
-        make_release_links( options.buildTop, options.installTop, arch=options.arch, force=options.force )
+        make_release_links( options.buildTop, options.installTop, arch=options.arch, force=options.force, verbose=options.verbose )
     else:
         print "No release builds specified.  Try using -f or -b options."
         parser.print_usage()
