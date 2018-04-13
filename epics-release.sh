@@ -9,12 +9,15 @@ if [ -z "$PSPKG_ROOT" -o -z "$TOOLS_SITE_TOP" ]; then
     fi
 fi
 
-# NOTE: The epics-release.sh script is normally not used, as
-# the eco_tools soft link epics-release points directly to
-# epics-release.py to avoid losing quotes around -m "Message Contents"
-# which breaks comment args when this epics-release.sh script is invoked.
+## NOTE: The epics-release.sh script is normally not used, as
+## the eco_tools soft link epics-release points directly to
+## epics-release.py to avoid losing quotes around -m "Message Contents"
+## which breaks comment args when this epics-release.sh script is invoked.
 export PSPKG_RELEASE=git-utils-0.2.0
 source $PSPKG_ROOT/etc/set_env.sh
 
 eco_tools_dir=`dirname $0`
-$eco_tools_dir/epics-release.py $*
+#printf -v REL_ARGS " %q"  $@
+#echo -m pdb $eco_tools_dir/epics-release.py  "$@"
+#python -m pdb $eco_tools_dir/epics-release.py  "$@"
+$eco_tools_dir/epics-release.py  "$@"
