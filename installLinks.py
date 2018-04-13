@@ -100,19 +100,20 @@ def make_links( buildTop, installTop, subdir, arch=None, force=False, is_site_pa
                 if filecmp.cmp(target, existing_target):
                     continue # same contents
             
+            msg = "Symbolic link has two possible targets:\n"
+            msg += "    %s\n" % existing_target
+            msg += "    %s" % target
             if verbose:
-                msg = "Symbolic link has two possible targets:\n"
-                msg += "    %s\n" % existing_target
-                msg += "    %s" % target
                 print msg
 
-            # self.warnings.append(msg)
-            #print "Skipping link %s ..." % symlink
-            #continue
-
-            # Remove the prior value
-            print "Removing prior link %s ..." % symlink
-            os.remove( symlink )
+            if force:
+                # Remove the prior value
+                print "Removing prior link %s ..." % symlink
+                os.remove( symlink )
+            else:
+                self.warnings.append(msg)
+                print "Skipping link %s ..." % symlink
+                continue
 
         if not force and not os.path.islink(symlink) and os.path.exists(symlink):
             print "Skipping pre-existing %s ..." % symlink
