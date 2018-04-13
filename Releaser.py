@@ -313,7 +313,7 @@ class Releaser(object):
         sys.stdout.flush()
         sys.stderr.flush()
         try:
-            if self._repo._url.find( 'extensions' ) > 0:
+            if False and self._repo._url.find( 'extensions' ) > 0:
                 # For extensions, we first checkout extensions-top
                 topRepo = gitRepo.gitRepo( DEF_GIT_EXT_TOP_URL, None, "extensions-top", DEF_GIT_EXT_TOP_TAG )
                 topRepo.CheckoutRelease( buildDir, verbose=self._verbose, dryRun=self._dryRun )
