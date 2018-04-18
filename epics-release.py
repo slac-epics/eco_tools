@@ -47,12 +47,10 @@ from repo_defaults import *
 #		This can be specified via the cmd line
 #		Enhancements to this script will be able to determine
 #		the appropriate version for major, minor, or bug-fix releases
-#   Create a branch named branch/<package> if it does not exist
-#   Copy the current version of the package to branch/<package>/<version>
 #	Checkout the release version to the release area
 #	Build the release version in the release area
 #
-# Copyright 2010,2011,2012,2014,2015,2016,2017 Stanford University
+# Copyright 2010,2011,2012,2014,2015,2016,2017,2018 Stanford University
 # Author: Bruce Hill <bhill@slac.stanford.edu>
 #
 # Released under the GPLv2 licence <http://www.gnu.org/licenses/gpl-2.0.html>
@@ -190,12 +188,9 @@ try:
                         help="do not include a release message"	)
     parser.add_option(	"-n", "--noTag", dest="noTag", action="store_true",
                         help="do not tag, just rebuild an existing release"	)
-    parser.add_option(	"-b", "--branch", dest="branch",
-                        help="branch to release, "
-                            "ex. $REPO/epics/branch/bugFix/ioc/cam/R0.2.1" )
     parser.add_option(	"-i", "--install", dest="installDir",
                         help="install directory, "
-                            "ex. /reg/g/pcds/package/epics/3.14/base/R0.0.1" )
+                            "ex. /afs/slac/g/lcls/epics/iocTop/BLD/R1.2.3" )
     parser.add_option(	"-d", "--debug", dest="debug", action="store_true",
                         help="display more info for debugging script" )
     parser.add_option(	"", "--dryRun", dest="dryRun", action="store_true",
