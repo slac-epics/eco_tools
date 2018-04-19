@@ -313,17 +313,8 @@ class Releaser(object):
         sys.stdout.flush()
         sys.stderr.flush()
         try:
-            if False and self._repo._url.find( 'extensions' ) > 0:
-                # For extensions, we first checkout extensions-top
-                topRepo = gitRepo.gitRepo( DEF_GIT_EXT_TOP_URL, None, "extensions-top", DEF_GIT_EXT_TOP_TAG )
-                topRepo.CheckoutRelease( buildDir, verbose=self._verbose, dryRun=self._dryRun )
-
-                # Then checkout the package to src/packageName
-                extSrcDir = os.path.join( buildDir, 'src', self._packageName )
-                self._repo.CheckoutRelease( extSrcDir, verbose=self._verbose, dryRun=self._dryRun )
-            else:
-                # Checkout release to build dir
-                self._repo.CheckoutRelease( buildDir, verbose=self._verbose, dryRun=self._dryRun )
+            # Checkout release to build dir
+            self._repo.CheckoutRelease( buildDir, verbose=self._verbose, dryRun=self._dryRun )
         except RuntimeError, e:
             print e
             raise BuildError, "BuildRelease %s: Checkout FAILED" % buildDir
