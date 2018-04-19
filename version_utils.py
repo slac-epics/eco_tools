@@ -431,7 +431,7 @@ def getMacrosFromFile( filePath, macroDict, debug = False ):
     '''
     if not os.path.isfile( filePath ):
         print "getMacrosFromFile Error: unable to open %s" % filePath 
-        return -1
+        return macroDict
     if debug:
         print "getMacrosFromFile %s: %d versions on entry" % ( filePath, len(macroDict) )
     in_file = open( filePath, "r" )
