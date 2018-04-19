@@ -221,20 +221,20 @@ def assemble_cvs_inputs_from_term(options):
     if options.destination:
         destinationPath = options.destination
     else:
-        ( parent_dir, folder_name ) = os.path.split( os.getcwd() )
+        ( parent_dir, cur_basename ) = os.path.split( os.getcwd() )
         destinationPath = dirName
         if os.path.isdir(packageName):
             # Already a folder for different checkouts of this packageName.  Use it.
             destinationPath = os.path.join( packageName, dirName )
-        if folder_name != packageName and dirName != (packageName + "-git"):
-            # Don't create packageName/packageName/dirName
-            # Also, no need for a parent packageName folder for PackageName-git style dirnames
-            destinationPath = os.path.join( packageName, dirName )
 
-    curDir = os.getcwd()
+        # Don't create packageName/packageName/dirName
+        if cur_basename != packageName:
+            # svn and CVS default to creating parent packageName folder
+            # git only creates the parent directory if user selects --createParent
+            if options.createParent or dirName != (packageName + "-git"):
+                destinationPath = os.path.join( packageName, dirName )
+
     checkOutModule( packageName, tagName, destinationPath, options )
-    # TODO: checkOutModule changes cwd to curDir/destinationPath.  Do we want functions to change current dir and not restore?
-    # os.chdir(curDir)
 
 # Determine the package and tag to checkout
 def assemble_cvs_inputs_from_file(repo, rel, options):
@@ -249,17 +249,20 @@ def assemble_cvs_inputs_from_file(repo, rel, options):
     packageName = cvs_dict['REPOSITORY']
     tagName     = cvs_dict['RELEASE']
 
-    ( parent_dir, folder_name ) = os.path.split( os.getcwd() )
-    if folder_name == packageName:
-        destinationPath = tagName
-    else:
-        destinationPath = os.path.join( packageName, tagName )
+    ( parent_dir, cur_basename ) = os.path.split( os.getcwd() )
+    destinationPath = tagName
+    if os.path.isdir(packageName):
+        # Already a folder for different checkouts of this packageName.  Use it.
+        destinationPath = os.path.join( packageName, dirName )
 
-    curDir = os.getcwd()
+    # Don't create packageName/packageName/dirName
+    if cur_basename != packageName:
+        # svn and CVS default to creating parent packageName folder
+        # git only creates the parent directory if user selects --createParent
+        if options.createParent or dirName != (packageName + "-git"):
+            destinationPath = os.path.join( packageName, dirName )
+
     checkOutModule( packageName, tagName, destinationPath, options, from_file=True )
-    # TODO: checkOutModule changes cwd to curDir/destinationPath.  Do we want functions to change current dir and not restore?
-    # os.chdir(curDir)
-
  
 def checkOutModule(packageName, tag, destinationPath, options, from_file=False ):
     '''Checkout the module from GIT/CVS. 
@@ -376,7 +379,7 @@ def checkOutModule(packageName, tag, destinationPath, options, from_file=False )
             inputs = assemble_release_site_inputs( batch=options.batch )
         export_release_site_file( inputs, debug=options.debug )
 
-    # TODO: checkOutModule changes cwd to curDir/destinationPath.  Do we want functions to change current dir and not restore?
+    # Restore current working dir
     os.chdir(curDir)
 
 def determinePathToGitRepo(packagePath):
@@ -537,6 +540,7 @@ def process_options(argv):
 
     parser.add_option('-v', '--verbose', action='store_true', dest='verbose', help='print verbose output')
     parser.add_option('-b', '--batch',   action='store_true', dest='batch', help='Run without confirmation prompts')
+    parser.add_option('-c', '--createParent',   action='store_true', dest='createParent', help='Automatically create parent dir using module name.')
     parser.add_option('-m', '--module',  action='callback', dest='module', help='Module to checkout, optionally add the tag to use', type='string', callback=module_callback)
     parser.add_option('-d', '--destination',  action='store', dest='destination', help='Checkout the package to this folder. Uses cvs -d. For example, eco -d CATER_12345 on MAIN_TRUNK checks out MAIN_TRUNK into a folder called CATER_12345. This option is ignored in batch mode.', type='string')
     # parser.add_option('-t', '--tag',  action='store', dest='tag', help='CVS tag to checkout - defaults to MAIN_TRUNK', type='string', default='MAIN_TRUNK')
