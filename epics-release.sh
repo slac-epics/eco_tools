@@ -16,7 +16,7 @@ fi
 export PSPKG_RELEASE=git-utils-0.2.0
 source $PSPKG_ROOT/etc/set_env.sh
 
-eco_tools_dir=`dirname $0`
+eco_tools_dir=`dirname $(readlink -e $0)`
 #printf -v REL_ARGS " %q"  $@
 #echo -m pdb $eco_tools_dir/epics-release.py  "$@"
 #python -m pdb $eco_tools_dir/epics-release.py  "$@"
