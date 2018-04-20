@@ -425,12 +425,13 @@ def getPkgReleaseList( top, pkgName ):
             releaseList += [ releaseSet[ release ] ]
     return releaseList
 
-def getMacrosFromFile( filePath, macroDict, debug = False ):
+def getMacrosFromFile( filePath, macroDict, debug = False, required = False ):
     '''Find and return a dictionary of gnu make style macros
     found in a file.  Ex. macroDict['BASE_MODULE_VERSION'] = 'R3.15.5-1.0'
     '''
     if not os.path.isfile( filePath ):
-        print "getMacrosFromFile Error: unable to open %s" % filePath 
+        if required:
+            print "getMacrosFromFile Error: unable to open %s" % filePath 
         return macroDict
     if debug:
         print "getMacrosFromFile %s: %d versions on entry" % ( filePath, len(macroDict) )
@@ -440,6 +441,10 @@ def getMacrosFromFile( filePath, macroDict, debug = False ):
         if line.startswith( '#' ) or len(line) == 0:
             continue
         if line.startswith( 'include' ) or line.startswith( '-include' ):
+            if line.startswith( '-include' ):
+                required = False
+            else:
+                required = True
             includeFileRefs = line.split()[1:]
             includeFiles = []
             # Expand macros and glob include file references
@@ -448,7 +453,7 @@ def getMacrosFromFile( filePath, macroDict, debug = False ):
                 includeFiles += glob.glob( ref )
             # Recursively call getMacrosFromFile for each includeFile
             for includeFile in includeFiles:
-                macroDict = getMacrosFromFile( includeFile, macroDict, debug )
+                macroDict = getMacrosFromFile( includeFile, macroDict, debug, required )
             continue
 
         for regExp in [ macroNameRegExp, versionRegExp, epicsBaseVerRegExp ]:
