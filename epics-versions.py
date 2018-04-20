@@ -406,6 +406,9 @@ try:
     else:
         epics_base_ver = determine_epics_base_ver()
         if not epics_base_ver:
+            print "epics-versions: Unable to determine EPICS Base version."
+            print "Please define via at least one of these env variables:"
+            print "  EPICS_BASE, EPICS_BASE_VER, EPICS_VER, BASE_MODULE_VERSION"
             epics_base_ver = 'unknown-base-ver'
 
     releaseCount = 0
@@ -452,6 +455,8 @@ try:
                         # Already done this one
                         continue
                     releaseCount += ExpandPackagesForTop( epicsTop, args, opt )
+            if not opt.allTops and releaseCount > 0:
+                break
 
     if releaseCount == 0:
         errorMsg = "Unable to find any releases for these modules:"
