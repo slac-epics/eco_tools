@@ -1,3 +1,11 @@
+R2.7	2018-04-19 Bruce Hill
+	Added a --createParent option (-c) to force creation of parent dir w/ same name as package.
+	Misc error handling and error output cleanup.
+	Fixed epics-release.sh to handle quoted message args so now epics-release link can setup pkg_mgr env for epics-release.py.
+		Allows python3 users to run epics-release.
+	Disabled special case for extensions that cloned them under extensions-top repos as we're now building unbundled extensions.
+	Added a --verbose flag to installLinks.py and made updates to previous links work.
+
 R2.6	2018-04-07 Bruce Hill
 	Added support in installLinks.py for reading buildTop's from a configure/RELEASE file
 	Make EPICS_BASE env var, if defined, first priority when deriving base version
