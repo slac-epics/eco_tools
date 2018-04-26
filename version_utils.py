@@ -163,7 +163,10 @@ def determine_epics_modules_top():
             return None
         if epics_base_ver.startswith( 'base-' ):
             epics_base_ver = epics_base_ver.replace( 'base-', '' )
-        epics_modules_top = os.path.join( epics_site_top, epics_base_ver, 'modules' )
+        if VersionToRelNumber(epics_base_ver) > 3.1412:
+            epics_modules_top = os.path.join( epics_site_top, epics_base_ver, 'modules'	)
+        else:
+            epics_modules_top = os.path.join( epics_site_top, 'modules', 'R3-14-12' )
         if not os.path.isdir( epics_modules_top ):
             epics_modules_top = os.path.join( epics_site_top, 'modules' )
         if not os.path.isdir( epics_modules_top ):
@@ -763,47 +766,6 @@ def update_pkg_dependency( topDir, pkgSpecs, debug=False, verbose=False ):
         if os.access( filePath, os.R_OK ):
             count += update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose )
     return count
-
-def get_cram_releaseDir( ):
-    packageInfo = None
-    packageInfoFile = '.cram/packageinfo'
-    if os.path.isfile( packageInfoFile ):
-        try:
-            with open( packageInfoFile, 'r' ) as pkgInfoFp:
-                packageInfo = json.load( pkgInfoFp )
-        except:
-            pass
-    if not packageInfo:
-        return None
-
-    facilityConfigFile = None
-    if os.path.isfile( DEF_LCLS_CRAM_USER ):
-        facilityConfigFile = DEF_LCLS_CRAM_USER
-    elif os.path.isfile( DEF_LCLS_CRAM_CFG ):
-        facilityConfigFile = DEF_LCLS_CRAM_CFG
-    if not facilityConfigFile:
-        return None
-    
-    facilityConfigDict = None
-    try:
-        with open( facilityConfigFile, 'r' ) as facilityFp:
-            facilityConfig = json.load( facilityFp )
-            facilityConfigDict = {}
-            for facility in facilityConfig:
-                facilityConfigDict[ facility['name'] ] = facility
-    except:
-        pass
-    if not facilityConfigDict:
-        return None
-
-    releaseDir = None
-    try:
-        releaseDir = facilityConfigDict['Dev'][ packageInfo['type'] ]['releaseFolder']
-        releaseDir += '/'
-        releaseDir += packageInfo['name']
-    except:
-        pass
-    return releaseDir
 
 # Check if any file inside configure/ has included a ../../RELEASE_SITE file
 def hasIncludeDotDotReleaseSite():

@@ -16,6 +16,7 @@ import commands
 import stat
 import os
 import subprocess
+from cram_utils import *
 from git_utils import *
 from svn_utils import *
 from version_utils import *
@@ -327,7 +328,7 @@ try:
 
     if not opt.installDir:
         # See if we can get the releaseDir from cram
-        releaseDir = get_cram_releaseDir( )
+        releaseDir = getCramReleaseDir( )
         if releaseDir:
             opt.installDir = os.path.join(	releaseDir, opt.release	)
 

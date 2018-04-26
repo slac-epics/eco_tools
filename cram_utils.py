@@ -4,6 +4,8 @@ Utilities for supporting cram'''
 import os
 import subprocess
 import json
+from git_utils     import *
+from repo_defaults import *
 
 def createCramPackageInfo(packageName, apptype):
     '''Create .cram/packageinfo'''
@@ -39,3 +41,51 @@ def determineCramAppType():
                                     ).strip()
     return apptype
 
+def getCramReleaseDir( url=None, refName=None ):
+    packageInfo = None
+    packageInfoFile = '.cram/packageinfo'
+    if url:
+        if not refName:
+            print "getCramReleaseDir error: No refName for url", url
+            return None
+        packageInfoContent = gitGetRemoteFile( url, refName, packageInfoFile )
+        if packageInfoContent:
+            packageInfo = json.loads( packageInfoContent )
+    else:
+        if os.path.isfile( packageInfoFile ):
+            try:
+                with open( packageInfoFile, 'r' ) as pkgInfoFp:
+                    packageInfo = json.load( pkgInfoFp )
+            except:
+                pass
+    if not packageInfo:
+        return None
+
+    facilityConfigFile = None
+    if os.path.isfile( DEF_LCLS_CRAM_USER ):
+        facilityConfigFile = DEF_LCLS_CRAM_USER
+    elif os.path.isfile( DEF_LCLS_CRAM_CFG ):
+        facilityConfigFile = DEF_LCLS_CRAM_CFG
+    if not facilityConfigFile:
+        return None
+    
+    facilityConfigDict = None
+    try:
+        with open( facilityConfigFile, 'r' ) as facilityFp:
+            facilityConfig = json.load( facilityFp )
+            facilityConfigDict = {}
+            for facility in facilityConfig:
+                facilityConfigDict[ facility['name'] ] = facility
+    except:
+        pass
+    if not facilityConfigDict:
+        return None
+
+    releaseDir = None
+    try:
+        releaseDir = facilityConfigDict['Dev'][ packageInfo['type'] ]['releaseFolder']
+        releaseDir += '/'
+        releaseDir += packageInfo['name']
+    except:
+        pass
+    return releaseDir
