@@ -136,6 +136,23 @@ def git_check_output( gitCommand, gitDir=None, debug=False, *args, ** kwargs ):
         print git_output
     return git_output
 
+def gitGetRemoteFile( url, refName, filePath, debug = False ):
+    '''Fetchs a file from a git repo url.
+    Returns file as a string or None if not found.'''
+    fileContents = None
+    try:
+        commitSpec = refName + ':' + filePath
+        fileContents = subprocess.check_output( [ 'git', '--git-dir=%s' % url, 'show', commitSpec ], stderr=subprocess.STDOUT )
+    except OSError, e:
+        if debug:
+            print e
+        pass
+    except subprocess.CalledProcessError, e:
+        if debug:
+            print e
+        pass
+    return fileContents
+
 def gitGetRemoteTag( url, tag, debug = False, verbose = False ):
     '''Fetchs tags from a git repo url and looks for a match w/ the desired tag.
     Returns a tuple of ( url, tag ), ( None, None ) on error.
