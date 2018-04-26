@@ -14,14 +14,18 @@ _macroNameToPkgName[ 'ALARM_CONFIGS_TOP' ] = None
 _macroNameToPkgName[ 'BASE_SITE_TOP' ] = None
 _macroNameToPkgName[ 'CONFIG' ] = None
 _macroNameToPkgName[ 'CONFIG_SITE_TOP' ] = None
+_macroNameToPkgName[ 'EPICS_BASE_VER' ] = None
 _macroNameToPkgName[ 'EPICS_EXTENSIONS' ] = None
 _macroNameToPkgName[ 'EPICS_MODULES' ] = None
 _macroNameToPkgName[ 'EPICS_SITE_TOP' ] = None
+_macroNameToPkgName[ 'EVR_MODULE' ] = None
 _macroNameToPkgName[ 'IOC_SITE_TOP' ] = None
+_macroNameToPkgName[ 'LINUX_KERNEL_MODULES' ] = None
 _macroNameToPkgName[ 'MY_MODULES' ] = None
 _macroNameToPkgName[ 'PACKAGE_SITE_TOP' ] = None
 _macroNameToPkgName[ 'PSPKG_ROOT' ] = None
 _macroNameToPkgName[ 'RULES' ] = None
+_macroNameToPkgName[ 'TEMPLATE_TOP' ] = None
 _macroNameToPkgName[ 'TOOLS_SITE_TOP' ] = None
 _macroNameToPkgName[ 'TOP' ] = None
 
@@ -93,6 +97,7 @@ pkgNameAddMacroName( 'Bx9000_MBT',		'BX9000_MBT' )
 pkgNameAddMacroName( 'Bx9000_MBT',		'BX9000MBT' )
 pkgNameAddMacroName( 'Camcom',			'CAMCOM' )
 pkgNameAddMacroName( 'caSnooper',		'CASNOOPER' )
+pkgNameAddMacroName( 'cexpsh',			'CEXP' )
 pkgNameAddMacroName( 'ChannelWatcher',	'CHANNELWATCHER' )
 pkgNameAddMacroName( 'diagTimer',		'DIAG_TIMER' )
 pkgNameAddMacroName( 'etherPSC',		'EPSC' )
