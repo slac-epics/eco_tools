@@ -10,6 +10,7 @@ import subprocess
 import Repo
 import gitRepo
 import svnRepo
+from cram_utils import *
 from git_utils import *
 from svn_utils import *
 from version_utils import *
@@ -279,7 +280,7 @@ class Releaser(object):
             pass
         return hasBuilt
 
-    def BuildRelease( self, buildBranch, buildDir, force=False, verbose=False, outputPipe = subprocess.PIPE ):
+    def BuildRelease( self, buildDir, force=False, verbose=False, outputPipe = subprocess.PIPE ):
         if not buildDir:
             raise BuildError, "Build dir not defined!"
         if self._verbose:
@@ -334,12 +335,20 @@ class Releaser(object):
             print "\nChecking dependents for %s ..." % ( buildDir )
             buildDep = getEpicsPkgDependents( buildDir )
             if 'base' in buildDep:
-                epics_site_top = determine_epics_site_top()
+                # Find the EPICS base version for this release
                 epics_base_ver = buildDep['base']
-                if VersionToRelNumber(epics_base_ver) > 3.141205:
+
+                # Find EPICS_MODULE_TOP for this release
+                # Note: Do not use determine_epics_modules_top() here as it gets base from env
+                epics_site_top = determine_epics_site_top()
+                if VersionToRelNumber(epics_base_ver) > 3.1412:
                     epics_modules_top = os.path.join( epics_site_top, epics_base_ver, 'modules'	)
                 else:
-                    epics_modules_top = os.path.join( epics_site_top, 'modules'	)
+                    epics_modules_top = os.path.join( epics_site_top, 'modules', 'R3-14-12' )
+                if not os.path.isdir( epics_modules_top ):
+                    epics_modules_top = os.path.join( epics_site_top, 'modules' )
+
+                # Check each dependent module release and build if needed
                 for dep in buildDep:
                     if dep == 'base':
                         continue	# Just check module dependents
@@ -386,7 +395,7 @@ class Releaser(object):
 
     def DoTestBuild( self ):
         try:
-            self.BuildRelease( self._ReleasePath, self._tmpDir )
+            self.BuildRelease( self._tmpDir )
             self.DoCleanup()
         except BuildError:
             print "DoTestBuild: %s Build error from BuildRelease in %s" % ( self._packageName, self._tmpDir )
@@ -403,6 +412,12 @@ class Releaser(object):
         if self._verbose:
             self._repo.ShowRepo( titleLine="InstallPackage: " + self._packageName, prefix="	" )
             print self
+
+        if not self._installDir:
+            # See if we can get the releaseDir from cram
+            releaseDir = getCramReleaseDir( self._repo.GetUrl(), self._repo.GetTag() )
+            if releaseDir:
+                self._installDir = os.path.join( releaseDir, self._repo.GetTag() )
 
         if not self._installDir:
             epics_site_top	= determine_epics_site_top()
@@ -452,7 +467,7 @@ class Releaser(object):
             self._grpOwner = DEF_PCDS_GROUP_OWNER
 
         try:
-            self.BuildRelease( self._ReleasePath, self._installDir, force=force )
+            self.BuildRelease( self._installDir, force=force )
             if self._verbose:
                 print "InstallPackage: %s installed to:\n%s" % ( self._packageName, os.path.realpath(self._installDir) )
         except BuildError, e:
