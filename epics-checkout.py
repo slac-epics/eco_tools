@@ -65,15 +65,13 @@ git_package2Location = parseGitModulesTxt()
 cvs_modules2Location = parseCVSModulesTxt()
 
 # TODO: 1. Breakout packageName completer code into it's own function
-# TODO: 2. Combine assemble_cvs_inputs_from_term and assemble_cvs_inputs_from_file into one function w/ a from_file boolean
+# TODO: 2. Combine assemble_env_inputs_from_term and assemble_env_inputs_from_file into one function w/ a from_file boolean
 # Determine the package and tag to checkout
-def assemble_cvs_inputs_from_term(options):
-    cvs_dict = {}
+def assemble_env_inputs_from_term(options):
 
-    cvs_dict['REPOSITORY'] = None
-
+    packageName = None
     if options.module:
-        cvs_dict['REPOSITORY'] = options.module
+        packageName = options.module
 
     packageNames = set().union(git_package2Location.keys(), cvs_modules2Location.keys())
 
@@ -87,9 +85,8 @@ def assemble_cvs_inputs_from_term(options):
     readline.set_completer(packageNameCompleter)
     readline.parse_and_bind("tab: complete")
 
-    while not cvs_dict['REPOSITORY']:
-        cvs_dict['REPOSITORY'] = raw_input('Enter name of module/package to checkout: ').strip()
-    packageName = cvs_dict['REPOSITORY']
+    while not packageName:
+        packageName = raw_input('Enter name of module/package to checkout: ').strip()
 
     # Remove completer after we are done...
     readline.set_completer()
@@ -103,13 +100,9 @@ def assemble_cvs_inputs_from_term(options):
     else:
         tags = []
         pathToGitRepo = determinePathToGitRepo( packageName )
-        autoGitPath = False
-        if autoGitPath and not pathToGitRepo:
-            pathToGitRepo = os.path.join( DEF_GIT_MODULES_PATH, packageName + '.git' )
-            if not os.path.exists( pathToGitRepo ):
-                pathToGitRepo = None
         if pathToGitRepo:
             if "svn" in pathToGitRepo:
+                # svn REPO
                 pathToSvnRepo = pathToGitRepo
                 dirName = "current"
                 tagsPath = pathToSvnRepo.replace( "trunk", "tags" )
@@ -120,6 +113,7 @@ def assemble_cvs_inputs_from_term(options):
                 except:
                     tags = []
             else:
+                # git REPO
                 dirName = packageName + '-git'
                 if os.path.exists(os.path.join(pathToGitRepo, "refs", "tags")):
                     # Determine the list of tags..
@@ -127,8 +121,9 @@ def assemble_cvs_inputs_from_term(options):
                 else:
                     print "Git repo at", pathToGitRepo, "does not seem to have any tags"
         else:
+            # cvs REPO
             dirName = 'MAIN_TRUNK'
-            p1 = subprocess.Popen(['cvs', '-Q', 'rlog', '-h', cvs_dict['REPOSITORY']], stdout=subprocess.PIPE)
+            p1 = subprocess.Popen(['cvs', '-Q', 'rlog', '-h', packageName], stdout=subprocess.PIPE)
             p2 = subprocess.Popen(['awk', '-F"[.:]"', '/^\t/&&$(NF-1)!=0{print $1}'], stdin=p1.stdout, stdout=subprocess.PIPE)
             p1.stdout.close()  # Allow p1 to receive a SIGPIPE if p2 exits.
             output = p2.communicate()[0]
@@ -167,7 +162,7 @@ def assemble_cvs_inputs_from_term(options):
             tagName = dirName
     else:
         dirName = tagName
-    cvs_dict['RELEASE'] = dirName
+    tagName = dirName
 
     if options.destination:
         destinationPath = options.destination
@@ -188,20 +183,25 @@ def assemble_cvs_inputs_from_term(options):
     checkOutModule( packageName, tagName, destinationPath, options )
 
 # Determine the package and tag to checkout
-def assemble_cvs_inputs_from_file(repo, rel, options):
-    cvs_dict = {}
-
-    cvs_dict['REPOSITORY'] = repo
-    cvs_dict['RELEASE'] = rel
-
-    if cvs_dict['RELEASE'] == "" or cvs_dict['RELEASE'] == 'HEAD':
-        cvs_dict['RELEASE'] = 'MAIN_TRUNK'
-
-    packageName = cvs_dict['REPOSITORY']
-    tagName     = cvs_dict['RELEASE']
+def assemble_env_inputs_from_file(packageName, tagName, options):
+    if tagName == "" or tagName == 'HEAD':
+        pathToGitRepo = determinePathToGitRepo( packageName )
+        if pathToGitRepo:
+            if "svn" in pathToGitRepo:
+                # svn REPO
+                dirName = "current"
+            else:
+                # git REPO
+                dirName = packageName + '-git'
+        else:
+            # cvs REPO
+            dirName = 'MAIN_TRUNK'
+            tagName = 'MAIN_TRUNK'
+    else:
+        dirName = tagName
 
     ( parent_dir, cur_basename ) = os.path.split( os.getcwd() )
-    destinationPath = tagName
+    destinationPath = dirName
     if os.path.isdir(packageName):
         # Already a folder for different checkouts of this packageName.  Use it.
         destinationPath = os.path.join( packageName, dirName )
@@ -541,7 +541,7 @@ def main(argv=None):
             print 'key is: ' + key
             print 'value is: ' + value
 
-            assemble_cvs_inputs_from_file(key,value,options)
+            assemble_env_inputs_from_file(key,value,options)
            
             print 'done with ' + line
             # repeat above for all lines in file
@@ -549,7 +549,7 @@ def main(argv=None):
         in_file.close()
 
     else:
-        assemble_cvs_inputs_from_term(options)
+        assemble_env_inputs_from_term(options)
 
     return 0
     

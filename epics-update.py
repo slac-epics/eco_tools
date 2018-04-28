@@ -27,10 +27,7 @@ from svn_utils import *
 from version_utils import *
 from eco_version import eco_tools_version
 
-# from cram_utils import *
 from repo_defaults import *
-
-# __all__ = ['export_release_site_file', 'assemble_cvs_inputs_from_term']
 
 def process_options(argv):
     if argv is None:
