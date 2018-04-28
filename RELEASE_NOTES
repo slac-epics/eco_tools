@@ -1,3 +1,9 @@
+R2.8	2018-04-27 Bruce Hill
+	Added --noCreateParent options and made createParent default to True
+	Fixed batch file mode for eco.
+	Added a check for cram info where epics-build would need it.
+	Added new git utility gitGetRemoteFile(url,branchOrTag,filePath)
+
 R2.7	2018-04-19 Bruce Hill
 	Added a --createParent option (-c) to force creation of parent dir w/ same name as package.
 	Misc error handling and error output cleanup.
