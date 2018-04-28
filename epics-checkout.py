@@ -28,67 +28,18 @@
 #
 #  Facility:  SLAC/LCLS/PCDS
 #
-#  Auth: 29-Nov-2010, Dayle Kotturi       (dayle)
-#  Auth: 04-Nov-2011, Murali Shankar      (mshankar)
-#  Auth: 10-Oct-2016, Bruce Hill          (bhill)
-#  Rev:  dd-mmm-yyyy, Reviewer's Name     (USERNAME)
-#
 #  Requested features to be added:
 #   - Add setting of directory permissions per new acl list changes; 
 #     i.e. set a flag to lock them
 #   - Only put IOC_SITE_TOP in RELEASE_SITE if actually needed, not just
 #     generically
-#   - Make use of "cvs rlog" command to show user all the possible tags
-#   - Make it runnable with command line args or a file instead of terminal 
-#     input; this includes making it checkout multiple packages at a time
 #   - Break it into two scripts: one just to create the RELEASE_SITE file 
 #     so that it could be used when checkout has already been done
-#   - Make it work for subversion
 #   - Make it go and change the $IOC/*/startup.cmd files to new release 
 #       for all/subset of iocs in checked out app?s iocBoot
 #
 #--------------------------------------------------------------
 #  For file history, please use the git log
-#  Mod:
-#  09-Dec-2010, Dayle Kotturi
-#    Bring in defaults for each setting from the environmens
-#  14-Dec-2010, Dayle Kotturi
-#    Add EPICS_BASE_VER to entries in RELEASE_SITE; 
-#    Use env var by same name as default 
-#    If the HEAD is checked out, name the directory MAIN_TRUNK
-#  15-Dec-2010, Dayle Kotturi
-#    Add this header of comments
-#    Add WWW_DIR to entries in RELEASE_SITE;
-#    Use /afs/slac.stanford.edu/www/grp/lcls as the default for WWW_DIR 
-#    Change default for WWW_DIR to env var LCLS_WWW
-#    Add capability to accept a file of 'package tag' pairs, 
-#    one per line to do checkout with default env vars
-#  04-Nov-2011 Murali Shankar
-#    Removed all references to LCLS_WWW or WWW per Ernest
-#  06-Dec-2011 Murali Shankar
-#    Restored this version from CVS. Ernest wants me to update instead.
-#  23-Feb-2012 Murali Shankar
-#    Removed leading and trailing whitespace from inputs per Suzie and Ernest's request
-#  04-June-2012 Murali Shankar
-#    Updated the help per Ernest
-#  04-June-2012 Murali Shankar
-#    Added support for the -m modulename argument per Ernest
-#  25-Sept-2012 Murali Shankar
-#    Added a -P argument to cvs checkout per Ernest
-#  13-Aug-2013 Murali Shankar
-#    Support for PACKAGE_SITE_TOP; default value for this comes from PACKAGE_TOP per Ernest/Sonya
-#  10-Oct-2013 Murali Shankar
-#    Added support for BUILD_TARGETS using CROSS_COMPILER_TARGET_ARCHS in ${EPICS_BASE_RELEASE}/config/CONFIG_SITE and ${EPICS_BASE_RELEASE}/bin
-#  12-Dec-2013 Murali Shankar
-#    Pulled support for BUILD_TARGETS per Ernest as this generates fake conflicts with base's checkRelease
-#  08-Jan-2014 Murali Shankar
-#    Added support for specifying destination folder when using eco in interactive mode.
-#  11-Feb-2014 Murali Shankar
-#    Bug fix for specifying destination folder when using eco - the final cd was not using the correct variable - hence exception.
-#  26-Aug-2014 Murali Shankar
-#    Added support for TOOLS_SITE_TOP and ALARM_CONFIGS_TOP for Kristi
-#  28-Jul-2015 Murali Shankar
-#    Added a validation method to make sure folks have their enviroment variables set correctly.
 #==============================================================
 import sys
 import os
@@ -540,7 +491,8 @@ def process_options(argv):
 
     parser.add_option('-v', '--verbose', action='store_true', dest='verbose', help='print verbose output')
     parser.add_option('-b', '--batch',   action='store_true', dest='batch', help='Run without confirmation prompts')
-    parser.add_option('-c', '--createParent',   action='store_true', dest='createParent', help='Automatically create parent dir using module name.')
+    parser.add_option('-c', '--createParent',   action='store_true', dest='createParent', default=True, help='Automatically create parent dir using module name.')
+    parser.add_option('-n', '--noCreateParent', action='store_false', dest='createParent', default=True, help='Do not create parent dir using module name unless a tag is specified.')
     parser.add_option('-m', '--module',  action='callback', dest='module', help='Module to checkout, optionally add the tag to use', type='string', callback=module_callback)
     parser.add_option('-d', '--destination',  action='store', dest='destination', help='Checkout the package to this folder. Uses cvs -d. For example, eco -d CATER_12345 on MAIN_TRUNK checks out MAIN_TRUNK into a folder called CATER_12345. This option is ignored in batch mode.', type='string')
     # parser.add_option('-t', '--tag',  action='store', dest='tag', help='CVS tag to checkout - defaults to MAIN_TRUNK', type='string', default='MAIN_TRUNK')
