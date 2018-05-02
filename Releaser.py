@@ -18,6 +18,9 @@ from version_utils import *
 def makeDirsWritable( dirPathTop ):
     userId  = os.geteuid()
     for dirPath, dirs, files in os.walk(dirPathTop):
+        dirName = os.path.split( dirPath )[-1]
+        if dirName == 'edl' or dirName.endswith( 'Screens' ):
+            continue	# Leave edl directories read-only to avoid inadvertant edm save ops
         pathStatus = os.stat( dirPath )
         if pathStatus.st_mode & stat.S_IWGRP:
             continue
@@ -226,7 +229,11 @@ class Releaser(object):
             if dirName == '.git' or dirName == '.svn' or dirName == 'CVS':
                 continue
             if userId == pathStatus.st_uid:
-                os.chmod( dirPath, pathStatus.st_mode | dirModeAllow )
+                if dirName == 'edl' or dirName.endswith( 'Screens' ):
+                    # Leave edl directories read-only to avoid edm replacing release screens
+                    os.chmod( dirPath, pathStatus.st_mode )
+                else:
+                    os.chmod( dirPath, pathStatus.st_mode | dirModeAllow )
                 if groupId >= 0 and groupId != pathStatus.st_gid:
                     os.chown( dirPath, -1, groupId )
             for fileName in files:
