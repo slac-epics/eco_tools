@@ -588,18 +588,33 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
             lineCache += line
             continue
 
+        # Parse the macro match
         originalLine   = match.group(0)
         commentedOut   = match.group(1).startswith('#')
         macroName      = match.group(2)
         oldVersionPath = match.group(3)
+
+        # Is this macro related to the base version
+        #isMacroBaseRelated = False
+        #if macroName in [ "EPICS_BASE", "EPICS_BASE_VER", "EPICS_MODULES", "MODULES_SITE_TOP" ]:
+        #	isMacroBaseRelated = True
+
         if macroName in newMacroVersions:
             pkgName = macroNameToPkgName(macroName)
             if not pkgName:
                 continue
-            if using_MODULE_VERSION.get( macroName, False ):
+            if pkgName == 'base':
+                if 'BASE_MODULE_VERSION' in oldMacroVersions:
+                    newVersionPath = "$(EPICS_SITE_TOP)/base/$(BASE_MODULE_VERSION)"
+                else:
+                    newVersionPath = "$(EPICS_SITE_TOP)/base/%s" % ( newMacroVersions[macroName] )
+                #print '1. newVersionPath = %s' % newVersionPath
+            elif using_MODULE_VERSION.get( macroName, False ):
                 newVersionPath = "$(EPICS_MODULES)/%s/$(%s_MODULE_VERSION)" % ( pkgName, macroName )
+                #print '2. newVersionPath = %s' % newVersionPath
             else:
                 newVersionPath = "$(EPICS_MODULES)/%s/%s" % ( pkgName, newMacroVersions[macroName] )
+                #print '3. newVersionPath = %s' % newVersionPath
             if macroName in definedModules:
                 # We've already defined this macroName
                 if not commentedOut:
@@ -627,7 +642,8 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
             continue
 
         # Handle BASE related macros
-        if not macroName in [ "EPICS_BASE", "EPICS_BASE_VER", "EPICS_MODULES", "MODULES_SITE_TOP" ]:
+        #if not isMacroBaseRelated:
+        if macroName in [ "EPICS_BASE", "EPICS_BASE_VER", "EPICS_MODULES", "MODULES_SITE_TOP" ]:
             lineCache += line
             continue
 
@@ -660,9 +676,12 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
 
         # Handle fixing unusual paths
         if macroName == "EPICS_BASE_VER":
-            print "Old: %s" %  oldLine,
-            line = string.replace( line, oldVersionPath, baseDirName )
-            print "New: %s" %  line,
+            oldLine = line
+            #line = string.replace( line, oldBaseVersion, newBaseVersion )
+            #line = string.replace( line, oldVersionPath, baseDirName )
+            if True or newBaseVersion in line:
+                print "Old: %s" %  oldLine,
+                print "New: %s" %  line,
             modified = True
 
         if macroName == "EPICS_BASE":
