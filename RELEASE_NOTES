@@ -1,3 +1,8 @@
+R2.9	2018-05-01 Bruce Hill
+	Added new gitGetVersionNumber() and use to avoid using --config for git version < 1.8
+	Fixed some issues if epics-update is asked to update the base version.
+	Make edm directories read-only to avoid edm replacing screens in release dirs
+
 R2.8	2018-04-27 Bruce Hill
 	Added --noCreateParent options and made createParent default to True
 	Fixed batch file mode for eco.
