@@ -6,6 +6,7 @@ import fileinput
 import subprocess
 import sys
 from repo_defaults import *
+from version_utils import *
 
 import gc
 
@@ -218,7 +219,9 @@ def cloneMasterRepo( gitMasterRepo, tpath, packageName, branch=None, depth=None,
     print "Cloning the master repo at", gitMasterRepo, "into", clonedFolder
     gitCommand = "clone --recursive %s %s" % ( gitMasterRepo, clonedFolder )
     if branch:
-        gitCommand += " --branch %s --config advice.detachedHead=false" % branch
+        gitCommand += " --branch %s" % branch
+        if gitGetVersionNumber() > 1.08:
+            gitCommand += " --config advice.detachedHead=false"
     #if depth and gitMasterRepo.find('://') > 0:
     if depth:
         gitCommand += " --no-local --depth %d" % depth
@@ -388,4 +391,26 @@ def git_get_versionFileName():
     except:
         pass
     return versionFileName
+
+def gitGetVersion():
+    '''Run git --version and return the git version as a string
+    Returns None on error'''
+    version = None
+    try:
+        git_output = git_check_output( "git --version" ).splitlines()
+        if len(git_output) >= 1:
+            version = git_output[0].split()[-1]
+    except:
+        pass
+    return version
+
+def gitGetVersionNumber():
+    '''Run git --version and return the git version as a float.
+    Each decimal point scales subsequent version components by 0.01 
+    1.2.3.4 => 1.020304
+    Returns 0.0 on error'''
+    version = gitGetVersion()
+    if not version:
+        return 0.0
+    return VersionToRelNumber( version )
 
