@@ -14,18 +14,26 @@ fi
 this_script=`readlink -f $BASH_ARGV`
 eco_tools_dir=`readlink -f $(dirname $this_script)`
 
-# Make sure we have PSPKG_ROOT and SETUP_SITE_TOP
+# Make sure we have PSPKG_ROOT and TOOLS_SITE_TOP
+# Use CONFIG_SITE_TOP to locate common_dirs.sh or
+# check known facility paths.
 if [ -z "$PSPKG_ROOT" -o -z "$TOOLS_SITE_TOP" ]; then
 	if [ ! -z "$CONFIG_SITE_TOP" -a -f $CONFIG_SITE_TOP/common_dirs.sh ]; then
 		source $CONFIG_SITE_TOP/common_dirs.sh
+	elif [  -f $FACILIITY_ROOT/epics/config/common_dirs.sh ]; then
+		source $FACILIITY_ROOT/epics/config/common_dirs.sh
+	elif [  -f /usr/local/lcls/epics/config/common_dirs.sh ]; then
+		source /usr/local/lcls/epics/config/common_dirs.sh
+	elif [  -f /usr/local/facet/epics/config/common_dirs.sh ]; then
+		source /usr/local/facet/epics/config/common_dirs.sh
 	elif [  -f /usr/local/controls/config/common_dirs.sh ]; then
 		source /usr/local/controls/config/common_dirs.sh
 	elif [  -f /reg/g/pcds/pyps/config/common_dirs.sh ]; then
 		source /reg/g/pcds/pyps/config/common_dirs.sh
-	elif [  -f /afs/slac/g/pcds/config/common_dirs.sh ]; then
-		source /afs/slac/g/pcds/config/common_dirs.sh
 	elif [  -f /afs/slac/g/lcls/epics/config/common_dirs.sh ]; then
 		source /afs/slac/g/lcls/epics/config/common_dirs.sh
+	elif [  -f /afs/slac/g/pcds/config/common_dirs.sh ]; then
+		source /afs/slac/g/pcds/config/common_dirs.sh
 	fi
 fi
 
