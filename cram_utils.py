@@ -20,7 +20,6 @@ def createCramPackageInfo(packageName, apptype):
     with open(packageInfofile, 'w') as pkginfof:
         json.dump(packageInfo, pkginfof)
 
-    subprocess.check_call(['git', 'add', '.cram'])
     subprocess.check_call(['git', 'add', '.cram/packageinfo'])
     
 def determineCramAppType():
