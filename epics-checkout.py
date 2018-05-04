@@ -155,14 +155,11 @@ def assemble_env_inputs_from_term(options):
         readline.set_completer()
         readline.parse_and_bind('tab: self-insert')
 
-    if  tagName == "":
-        if  dirName == 'current':
-            tagName = dirName
+    if tagName == "":
         if  dirName == 'MAIN_TRUNK':
             tagName = dirName
     else:
         dirName = tagName
-    tagName = dirName
 
     if options.destination:
         destinationPath = options.destination
@@ -503,7 +500,7 @@ def importFromCVS( options ):
 
 
 def module_callback(option, opt_str, value, parser):
-    print 'Processing MODULE option; Setting ', option.dest, ' to ', value
+    print 'Processing MODULE option; Setting', option.dest, 'to', value
     setattr(parser.values, option.dest, value)
     if len(parser.rargs) > 0 and not parser.rargs[0].startswith("-"):
         print 'Setting tag to ' + parser.rargs[0]
