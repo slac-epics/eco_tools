@@ -360,82 +360,127 @@ def determinePathToGitRepo(packagePath):
                 dirs.remove( dir )
     return None
 
-def initGitBareRepo():
+def initGitBareRepo( options ):
     '''Initialize a bare repo in the user specified folder'''
+    showStatusZenity = False
     gitRoot = determineGitRoot()
     if 'CVSROOT' not in os.environ:
         os.environ['CVSROOT'] = DEF_CVS_ROOT
-    
-    # Ask the user for the name of the package
-    packageName = subprocess.check_output(["zenity", "--entry", "--title", "Package Name", "--text", "Please enter the name of the package"]).strip()
+ 
+    if options.module:
+        packageName = options.module
+    else:
+        # Ask the user for the name of the package
+        packageName = subprocess.check_output(["zenity", "--entry", "--title", "Package Name", "--text", "Please enter the name of the package"]).strip()
+        showStatusZenity = True
+
     if packageName in git_package2Location or packageName in cvs_modules2Location:
         if packageName in git_package2Location:
             packageLocation = git_package2Location[packageName]
         elif packageName in cvs_modules2Location:
             packageLocation = os.path.join(os.environ['CVSROOT'], cvs_modules2Location[packageName])
-        subprocess.check_call(["zenity", "--error", "--title", "Error", "--text", "The package " + packageName + " already is already registered and exists in " + packageLocation])
+        print "Error: The package " + packageName + " is already registered and exists in:\n" + packageLocation
+        if showStatusZenity:
+            subprocess.check_call(["zenity", "--error", "--title", "Error", "--text", "The package " + packageName + " is already registered and exists in " + packageLocation])
         return
-    
-    # Ask the use where the master repo is to be created
-    bareRepoParentFolder = subprocess.check_output(["zenity", "--file-selection", "--title", "Please choose the parent folder where you want to create the bare repo", "--directory", "--filename="+gitRoot]).strip()
-    
-    apptype = determineCramAppType()
+ 
+    if options.destination:
+        bareRepoParentFolder = options.destination
+    else:
+        # Ask the use where the master repo is to be created
+        showStatusZenity = True
+        bareRepoParentFolder = subprocess.check_output(["zenity", "--file-selection", "--title", "Please choose the parent folder where you want to create the bare repo", "--directory", "--filename="+gitRoot]).strip()
 
-    # Create the master repo as a bare repo
-    gitMasterRepo = initBareRepo(bareRepoParentFolder, packageName)
-                                        
+
+    gitRepoPath = os.path.join( bareRepoParentFolder, packageName+".git" )
+    try:
+        # Create the master repo as a bare repo
+        initBareRepo( gitRepoPath )
+    except Exception as e:
+        print "initGitBareRepo Error: initBareRepo call failed!\ngitRepoPath = " + gitRepoPath 
+        print str(e)
+        return
+
     tpath = tempfile.mkdtemp()
     curDir = os.getcwd()
-    
-    clonedFolder = cloneMasterRepo(gitMasterRepo, tpath, packageName)
+
+    clonedFolder = cloneMasterRepo(gitRepoPath, tpath, packageName)
     os.chdir(clonedFolder)
-    
+
     createGitIgnore()
-    createCramPackageInfo(packageName, apptype)
-        
+    if options.apptype:
+        apptype = options.apptype
+    else:
+        apptype = determineCramAppType()
+    if apptype.lower() != 'none':
+        createCramPackageInfo(packageName, apptype)
+
     gitCommitAndPush( 'Initial commit/import from eco. Added a default .gitignore and other defaults.' )
 
     os.chdir(curDir)
     shutil.rmtree(tpath)
     
-    addPackageToEcoModuleList(packageName, gitMasterRepo)
+    addPackageToEcoModuleList(packageName, gitRepoPath)
     
     print "Done creating bare repo for package ", packageName, ". Use eco to clone this repo into your working directory."
-    subprocess.check_call(["zenity", "--info", "--title", "Repo created for " + packageName, "--text", "Done creating bare repo for package " + packageName + ". Use eco to clone this repo into your working directory."])
+    if showStatusZenity:
+        subprocess.check_call(	["zenity", "--info", "--title", "Repo created for " + packageName,
+                                "--text", "Done creating bare repo for package " + packageName +
+                                ". Use eco to clone this repo into your working directory."] )
 
-def importFromCVS():
+def importFromCVS( options ):
     '''Import package from CVS and place into new git repo. Uses ${TOOLS}/cvs2git/current/cvs2git to do the actual importing'''
     gitRoot = determineGitRoot()
     cvs2git_utils.checkCVS2GitPresent()
+    showStatusZenity = False
  
-    # Ask the user for the name of the package
-    packageName = subprocess.check_output(["zenity", "--entry", "--title", "Package Name", "--text", "Please enter the name of the package"]).strip()
+    if options.module:
+        packageName = options.module
+    else:
+        # Ask the user for the name of the package
+        showStatusZenity = True
+        packageName = subprocess.check_output( ["zenity", "--entry", "--title", "Package Name", "--text",
+                                                "Please enter the name of the package"] ).strip()
+
     if packageName in git_package2Location:
-        subprocess.check_call(["zenity", "--error", "--title", "Error", "--text", "The package " + packageName + " is already registered and exists here - " + packageLocation])
+        print "eco cvs2git error: %s is already registered and exists here:\n%s" % ( packageName, git_package2Location[packageName] )
         return
     if packageName not in cvs_modules2Location:
-        subprocess.check_call(["zenity", "--error", "--title", "Error", "--text", "The package " + packageName + " does not seem to be a CVS package."])
+        print "eco cvs2git error: %s does not seem to be a CVS module." % packageName
+        print "Make sure it exists in %s/CVSROOT/modules" % os.environ['CVSROOT']
         return
 
     if 'CVSROOT' not in os.environ:
         os.environ['CVSROOT'] = DEF_CVS_ROOT
     CVSpackageLocation = os.path.join(os.environ['CVSROOT'], cvs_modules2Location[packageName])
     print "Importing CVS package from ", CVSpackageLocation
-    
-    # Ask the use where the master repo is to be created
-    bareRepoParentFolder = subprocess.check_output(["zenity", "--file-selection", "--title", "Please choose the parent folder where you want to create the master git repo", "--directory", "--filename="+gitRoot]).strip()
-    
-    # Create a bare master repo to load the CVS history into
-    gitMasterRepo = initBareRepo(bareRepoParentFolder, packageName)     
+
+    if options.destination:
+        bareRepoParentFolder = options.destination
+    else:
+        # Ask the use where the master repo is to be created
+        showStatusZenity = True
+        bareRepoParentFolder = subprocess.check_output(	["zenity", "--file-selection", "--title",
+                                                        "Please choose the parent folder where you want to create the master git repo",
+                                                        "--directory", "--filename="+gitRoot] ).strip()
 
     curDir = os.getcwd()
     tpath = tempfile.mkdtemp()
 
-    cvs2git_utils.importHistoryFromCVS(tpath, gitMasterRepo, CVSpackageLocation)
-    print "CVS history for ", packageName, " imported to ", gitMasterRepo
+    gitRepoPath = bareRepoParentFolder
+    if not gitRepoPath.endswith( packageName+".git" ):
+        gitRepoPath = os.path.join( gitRepoPath, packageName+".git")
+
+    try:
+        cvs2git_utils.importHistoryFromCVS(tpath, gitRepoPath, CVSpackageLocation)
+    except Exception as e:
+        print str(e)
+        return
+
+    print "CVS history for ", packageName, " imported to ", gitRepoPath
 
     # Add .gitignore
-    clonedFolder = cloneMasterRepo(gitMasterRepo, tpath, packageName)
+    clonedFolder = cloneMasterRepo(gitRepoPath, tpath, packageName)
     os.chdir(clonedFolder)
     createGitIgnore()
     # We expect .cram/packageinfo to be there already
@@ -444,14 +489,17 @@ def importFromCVS():
 
     os.chdir(curDir)
 
-    addPackageToEcoModuleList(packageName, gitMasterRepo)
+    addPackageToEcoModuleList(packageName, gitRepoPath)
     cvs2git_utils.removeModuleFromCVS(tpath, packageName, CVSpackageLocation)
 
     os.chdir(curDir)
     shutil.rmtree(tpath)
-    
+
     print "Done creating bare master repo for package ", packageName, ". Use eco to clone this repo into your working directory."
-    subprocess.check_call(["zenity", "--info", "--title", "Repo created for " + packageName, "--text", "Done creating bare repo for package " + packageName + ". Use eco to clone this repo into your working directory."])
+    if showStatusZenity:
+        subprocess.check_call(	["zenity", "--info", "--title", "Repo created for " + packageName,
+                                "--text", "Done creating bare repo for package " + packageName +
+                                ". Use eco to clone this repo into your working directory."] )
 
 
 def module_callback(option, opt_str, value, parser):
@@ -490,6 +538,7 @@ def process_options(argv):
     parser = optparse.OptionParser(usage=usage, version=eco_tools_version)
 
     parser.add_option('-v', '--verbose', action='store_true', dest='verbose', help='print verbose output')
+    parser.add_option('-a', '--apptype', action='store', help='Cram app type. Used by initrepo to add .cram/packageinfo')
     parser.add_option('-b', '--batch',   action='store_true', dest='batch', help='Run without confirmation prompts')
     parser.add_option('-c', '--createParent',   action='store_true', dest='createParent', default=True, help='Automatically create parent dir using module name.')
     parser.add_option('-n', '--noCreateParent', action='store_false', dest='createParent', default=True, help='Do not create parent dir using module name unless a tag is specified.')
@@ -520,7 +569,7 @@ def main(argv=None):
 
     if (options.input_file_path):
         if options.input_file_path in commands:
-            commands[options.input_file_path]()
+            commands[options.input_file_path]( options )
             return
         try:
             in_file = open(options.input_file_path, 'r')

@@ -5,7 +5,10 @@ import os
 import fileinput
 import subprocess
 import sys
+import shutil
+import tempfile
 from repo_defaults import *
+from cvs_utils import *
 from git_utils import *
 import gc
 
@@ -17,6 +20,7 @@ else:
     TOOLS_SITE_TOP	= LCLS_TOOLS
     os.environ['TOOLS'] = TOOLS_SITE_TOP
 
+gitDefaultDirFormat = "/afs/slac.stanford.edu/g/cd/swe/git/repos/package/{}"
 cvs2git_dir = os.path.join( TOOLS_SITE_TOP, "cvs2git", "current" )
 if not os.path.isdir(cvs2git_dir):
     cvs2git_dir = None
@@ -36,9 +40,18 @@ if cvs2git_dir:
     from cvs2svn_lib.symbol_strategy import AllBranchRule
     from cvs2svn_lib.symbol_strategy import HeuristicPreferredParentRule
 
+cvs_modules2Location = None
+git_modules2Location = None
 
-def importHistoryFromCVS(tpath, gitRepoPath, CVSpackageLocation, gitFolder=None, module=None):
+def importHistoryFromCVS(tpath, gitRepoPath, CVSpackageLocation ):
     '''Import history into a git repo using cvs2git. tpath is a precreated temporary folder.''' 
+
+    if gitRepoPath is None:
+        raise Exception( "importHistoryFromCVS Error: gitRepoPath not specified" )
+
+    if os.path.exists(gitRepoPath):
+        raise Exception( "importHistoryFromCVS Error: cvs import of repo already exists:\n%s" % gitRepoPath )
+
     curDir = os.getcwd()
     os.chdir(tpath)
     os.mkdir("cvs2git-tmp")
@@ -88,19 +101,14 @@ def importHistoryFromCVS(tpath, gitRepoPath, CVSpackageLocation, gitFolder=None,
 
     cvsgitdumppath = os.path.abspath(tpath)
 
-    # If a gitRepoPath wasn't provided, create a new bare repo
-    if gitRepoPath is None:
-        if not gitFolder:
-            print "git repo path and import folder are not defined!"
-            return
-        if gitFolder.endswith(".git"):
-            gitRepoPath = gitFolder
-        else:
-            gitRepoPath = os.path.join( gitFolder, module+".git")
-    if os.path.exists(gitRepoPath):
-        print "cvs import of repo already exists:", gitRepoPath
-        return
-    gitRepoPath = initBareRepo( gitRepoPath, module )
+    try:
+        # Create a bare master repo to load the CVS history into
+        initBareRepo( gitRepoPath )
+    except Exception as e:
+        print "importHistoryFromCVS Error: initBareRepo call failed!\ngitRepoPath = " + gitRepoPath 
+        print str(e)
+        raise
+
     os.chdir(gitRepoPath)
 
     # Use Python Pipes to import CVS dump into GIT
@@ -119,6 +127,7 @@ def importHistoryFromCVS(tpath, gitRepoPath, CVSpackageLocation, gitFolder=None,
 
     subprocess.check_call(['git', 'gc', '--prune=now'])
     os.chdir(curDir)
+    return gitRepoPath
 
 def checkCVS2GitPresent():
     '''Make sure we have cvs2git present'''
@@ -144,3 +153,40 @@ def removeModuleFromCVS(tpath, packageName, CVSpackageLocation):
     
     os.chdir(curDir)
 
+def importModuleType( cvsRoot, module, typePaths, gitFolder=None, repoPath=None, fromDir='from-cvs' ):
+    '''Import a CVS module for the specified type.
+    typePaths is a dictionary where:
+        typePath['cvs'] is the CVS repo path relative to $CVSROOT for module type
+        typePath['git'] is the git repo path relative to $GIT_TOP for module type
+    '''
+    global cvs_modules2Location, git_modules2Location
+    if	cvs_modules2Location is None:
+        cvs_modules2Location = parseCVSModulesTxt( cvsRoot )
+    if	git_modules2Location is None:
+        git_modules2Location = parseGitModulesTxt()
+    if repoPath is None:
+        if module in cvs_modules2Location:
+            repoPath = os.path.join( cvsRoot, cvs_modules2Location[module] )
+        else:
+            repoPath = os.path.join( cvsRoot, typePaths['cvs'], module )
+    if gitFolder is None:
+        if module in git_modules2Location:
+            gitRepoPath = git_modules2Location[module]
+        else:
+            gitRepoPath = os.path.join( gitDefaultDirFormat.format(typePaths['git']), fromDir, module + ".git" )
+    else:
+        gitRepoPath = os.path.join( gitFolder, module + ".git" )
+
+    if os.path.isdir( gitRepoPath ):
+        print "cvs import of repo already exists:", gitRepoPath
+        return
+    print "Importing CVS module %s from %s\n   to %s" % ( module, repoPath, gitRepoPath )
+ 
+    # Import the CVS history using a tmp folder
+    tpath = tempfile.mkdtemp()
+    try:
+        importHistoryFromCVS( tpath, gitRepoPath, repoPath )
+    except Exception as e:
+        print str(e)
+    shutil.rmtree(tpath)
+    print "CVS module %s successfully imported from %s\n   to %s" % ( module, repoPath, gitRepoPath )

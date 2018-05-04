@@ -3,39 +3,26 @@
 
 import argparse
 import os.path
-import shutil
-import tempfile
 from cvs_utils import *
 from git_utils import *
 import cvs2git_utils
 
-defaultModulesDir = "/afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/modules/from-spear"
 cvsRoot = "/afs/slac.stanford.edu/g/spear/cvsrep"
-cvs_modules2Location = parseCVSModulesTxt( cvsRoot )
-git_modules2Location = parseGitModulesTxt()
 
-def importModule( module, gitFolder=None, repoPath=None ):
-    if  repoPath is None:
-        if module in cvs_modules2Location:
-            repoPath = os.path.join( cvsRoot, cvs_modules2Location[module] )
-        else:
-            repoPath = os.path.join( cvsRoot, 'epics/modules', module )
-    if gitFolder is None:
-        if module in git_modules2Location:
-            gitFolder = git_modules2Location[module]
-        else:
-            gitFolder = defaultModulesDir
-    print "Importing CVS module %s from %s\n   to %s" % ( module, repoPath, gitFolder )
- 
-    # Import the CVS history using a tmp folder
-    tpath = tempfile.mkdtemp()
-    cvs2git_utils.importHistoryFromCVS( tpath, gitFolder, repoPath, module=module )
-    shutil.rmtree(tpath)
+# Dictionary to store the cvs path and git path for each kind of import
+# To add a new type add the entry in here with the proper paths and add
+# the proper definition of moduleType for the importModuleType function.
+moduleTypePaths = {
+    'epics_module': {'cvs': 'epics/modules', 'git': 'epics/modules'},
+    'kernel_module': {'cvs': 'linuxKernel_Modules', 'git': 'linux/drivers/kernel'},
+    'epics_extension': {'cvs': 'epics/extensions/src', 'git': 'epics/extensions'}
+}
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser( description='''This script creates a git repo for each specified CVS module....
 ''')
-    parser.add_argument( '-m', '--module', action='append', required=True, help='CVS module name to import.' )
+    parser.add_argument( '-m', '--module', action='append', required=True, help='Module name to import.' )
+    parser.add_argument( '-e', '--extension', action='store_true', default=False, required=False, help='Indicates if this is a EPICS Extension.' )
     parser.add_argument( '--repoPath',  action='store', default=None, help='CVS repo path to import.' )
     parser.add_argument( '--gitFolder', action='store', default=None, help='Folder to create git repo in.' )
 
@@ -46,8 +33,13 @@ if __name__ == '__main__':
         if os.path.exists( '/afs/slac.stanford.edu/g/lcls/tools' ):
             os.environ['TOOLS'] = '/afs/slac.stanford.edu/g/lcls/tools'
 
+    moduleType = 'epics_module'
+    if args.extension:
+        moduleType = 'epics_extension'
+
     for m in args.module:
-        importModule( m, repoPath=args.repoPath, gitFolder=args.gitFolder )
+        typePaths = moduleTypePaths[moduleType]
+        cvs2git_utils.importModuleType( cvsRoot, m, typePaths, repoPath=args.repoPath, gitFolder=args.gitFolder, fromDir='from-spear' )
 
     print "Done."
 

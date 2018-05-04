@@ -40,7 +40,7 @@ def parseGitModulesTxt():
             print "Error parsing ", gitModulesTxtFile, "Cannot break", line, "into columns with enough fields using spaces/tabs"
             continue
         packageName = parts[0]
-        packageLocation = parts[1]
+        packageLocation = expandMacros( parts[1], os.environ )
         package2Location[packageName] = packageLocation
     return package2Location
 
@@ -195,20 +195,22 @@ def gitGetRemoteTag( url, tag, debug = False, verbose = False ):
             print "gitGetRemoteTag: Invalid git url %s" % ( url )
     return ( git_url, git_tag )
 
-def initBareRepo(parentFolder, packageName):
-    if parentFolder.endswith( packageName + ".git" ):
-        gitMasterRepo = parentFolder
-    else:
-        gitMasterRepo = os.path.join(parentFolder, packageName+".git")
-    print "Checking to see if git master repo exists at", gitMasterRepo
-    if os.path.exists(gitMasterRepo):
-        subprocess.check_call(["zenity", "--error", "--title", "Error", "--text", "Git master repo for package " + packageName + " already exists at " + gitMasterRepo])
-        raise Exception("Git master repo already exists at " + gitMasterRepo)
-    print "Creating a new bare repo in", parentFolder, "for package", packageName
-    subprocess.check_call(["git", "init", "--bare", "--template=%s/templates" % DEF_GIT_MODULES_PATH, gitMasterRepo])
-    if not os.path.exists(gitMasterRepo):
-        raise Exception("Git master repo does not seem to exist at " + gitMasterRepo)
-    return gitMasterRepo
+def initBareRepo( gitRepoPath, verbose=False ):
+    if not gitRepoPath.endswith( ".git" ):
+        raise Exception( "initBareRepo: repo path must end in .git\n%s" % gitRepoPath )
+    if os.path.exists(gitRepoPath):
+        raise Exception("Git repo path already exists at " + gitRepoPath)
+
+    # Make sure parent folder exists
+    ( parentFolder, module )  = os.path.split( gitRepoPath )
+    if not os.path.isdir( parentFolder ):
+        if verbose: print "Pre-creating parent folder for " + gitRepoPath
+        os.mkdir( parentFolder )
+
+    if verbose: print "Creating a new bare repo in " + gitRepoPath
+    subprocess.check_call(["git", "init", "--bare", "--template=%s/templates" % DEF_GIT_MODULES_PATH, gitRepoPath])
+    if not os.path.exists(gitRepoPath):
+        raise Exception( "Failed to create git repo at:\n" + gitRepoPath )
 
 def cloneMasterRepo( gitMasterRepo, tpath, packageName, branch=None, depth=None, verbose=False ):
     '''Create a clone of the master repo given a destination folder'''
@@ -229,7 +231,24 @@ def cloneMasterRepo( gitMasterRepo, tpath, packageName, branch=None, depth=None,
     return clonedFolder
 
 def createGitIgnore():
-    gitIgnoreLines = ["bin/", "CVS/", "O.*/", "RELEASE_SITE", "db/", "dbd/", "iocBoot/*/envPaths", "*~"]
+    gitIgnoreLines = [	
+                        "*~",
+                        "O.*/",
+                        "*.log",
+                        "*.swp",
+                        "CVS/",
+                        "bin/",
+                        "db/",
+                        "dbd/",
+                        "html/",
+                        "include/",
+                        "lib/",
+                        "templates/",
+                        "cdCommands",
+                        "envPaths",
+                        "RELEASE_SITE",
+                        "tags"
+                    ]
     with open(".gitignore", "w") as f:
         f.write("\n".join(gitIgnoreLines))
     subprocess.check_call(['git', 'add', '.gitignore'])
@@ -250,6 +269,17 @@ def addPackageToEcoModuleList(packageName, gitMasterRepo):
         return
     gitModulesTxtFolder = os.path.join(os.environ['TOOLS'], 'eco_modulelist')
     os.chdir(gitModulesTxtFolder)
+
+    try:
+        repoCmd = [ 'git', 'status', '--short', '--untracked-files=no' ]
+        statusInfo = git_check_output( repoCmd, stderr=subprocess.STDOUT )
+        statusLines = statusInfo.splitlines()
+        if len(statusLines) > 0:
+            repoCmd = [ 'git', 'commit', '-a', '-m', '"eco_tools addPackageToEcoModuleList: Committing uncommited changes"' ]
+            git_check_call( repoCmd, stderr=subprocess.STDOUT )
+    except:
+        raise
+
     subprocess.check_call(['git', 'pull', '--rebase'])
     with open('modulelist.txt', 'a') as f:
         f.write(packageName + "\t\t\t" + gitMasterRepo+"\n")
@@ -346,29 +376,6 @@ def gitFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
         else:
             print "gitFindPackageRelease Error: Cannot find %s/%s" % (packagePath, tag)
     return (repo_url, repo_tag)
-
-def parseGitModulesTxt():
-    '''Parse the GIT modules txt file and return a dict of packageName -> location'''
-    gitModulesTxtFile = os.path.join(os.environ['TOOLS'], 'eco_modulelist', 'modulelist.txt')
-    if not os.path.isfile(gitModulesTxtFile):
-        return {}
-    package2Location = {}
-    with open(gitModulesTxtFile, 'r') as f:
-        lines = f.readlines()
-    for line in lines:
-        line = line.strip()
-        if not line:
-            continue
-        if line.startswith('#'):
-            continue
-        parts = line.split()
-        if(len(parts) < 2):
-            print "Error parsing ", gitModulesTxtFile, "Cannot break", line, "into columns with enough fields using spaces/tabs"
-            continue
-        packageName = parts[0]
-        packageLocation = parts[1]
-        package2Location[packageName] = packageLocation
-    return package2Location
 
 def git_get_versionFileName():
     '''If git config has a value for ecotools.versionfile,
