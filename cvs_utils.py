@@ -81,6 +81,9 @@ def parseCVSModulesTxt( cvsRepoRoot=None, verbose=False ):
     if  cvsRepoRoot is not None:
         os.environ['CVSROOT'] = cvsRepoRoot
     if 'CVSROOT' not in os.environ:
+        if not os.path.exists( DEF_CVS_ROOT ):
+            # CVS root not accessible.  Carry on quietly.
+            return package2Location
         os.environ['CVSROOT'] = DEF_CVS_ROOT
     cvsModulesTxtFile = os.path.join( os.environ['CVSROOT'], 'CVSROOT', 'modules')
     if not os.path.exists(cvsModulesTxtFile):
