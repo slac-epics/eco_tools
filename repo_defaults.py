@@ -1,6 +1,9 @@
 '''
 Defaults for release paths, repo urls and repo paths'''
 # repo_defaults.py
+
+import os
+
 # Default string variables for cvs, svn, and git repo paths
 DEF_CVS_ROOT		= '/afs/slac/g/lcls/cvs'
 DEF_SVN_REPO		= "file:///afs/slac/g/pcds/vol2/svn/pcds"
@@ -21,7 +24,16 @@ DEF_LCLS_CRAM_USER	= '.cram_user_facilities.cfg'
 DEF_PCDS_GROUP_OWNER= "ps-pcds"
 
 # Use these for filesystem access
-DEF_GIT_REPO_PATH		= "/afs/slac.stanford.edu/g/cd/swe/git/repos"
+DEF_AFS_GIT_REPOS		= "/afs/slac.stanford.edu/g/cd/swe/git/repos"
+
+DEF_GIT_EXT_TOP_TAG		= "slac-master"
+DEF_GIT_RELEASE_DEPTH = 10
+
+DEF_GIT_REPO_PATH		= DEF_AFS_GIT_REPOS
+if "GIT_REPO_ROOT" in os.environ:
+    DEF_GIT_REPO_PATH = os.environ["GIT_REPO_ROOT"]
+elif "GIT_TOP" in os.environ:
+    DEF_GIT_REPO_PATH = os.environ["GIT_TOP"]
 DEF_GIT_EPICS_PATH		= DEF_GIT_REPO_PATH + "/package/epics"
 DEF_GIT_BASE_PATH		= DEF_GIT_REPO_PATH + "/package/epics/base"
 DEF_GIT_MODULES_PATH	= DEF_GIT_REPO_PATH + "/package/epics/modules"
@@ -29,14 +41,12 @@ DEF_GIT_EXTENSIONS_PATH	= DEF_GIT_REPO_PATH + "/package/epics/extensions"
 DEF_GIT_EXT_TOP_PATH	= DEF_GIT_EXTENSIONS_PATH + "/extensions-top.git"
 
 # Use these for remote repo access
-DEF_GIT_REPOS_URL		= "file://" + DEF_GIT_REPO_PATH
-#DEF_GIT_REPOS_URL		= "git@code.stanford.edu:slac-epics"
-DEF_GIT_EPICS_URL		= "file://" + DEF_GIT_EPICS_PATH
-DEF_GIT_MODULES_URL		= "file://" + DEF_GIT_MODULES_PATH
-DEF_GIT_EXTENSIONS_URL	= "file://" + DEF_GIT_EXTENSIONS_PATH
-DEF_GIT_EXT_TOP_URL		= "file://" + DEF_GIT_EXTENSIONS_PATH + "/extensions-top.git"
-DEF_GIT_EXT_TOP_TAG		= "slac-master"
-DEF_GIT_RELEASE_DEPTH = 10
+#DEF_GIT_REPOS_URL		= "file://" + DEF_GIT_REPO_PATH
+##DEF_GIT_REPOS_URL		= "git@code.stanford.edu:slac-epics"
+#DEF_GIT_EPICS_URL		= "file://" + DEF_GIT_EPICS_PATH
+#DEF_GIT_MODULES_URL		= "file://" + DEF_GIT_MODULES_PATH
+#DEF_GIT_EXTENSIONS_URL	= "file://" + DEF_GIT_EXTENSIONS_PATH
+#DEF_GIT_EXT_TOP_URL		= "file://" + DEF_GIT_EXTENSIONS_PATH + "/extensions-top.git"
 
 defEpicsTopVariants = []
 defEpicsTopVariants.append( "modules" )

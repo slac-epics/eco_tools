@@ -10,9 +10,6 @@ from version_utils import *
 
 import gc
 
-DEF_GIT_REPOS		= "/afs/slac/g/cd/swe/git/repos"
-#DEF_GIT_REPOS		= "git@code.stanford.edu:slac-epics"
-DEF_GIT_MODULES		= DEF_GIT_REPOS + "/package/epics/modules"
 LCLS_TOOLS			= '/afs/slac/g/lcls/tools'
 if 'TOOLS' in os.environ:
     TOOLS_SITE_TOP	= os.environ['TOOLS']
@@ -48,7 +45,7 @@ git_package2Location = parseGitModulesTxt()
 
 def determineGitRoot( ):
     '''Get the root folder for GIT repos at SLAC'''
-    gitRoot = DEF_GIT_REPOS_URL
+    gitRoot = DEF_AFS_GIT_REPOS
     # The GIT_REPO_ROOT variable is mainly used when testing eco and is not something that we really expect from the environment.
     if "GIT_REPO_ROOT" in os.environ:
         gitRoot = os.environ["GIT_REPO_ROOT"]
@@ -359,7 +356,7 @@ def gitFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
         url_path = git_package2Location[packageName]
         (repo_url, repo_tag) = gitGetRemoteTag( url_path, tag, verbose=verbose )
     else:
-        for url_root in [ DEF_GIT_MODULES_URL, DEF_GIT_EXTENSIONS_URL, DEF_GIT_EPICS_URL, DEF_GIT_REPOS_URL ]:
+        for url_root in [ DEF_GIT_MODULES_PATH, DEF_GIT_EXTENSIONS_PATH, DEF_GIT_EPICS_PATH, DEF_GIT_REPO_PATH ]:
             if repo_url is not None:
                 break
             for p in [ packageName, packagePath ]:

@@ -95,7 +95,7 @@ def process_options(argv):
             + '\nExamples:\n' \
             + 'epics-build -p history/R2.6.1\n' \
             + 'epics-build -p asyn/4.31-0.1.0 --top /afs/slac/g/lcls/epics/R3.15.5-1.0/modules\n'
-    epilog = textwrap.dedent(epilog_fmt % ( gitModulesTxtFile, DEF_GIT_REPOS_URL, DEF_SVN_REPO, DEF_CVS_ROOT ))
+    epilog = textwrap.dedent(epilog_fmt % ( gitModulesTxtFile, DEF_GIT_REPO_PATH, DEF_SVN_REPO, DEF_CVS_ROOT ))
     parser = argparse.ArgumentParser( description=description, formatter_class=argparse.RawDescriptionHelpFormatter, epilog=epilog )
     parser.add_argument( '-p', '--package',   dest='packages', action='append', \
                         help='EPICS module-name/release-version. Ex: asyn/R4.30-1.0.1', default=[] )
