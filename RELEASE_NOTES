@@ -1,3 +1,10 @@
+R2.10	2018-05-05 Bruce Hill
+	Fixed issues when working off-site at LERF by testing before accessing AFS paths
+	Fixed eco bug which set tag to dirName when it should not.
+	Fixed initrepo & cvs2git and have them use -m and/or -d when provided.
+	Added more options to where to look for common_dirs.sh
+	Made eco_tools launch scripts simpler and more robust.
+
 R2.9	2018-05-01 Bruce Hill
 	Added new gitGetVersionNumber() and use to avoid using --config for git version < 1.8
 	Fixed some issues if epics-update is asked to update the base version.
