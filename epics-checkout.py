@@ -116,11 +116,13 @@ def assemble_env_inputs_from_term(options):
                 # git REPO
                 dirName = packageName + '-git'
                 if os.path.exists(os.path.join(pathToGitRepo, "refs", "tags")):
+                    # git REPO in local filespace
                     # Determine the list of tags..
                     tags = os.listdir(os.path.join(pathToGitRepo, "refs", "tags"))
-                else:
+                elif os.path.exists( pathToGitRepo ):
                     print "Git repo at", pathToGitRepo, "does not seem to have any tags"
-        else:
+
+        if len(tags) == 0 and os.path.isdir( DEF_CVS_ROOT ):            
             # cvs REPO
             dirName = 'MAIN_TRUNK'
             p1 = subprocess.Popen(['cvs', '-Q', 'rlog', '-h', packageName], stdout=subprocess.PIPE)
@@ -252,7 +254,21 @@ def checkOutModule(packageName, tag, destinationPath, options, from_file=False )
     # See if we can find it in with the git repos
     pathToGitRepo = determinePathToGitRepo(packageName)
 
-    if pathToGitRepo:
+    if not pathToGitRepo and len(parseCVSModulesTxt()) > 0:
+        if (tag == 'MAIN_TRUNK'):
+            cmd='cvs checkout -P -d ' + destinationPath + ' ' + packageName    
+            print cmd
+        else:
+            cmd='cvs checkout -P -r '+ tag +' -d '+ destinationPath +' ' + packageName    
+            print cmd
+        os.system(cmd)
+        if not os.path.isdir(destinationPath):
+            sys.stderr.write( "Error: unable to do cvs checkout of %s\n" % packageName )
+            sys.exit(1)
+        os.chdir(destinationPath)
+    else:
+        if not pathToGitRepo:
+            pathToGitRepo = os.path.join( determineGitRoot(), 'package/epics/modules', packageName + '.git' )
         pathToSvnRepo = None
         if  pathToGitRepo.startswith("file:///"):
             pathToSvnRepo = pathToGitRepo
@@ -265,6 +281,9 @@ def checkOutModule(packageName, tag, destinationPath, options, from_file=False )
                 cmd=[ 'svn', 'checkout', '--revision', tag, pathToSvnRepo, destinationPath ]
             print cmd
             subprocess.check_call(cmd)
+            if not os.path.isdir(destinationPath):
+                sys.stderr.write( "Error: unable to do svn checkout of %s\n" % packageName )
+                sys.exit(1)
             os.chdir(destinationPath)
         else:
             print packageName, "is a git package.\nCloning the repository at", pathToGitRepo
@@ -292,15 +311,7 @@ def checkOutModule(packageName, tag, destinationPath, options, from_file=False )
             # 3. github-master
             # 4. lcls-trunk
             # 5. pcds-trunk
-    else:
-        if (tag == 'MAIN_TRUNK'):
-            cmd='cvs checkout -P -d ' + destinationPath + ' ' + packageName    
-            print cmd
-        else:
-            cmd='cvs checkout -P -r '+ tag +' -d '+ destinationPath +' ' + packageName    
-            print cmd
-        os.system(cmd)
-        os.chdir(destinationPath)
+
 
     # See if we need to create or update a RELEASE_SITE file
     # Not needed if this is an EPICS base package
@@ -340,6 +351,9 @@ def determinePathToGitRepo(packagePath):
     gitRoot = determineGitRoot()
     gitPackageDir  = packageName + ".git"
     gitPackagePath = packagePath + ".git"
+    if not os.path.isdir( DEF_CVS_ROOT ) and gitRoot:
+        # Must be offsite, assume gitRoot and an EPICS module path
+        return os.path.join( gitRoot, 'package/epics/modules', gitPackageDir )
     for dirPath, dirs, files in os.walk( gitRoot, topdown=True ):
         if len( dirs ) == 0:
             continue
