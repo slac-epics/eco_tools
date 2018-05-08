@@ -1,3 +1,9 @@
+R2.11	2018-05-08 Bruce Hill
+	Added support to epics-checkout for svn modules and ioc's.
+	Consolidated code to fetch tags into one function each for cvs_utils, svn_utils, and git_utils.
+		Fixes bug that caused eco failure for FastFeedback by not fetching git tags correctly.
+	Fixed missing test of dirName before defaulting to MAIN_TRUNK when repo has no tags
+
 R2.10	2018-05-05 Bruce Hill
 	Fixed issues when working off-site at LERF by testing before accessing AFS paths
 	Fixed eco bug which set tag to dirName when it should not.
