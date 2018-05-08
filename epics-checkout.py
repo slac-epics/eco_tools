@@ -109,9 +109,10 @@ def assemble_env_inputs_from_term(options):
                 tags = svnGetRemoteTags( pathToGitRepo, verbose=options.verbose )
             else:
                 # git REPO
+                if not dirName:
+                    dirName = packageName + "-git"
                 tags = gitGetRemoteTags( pathToGitRepo, verbose=options.verbose )
-
-        if len(tags) == 0 and os.path.isdir( DEF_CVS_ROOT ):            
+        elif os.path.isdir( DEF_CVS_ROOT ):            
             # cvs REPO
             if not dirName:
                 dirName = 'MAIN_TRUNK'
@@ -144,6 +145,9 @@ def assemble_env_inputs_from_term(options):
         destinationPath = options.destination
     else:
         ( parent_dir, cur_basename ) = os.path.split( os.getcwd() )
+        if not dirName:
+            print "Error, dirName not specified!"
+            return None
         destinationPath = dirName
         if os.path.isdir(packageName):
             # Already a folder for different checkouts of this packageName.  Use it.
