@@ -25,6 +25,24 @@ def cvsPathExists( cvsPath, revision=None, debug=False ):
     except subprocess.CalledProcessError:
         return False
 
+def cvsGetRemoteTags( packageName, verbose=False ):
+    p1 = subprocess.Popen(['cvs', '-Q', 'rlog', '-h', packageName], stdout=subprocess.PIPE)
+    p2 = subprocess.Popen(['awk', '-F"[.:]"', '/^\t/&&$(NF-1)!=0{print $1}'], stdin=p1.stdout, stdout=subprocess.PIPE)
+    p1.stdout.close()  # Allow p1 to receive a SIGPIPE if p2 exits.
+    output = p2.communicate()[0]
+
+    plaintags = set()
+    for line in output.split('\n'):
+        line = line.strip()
+        parts = line.split()
+        if len(parts) < 1:
+            continue
+        plaintags.add(parts[0].split(":")[0])
+    tags = sorted(plaintags)
+    if verbose:
+        print "cvsGetRemoteTags: Found %d tags in %s" % ( len(tags), packageName )
+    return tags
+
 def cvsGetWorkingBranch( debug=False ):
     '''See if the current directory is the top of an cvs working directory.
     Returns a 3-tuple of [ url, branch, tag ], [ None, None, None ] on error.

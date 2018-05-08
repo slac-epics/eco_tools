@@ -55,6 +55,7 @@ import re
 from cram_utils import *
 from cvs_utils import *
 from git_utils import *
+from svn_utils import *
 from version_utils import *
 import cvs2git_utils
 
@@ -103,42 +104,18 @@ def assemble_env_inputs_from_term(options):
         if pathToGitRepo:
             if "svn" in pathToGitRepo:
                 # svn REPO
-                pathToSvnRepo = pathToGitRepo
-                dirName = "current"
-                tagsPath = pathToSvnRepo.replace( "trunk", "tags" )
-                tagsPath = tagsPath.replace( "/current", "" )
-                try:
-                    tags = subprocess.check_output(["svn", "ls", tagsPath ] ).splitlines()
-                    tags = [ tag.replace("/", "") for tag in tags ]
-                except:
-                    tags = []
+                if not dirName:
+                    dirName = "current"
+                tags = svnGetRemoteTags( pathToGitRepo, verbose=options.verbose )
             else:
                 # git REPO
-                dirName = packageName + '-git'
-                if os.path.exists(os.path.join(pathToGitRepo, "refs", "tags")):
-                    # git REPO in local filespace
-                    # Determine the list of tags..
-                    tags = os.listdir(os.path.join(pathToGitRepo, "refs", "tags"))
-                elif os.path.exists( pathToGitRepo ):
-                    print "Git repo at", pathToGitRepo, "does not seem to have any tags"
+                tags = gitGetRemoteTags( pathToGitRepo, verbose=options.verbose )
 
         if len(tags) == 0 and os.path.isdir( DEF_CVS_ROOT ):            
             # cvs REPO
             if not dirName:
                 dirName = 'MAIN_TRUNK'
-            p1 = subprocess.Popen(['cvs', '-Q', 'rlog', '-h', packageName], stdout=subprocess.PIPE)
-            p2 = subprocess.Popen(['awk', '-F"[.:]"', '/^\t/&&$(NF-1)!=0{print $1}'], stdin=p1.stdout, stdout=subprocess.PIPE)
-            p1.stdout.close()  # Allow p1 to receive a SIGPIPE if p2 exits.
-            output = p2.communicate()[0]
-
-            plaintags = set()
-            for line in output.split('\n'):
-                line = line.strip()
-                parts = line.split()
-                if len(parts) < 1:
-                    continue
-                plaintags.add(parts[0].split(":")[0])
-            tags = sorted(plaintags)
+            tags = cvsGetRemoteTags( packageName )
 
         if len(tags) > 0:            
             def tagCompleter(text, state):
@@ -163,7 +140,6 @@ def assemble_env_inputs_from_term(options):
             tagName = dirName
     else:
         dirName = tagName
-
     if options.destination:
         destinationPath = options.destination
     else:
@@ -276,10 +252,14 @@ def checkOutModule(packageName, tag, destinationPath, options, from_file=False )
         if  pathToGitRepo.startswith("svn:///"):
             pathToSvnRepo = pathToGitRepo.replace("svn:///", "file:///")
         if  pathToSvnRepo:
-            if ( tag == 'MAIN_TRUNK' or tag == 'current' ):
-                cmd=[ 'svn', 'checkout', pathToSvnRepo, destinationPath ]
+            if ( not tag or tag == 'current' ):
+                pathToSvnRepo = pathToSvnRepo.replace("tags","trunk")
             else:
-                cmd=[ 'svn', 'checkout', '--revision', tag, pathToSvnRepo, destinationPath ]
+                pathToSvnRepo = pathToSvnRepo.replace( "trunk/pcds/epics/extensions","epics/tags/extensions" )
+                pathToSvnRepo = pathToSvnRepo.replace( "trunk/pcds/epics/modules","epics/tags/modules" )
+                pathToSvnRepo = pathToSvnRepo.replace( "trunk","tags" )
+                pathToSvnRepo = pathToSvnRepo.replace( "current",tag )
+            cmd=[ 'svn', 'checkout', pathToSvnRepo, destinationPath ]
             print cmd
             subprocess.check_call(cmd)
             if not os.path.isdir(destinationPath):
@@ -370,6 +350,11 @@ def determinePathToGitRepo(packagePath):
             if dir.endswith( ".git" ):
                 # Remove from list so we don't search recursively
                 dirs.remove( dir )
+    # Didn't find a match in eco_modulelist or git paths.
+    # Check for an svn package
+    (svn_url, svn_path, svn_tag) = svnFindPackageRelease( packagePath, tag = None, verbose=True )
+    if svn_url:
+        return svn_url
     return None
 
 def initGitBareRepo( options ):

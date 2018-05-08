@@ -24,6 +24,21 @@ def svnPathExists( svnPath, revision=None, debug=False ):
     except subprocess.CalledProcessError:
         return False
 
+def svnGetRemoteTags( pathToSvnRepo, verbose=False ):
+    tags = []
+    tagsPath = pathToSvnRepo.replace("trunk/pcds/epics/modules","epics/tags/modules")
+    tagsPath = tagsPath.replace( "trunk", "tags" )
+    tagsPath = tagsPath.replace( "/current", "" )
+    try:
+        tags = subprocess.check_output(["svn", "ls", tagsPath ] ).splitlines()
+        tags = [ tag.replace("/", "") for tag in tags ]
+    except:
+        pass
+    tags = sorted(tags)
+    if verbose:
+        print "svnGetRemoteTags: Found %d tags in %s" % ( len(tags), pathToSvnRepo )
+    return tags
+
 def svnGetWorkingBranch( debug=False ):
     '''See if the current directory is the top of an svn working directory.
     Returns a 3-tuple of [ url, branch, tag ], [ None, None, None ] on error.
@@ -61,25 +76,36 @@ def svnGetWorkingBranch( debug=False ):
         pass
     return ( repo_url, repo_branch, repo_tag )
 
-def svnFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
-    (repo_url, repo_path, repo_tag) = (None, None, None)
-    if not tag:
-        ( packagePath, tag ) = os.path.split(packageSpec)
-    else:
-        packagePath = packageSpec
-    # Our svn tags all start w/ "R"
-    # For compatibility w/ pkg_mgr, provide missing R if needed
-    if not tag.startswith( "R" ):
-        tag = "R" + tag
+def svnFindPackageRelease( packagePath, tag, debug = False, verbose = False ):
+    '''Search known svn package paths for the package.
+    Returns a tuple: (repo_url, repo_path, repo_tag)
+    Returns (None, None, None) on error'''
     if verbose:
         print "svnFindPackageRelease: Looking for packagePath=%s, tag=%s" % (packagePath, tag)
+    (repo_url, repo_path, repo_tag) = (None, None, None)
+    svn_paths   = []
+    if tag:
+        # Our svn tags all start w/ "R"
+        # For compatibility w/ pkg_mgr, provide missing R if needed
+        if not tag.startswith( "R" ):
+            tag = "R" + tag
+        svn_paths  += [ DEF_SVN_TAGS ]
+        svn_paths  += [ os.path.join( DEF_SVN_TAGS, 'modules' ) ]
+        svn_paths  += [ os.path.join( DEF_SVN_TAGS, 'extensions' ) ]
+        svn_paths  += [ os.path.join( DEF_SVN_TAGS, 'ioc' ) ]
+        svn_paths  += [ os.path.join( DEF_SVN_TAGS, 'ioc', 'common' ) ]
+    else:
+        tag = 'current'
+        svn_paths  += [ os.path.join( DEF_SVN_REPO, DEF_SVN_STUB2 ) ]
+        svn_paths  += [ os.path.join( DEF_SVN_REPO, DEF_SVN_STUB2, 'modules' ) ]
+        svn_paths  += [ os.path.join( DEF_SVN_REPO, DEF_SVN_STUB2, 'extensions' ) ]
+        svn_paths  += [ os.path.join( DEF_SVN_REPO, DEF_SVN_STUB1 ) ]
+        svn_paths  += [ os.path.join( DEF_SVN_REPO, DEF_SVN_STUB1, 'ioc' ) ]
+        svn_paths  += [ os.path.join( DEF_SVN_REPO, DEF_SVN_STUB1, 'ioc', 'common' ) ]
+        svn_paths  += [ os.path.join( DEF_SVN_REPO, DEF_SVN_STUB1, 'modules' ) ]
+        svn_paths  += [ os.path.join( DEF_SVN_REPO, DEF_SVN_STUB1, 'extensions' ) ]
 
-    svn_tag_paths  =  [ DEF_SVN_TAGS ]
-    svn_tag_paths  += [ os.path.join( DEF_SVN_TAGS, 'modules' ) ]
-    svn_tag_paths  += [ os.path.join( DEF_SVN_TAGS, 'extensions' ) ]
-    svn_tag_paths  += [ os.path.join( DEF_SVN_TAGS, 'ioc/common' ) ]
-
-    for path in svn_tag_paths:
+    for path in svn_paths:
         url = os.path.join( path, packagePath, tag )
         if svnPathExists( url, debug=debug ):
             (repo_url, repo_path, repo_tag) = ( url, path, tag )

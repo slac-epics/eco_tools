@@ -2,6 +2,7 @@
 Utilities for creating GIT bare repos and such'''
 
 import os
+import re
 import fileinput
 import subprocess
 import sys
@@ -151,6 +152,33 @@ def gitGetRemoteFile( url, refName, filePath, debug = False ):
         pass
     return fileContents
 
+def gitGetRemoteTags( url, debug = False, verbose = False ):
+    '''Fetchs a list of tags from a git repo url.
+    Returns a dictionary of SHA1 hashes by tagName.'''
+    tagSpecRegExp = re.compile( r"^(.*)\s+refs/tags/(.*)$" )
+    tags = {}
+    try:
+        statusInfo = subprocess.check_output( [ 'git', 'ls-remote', url ], stderr=subprocess.STDOUT )
+        for line in statusInfo.splitlines():
+            if line is None:
+                break
+            tagSpecMatch = tagSpecRegExp.search( line )
+            if not tagSpecMatch:
+                continue
+            tags[ tagSpecMatch.group(2) ] = tagSpecMatch.group(1)
+
+    except OSError, e:
+        if debug:
+            print e
+        pass
+    except subprocess.CalledProcessError, e:
+        if debug:
+            print e
+        pass
+    if verbose:
+        print "gitGetRemoteTags: Found %d tags in %s" % ( len(tags), url )
+    return tags
+
 def gitGetRemoteTag( url, tag, debug = False, verbose = False ):
     '''Fetchs tags from a git repo url and looks for a match w/ the desired tag.
     Returns a tuple of ( url, tag ), ( None, None ) on error.
@@ -164,16 +192,10 @@ def gitGetRemoteTag( url, tag, debug = False, verbose = False ):
     else:
         tag_spec    = 'refs/tags/%s' % tag
     try:
-        statusInfo = subprocess.check_output( [ 'git', 'ls-remote', url ], stderr=subprocess.STDOUT )
-        for line in statusInfo.splitlines():
-            if line is None:
-                break
-            url_valid = True
-            tokens = line.split()
-            if tokens[1] == tag_spec:
-                git_url = url
-                git_tag = tag
-                break
+        tags = gitGetRemoteTags( url, debug = False, verbose = False )
+        if tag in tags:
+            git_url = url
+            git_tag = tag
 
     except OSError, e:
         if debug:
@@ -215,15 +237,19 @@ def cloneMasterRepo( gitMasterRepo, tpath, packageName, branch=None, depth=None,
         clonedFolder = os.path.join(tpath, packageName)
     else:
         clonedFolder = tpath
-    print "Cloning the master repo at", gitMasterRepo, "into", clonedFolder
+    prompt = "Cloning the master repo at %s into %s" % ( gitMasterRepo, clonedFolder )
     gitCommand = "clone --recursive %s %s" % ( gitMasterRepo, clonedFolder )
     if branch:
         gitCommand += " --branch %s" % branch
+        prompt += " from branch %s" % branch
         if gitGetVersionNumber() > 1.08:
             gitCommand += " --config advice.detachedHead=false"
     #if depth and gitMasterRepo.find('://') > 0:
     if depth:
         gitCommand += " --no-local --depth %d" % depth
+    #May throw RuntimeError or subprocess.CalledProcessError exceptions
+    print prompt
+    #print "%s" % prompt
     git_check_call( gitCommand, debug=verbose )
     return clonedFolder
 
