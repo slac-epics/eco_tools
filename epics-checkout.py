@@ -124,7 +124,8 @@ def assemble_env_inputs_from_term(options):
 
         if len(tags) == 0 and os.path.isdir( DEF_CVS_ROOT ):            
             # cvs REPO
-            dirName = 'MAIN_TRUNK'
+            if not dirName:
+                dirName = 'MAIN_TRUNK'
             p1 = subprocess.Popen(['cvs', '-Q', 'rlog', '-h', packageName], stdout=subprocess.PIPE)
             p2 = subprocess.Popen(['awk', '-F"[.:]"', '/^\t/&&$(NF-1)!=0{print $1}'], stdin=p1.stdout, stdout=subprocess.PIPE)
             p1.stdout.close()  # Allow p1 to receive a SIGPIPE if p2 exits.
