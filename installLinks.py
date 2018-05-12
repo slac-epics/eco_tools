@@ -111,7 +111,6 @@ def make_links( buildTop, installTop, subdir, arch=None, force=False, is_site_pa
                 print "Removing prior link %s ..." % symlink
                 os.remove( symlink )
             else:
-                self.warnings.append(msg)
                 print "Skipping link %s ..." % symlink
                 continue
 
