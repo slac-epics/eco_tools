@@ -92,10 +92,10 @@ pkgNameAddMacroName( 'base',			'BASE_MODULE_VERSION' )
 pkgNameAddMacroName( 'base',			'EPICS_BASE' )
 pkgNameAddMacroName( 'BergozBCM-RF-asyn','BERGOZBCM_RF_ASYN' )
 pkgNameAddMacroName( 'Bk9000_MBT',		'BK9000_MBT' )
-pkgNameAddMacroName( 'bldClient',		'BLD_CLIENT' )
-pkgNameAddMacroName( 'Bx9000_MBT',		'BX9000' )
+pkgNameAddMacroName( 'bldClient',		'BLD_CLIENT' )	# TODO: We should flag these non-standard macro names
+pkgNameAddMacroName( 'Bx9000_MBT',		'BX9000' )	# TODO: We should flag these non-standard macro names
 pkgNameAddMacroName( 'Bx9000_MBT',		'BX9000_MBT' )
-pkgNameAddMacroName( 'Bx9000_MBT',		'BX9000MBT' )
+pkgNameAddMacroName( 'Bx9000_MBT',		'BX9000MBT' )	# TODO: We should flag these non-standard macro names
 pkgNameAddMacroName( 'Camcom',			'CAMCOM' )
 pkgNameAddMacroName( 'caSnooper',		'CASNOOPER' )
 pkgNameAddMacroName( 'cexpsh',			'CEXP' )
@@ -112,23 +112,28 @@ pkgNameAddMacroName( 'ip440-asyn',		'IP440_ASYN' )
 pkgNameAddMacroName( 'ip445',			'XY2445' )
 pkgNameAddMacroName( 'ip445-asyn',		'IP445_ASYN' )
 pkgNameAddMacroName( 'LeCroy_ENET',		'LECROY' )
-pkgNameAddMacroName( 'normativeTypesCPP','NORMATIVE' )
-pkgNameAddMacroName( 'normativeTypesCPP','NORMATIVETYPES' )
+pkgNameAddMacroName( 'normativeTypesCPP','NORMATIVE' )	# TODO: We should flag these non-standard macro names
+pkgNameAddMacroName( 'normativeTypesCPP','NORMATIVETYPES' )	# TODO: We should flag these non-standard macro names
 pkgNameAddMacroName( 'procServ',		'PROCSERV' )
 pkgNameAddMacroName( 'PSCD_Camac',		'PSCDCAMAC' )
-pkgNameAddMacroName( 'pvAccessCPP',		'PVACCESS' )
-pkgNameAddMacroName( 'pvAccessCPP',		'pvAccessCPP' )
-pkgNameAddMacroName( 'pvaClientCPP',	'PVACLIENT' )
+pkgNameAddMacroName( 'pvAccessCPP',		'PVACCESS' )	# TODO: We should flag these non-standard macro names
+pkgNameAddMacroName( 'pvAccessCPP',		'pvAccessCPP' )	# TODO: We should flag these non-standard macro names
+pkgNameAddMacroName( 'pvaClientCPP',	'PVACLIENT' )	# TODO: We should flag these non-standard macro names
 pkgNameAddMacroName( 'pvaSrv',			'PVASRV' )
-pkgNameAddMacroName( 'pvCommonCPP',		'PVCOMMON' )
-pkgNameAddMacroName( 'pvCommonCPP',		'pvCommonCPP' )
-pkgNameAddMacroName( 'pvDatabaseCPP',	'PVDATABASE' )
-pkgNameAddMacroName( 'pvDataCPP',		'PVDATA' )
-pkgNameAddMacroName( 'pvDataCPP',		'pvDataCPP' )
+pkgNameAddMacroName( 'pvCommonCPP',		'PVCOMMONCPP' )
+pkgNameAddMacroName( 'pvCommonCPP',		'PVCOMMON' )	# TODO: We should flag these non-standard macro names
+pkgNameAddMacroName( 'pvCommonCPP',		'pvCommonCPP' )	# TODO: We should flag these non-standard macro names
+pkgNameAddMacroName( 'pvDatabaseCPP',	'PVDATABASECPP' )
+pkgNameAddMacroName( 'pvDatabaseCPP',	'PVDATABASE' )	# TODO: We should flag these non-standard macro names
+pkgNameAddMacroName( 'pvDataCPP',		'PVDATACPP' )
+pkgNameAddMacroName( 'pvDataCPP',		'PVDATA' )	# TODO: We should flag these non-standard macro names
+pkgNameAddMacroName( 'pvDataCPP',		'pvDataCPP' )	# TODO: We should flag these non-standard macro names
 pkgNameAddMacroName( 'pvIOCCPP',		'PVIOC' )
 pkgNameAddMacroName( 'seq',				'SNCSEQ' )
 pkgNameAddMacroName( 'sscan',			'SSCAN' )
 pkgNameAddMacroName( 'sSubRecord',		'SSUBRECORD' )
+pkgNameAddMacroName( 'streamdevice',	'STREAMDEVICE' )
+pkgNameAddMacroName( 'streamdevice',	'STREAM' )	# TODO: We should flag these non-standard macro names
 pkgNameAddMacroName( 'StripTool',		'STRIPTOOL' )
 pkgNameAddMacroName( 'timingApi',		'TIMING_API' )
 pkgNameAddMacroName( 'VHQx0x',			'VHQX0X' )
