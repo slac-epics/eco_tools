@@ -408,7 +408,7 @@ def determinePathToGitRepo( packagePath, verbose = False ):
                 dirs.remove( dir )
     # Didn't find a match in eco_modulelist or git paths.
     # Check for an svn package
-    (svn_url, svn_path, svn_tag) = svnFindPackageRelease( packagePath, tag = None, verbose=True )
+    (svn_url, svn_path, svn_tag) = svnFindPackageRelease( packagePath, tag = None, verbose=verbose )
     if svn_url:
         return svn_url
     return None
