@@ -421,7 +421,10 @@ def gitFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
         packagePath = packageSpec
     else:
         (packagePath, tag) = os.path.split( packageSpec )
-    packageName = os.path.split( packagePath )[1]
+    if tag:
+        packageName = os.path.split( packagePath )[1]
+    else:
+        packageName = packagePath
     if verbose:
         print "gitFindPackageRelease: packageName=%s, packagePath=%s" % ( packageName, packagePath )
 
