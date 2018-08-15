@@ -1,3 +1,8 @@
+R2.12	2018-08-14 Bruce Hill
+	Fixes paths from eco_modulelist when GIT_TOP is different. i.e. prod, offsite, etc
+	Added ver soft link and tweaked default verbosity
+	Normalized macro names for pvAccessCPP, pvDataCPP, etc.
+
 R2.11	2018-05-08 Bruce Hill
 	Added support to epics-checkout for svn modules and ioc's.
 	Consolidated code to fetch tags into one function each for cvs_utils, svn_utils, and git_utils.
