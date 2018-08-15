@@ -25,6 +25,7 @@ DEF_PCDS_GROUP_OWNER= "ps-pcds"
 
 # Use these for filesystem access
 DEF_AFS_GIT_REPOS		= "/afs/slac.stanford.edu/g/cd/swe/git/repos"
+DEF_AFS_GIT_REPOS2		= "/afs/slac/g/cd/swe/git/repos"
 
 DEF_GIT_EXT_TOP_TAG		= "slac-master"
 DEF_GIT_RELEASE_DEPTH = 10

@@ -365,6 +365,52 @@ def gitGetWorkingBranch( debug = False, verbose = False ):
         pass
     return ( repo_url, repo_branch, repo_tag )
 
+def determinePathToGitRepo( packagePath, verbose = False ):
+    '''If the specified package is stored in GIT, then return the URL to the GIT repo. Otherwise, return None'''
+    # See if the package was listed in $TOOLS/eco_modulelist/modulelist.txt
+    packageName = os.path.split( packagePath )[-1]
+    if packageName in git_package2Location:
+        defRepoPath = git_package2Location[packageName]
+        if os.path.isdir( defRepoPath ):
+            return defRepoPath
+        gitRoot = determineGitRoot()
+        if gitRoot != DEF_AFS_GIT_REPOS and gitRoot != DEF_AFS_GIT_REPOS2:
+            # See if we need to adjust the path from git_package2Location
+            if  defRepoPath.startswith( DEF_AFS_GIT_REPOS ):
+                defRepoPath = defRepoPath.replace(    DEF_AFS_GIT_REPOS, gitRoot )
+            if  defRepoPath.startswith( DEF_AFS_GIT_REPOS2 ):
+                defRepoPath = defRepoPath.replace(    DEF_AFS_GIT_REPOS2, gitRoot )
+        return defRepoPath
+
+    # Check under the root of the git repo area for a bare repo w/ the right name
+    gitRoot = determineGitRoot()
+    gitPackageDir  = packageName + ".git"
+    gitPackagePath = packagePath + ".git"
+    if not os.path.isdir( DEF_CVS_ROOT ) and gitRoot:
+        # Must be offsite, assume gitRoot and an EPICS module path
+        return os.path.join( gitRoot, 'package/epics/modules', gitPackageDir )
+    for dirPath, dirs, files in os.walk( gitRoot, topdown=True ):
+        if len( dirs ) == 0:
+            continue
+        for dir in dirs[:]:
+            if dir == 'from-svn' or dir == 'from-cvs':
+                # Remove from list so we don't search these import directories
+                dirs.remove( dir )
+                continue
+            if dir == gitPackageDir:
+                return os.path.join( dirPath, dir )
+            if os.path.isdir( os.path.join( dirPath, gitPackagePath ) ):
+                return os.path.join( dirPath, gitPackagePath )
+            if dir.endswith( ".git" ):
+                # Remove from list so we don't search recursively
+                dirs.remove( dir )
+    # Didn't find a match in eco_modulelist or git paths.
+    # Check for an svn package
+    (svn_url, svn_path, svn_tag) = svnFindPackageRelease( packagePath, tag = None, verbose=True )
+    if svn_url:
+        return svn_url
+    return None
+
 def gitFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
     (repo_url, repo_tag) = (None, None)
     if verbose:
