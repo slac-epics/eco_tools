@@ -7,6 +7,7 @@ import subprocess
 import Repo
 from repo_defaults import *
 from cvs_utils import *
+from version_utils import *
 
 class cvsError( Exception ):
     pass
@@ -20,13 +21,7 @@ class cvsRepo( Repo.Repo ):
         self._cvsStub2	= DEF_cvs_STUB2
         self._cvsRepo	= DEF_cvs_REPO
         self._cvsTags	= DEF_cvs_TAGS
-        # Make sure we have a valid EPICS_SITE_TOP
-        defaultEpicsSiteTop = DEF_EPICS_TOP_LCLS 
-        if not os.path.isdir( defaultEpicsSiteTop ):
-            defaultEpicsSiteTop = DEF_EPICS_TOP_AFS
-        if not os.path.isdir( defaultEpicsSiteTop ):
-            raise Releaser.ValidateError, ( "Can't find EPICS_SITE_TOP at %s" % defaultEpicsSiteTop )
-        self._prefix	= defaultEpicsSiteTop
+        self._prefix	= determine_epics_site_top()
 
 #	def __repr__( self ):
 #		return "cvsRepo"
