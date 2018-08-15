@@ -158,6 +158,8 @@ def gitGetRemoteTags( url, debug = False, verbose = False ):
     tagSpecRegExp = re.compile( r"^(.*)\s+refs/tags/(.*)$" )
     tags = {}
     try:
+        if verbose:
+            print "gitGetRemoteTags running: git ls-remote %s" % url
         statusInfo = subprocess.check_output( [ 'git', 'ls-remote', url ], stderr=subprocess.STDOUT )
         for line in statusInfo.splitlines():
             if line is None:
@@ -192,7 +194,7 @@ def gitGetRemoteTag( url, tag, debug = False, verbose = False ):
     else:
         tag_spec    = 'refs/tags/%s' % tag
     try:
-        tags = gitGetRemoteTags( url, debug = False, verbose = False )
+        tags = gitGetRemoteTags( url, debug = debug, verbose = verbose )
         if tag in tags:
             git_url = url
             git_tag = tag
@@ -425,7 +427,7 @@ def gitFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
 
     # See if the package was listed in $TOOLS/eco_modulelist/modulelist.txt
     if packageName in git_package2Location:
-        url_path = git_package2Location[packageName]
+        url_path = determinePathToGitRepo( packageName, verbose=verbose )
         (repo_url, repo_tag) = gitGetRemoteTag( url_path, tag, verbose=verbose )
     else:
         for url_root in [ DEF_GIT_MODULES_PATH, DEF_GIT_EXTENSIONS_PATH, DEF_GIT_EPICS_PATH, DEF_GIT_REPO_PATH ]:

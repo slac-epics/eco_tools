@@ -109,6 +109,8 @@ class gitRepo( Repo.Repo ):
         try:
             # Refresh the tags
             # TODO: May fail if git repo is read-only
+            if verbose:
+                print "CheckoutRelease running: git fetch origin refs/tags/%s" % self._tag
             cmdList = [ "git", "fetch", "origin", "refs/tags/" + self._tag ]
             subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
 
