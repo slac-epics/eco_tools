@@ -1,9 +1,9 @@
 #!/usr/bin/env python
+from __future__ import print_function
 import os
 import re
 import sys
 import json
-import dircache
 import glob
 import subprocess
 from repo_defaults import *
@@ -37,7 +37,7 @@ def VersionToRelNumber( version, debug=False ):
     try:
         ver = version
         if debug:
-            print "VersionToRelNumber: %s" % ( ver )
+            print("VersionToRelNumber: %s" % ( ver ))
         verMatch = releaseRegExp.search( ver )
         if verMatch:
             ver = verMatch.group(2) + '.' + verMatch.group(3) + verMatch.group(4)
@@ -53,7 +53,7 @@ def VersionToRelNumber( version, debug=False ):
     except:
         pass
     if debug:
-        print "VersionToRelNumber: %s = %f" % ( version, relNumber )
+        print("VersionToRelNumber: %s = %f" % ( version, relNumber ))
     return relNumber
 
 def isReleaseCandidate(release):
@@ -84,13 +84,13 @@ def isPCDSPath(path):
         return True
     if path.startswith( '/afs/slac/g/pcds' ): # /afs/slac symbolic link might be part of pcds pathnames
         return True
-    if path.startswith( DEF_EPICS_TOP_PCDS ):
+    if path.startswith( DEF_EPICS_TOP_AFS ):
         return True
     return False
 
 def get_base_versions( epics_site_top ):
     base_versions	= []
-    base_candidates	= dircache.listdir( os.path.join( epics_site_top, 'base' ) )
+    base_candidates	= os.listdir( os.path.join( epics_site_top, 'base' ) )
     for base_candidate in base_candidates:
         if isBaseTop( os.path.join( epics_site_top, 'base', base_candidate ) ):
             base_versions.append( base_candidate )
@@ -159,7 +159,7 @@ def determine_epics_modules_top():
         epics_base_ver = determine_epics_base_ver()
         epics_site_top = determine_epics_site_top()
         if not epics_base_ver or not epics_site_top:
-            print "determine_epics_modules_top Error: Unable to determine EPICS_MODULES_TOP!"
+            print("determine_epics_modules_top Error: Unable to determine EPICS_MODULES_TOP!")
             return None
         if epics_base_ver.startswith( 'base-' ):
             epics_base_ver = epics_base_ver.replace( 'base-', '' )
@@ -170,7 +170,7 @@ def determine_epics_modules_top():
         if not os.path.isdir( epics_modules_top ):
             epics_modules_top = os.path.join( epics_site_top, 'modules' )
         if not os.path.isdir( epics_modules_top ):
-            print "determine_epics_modules_top Error: Unable to determine valid EPICS_MODULES_TOP!"
+            print("determine_epics_modules_top Error: Unable to determine valid EPICS_MODULES_TOP!")
             epics_modules_top = None
     return epics_modules_top
 
@@ -187,7 +187,7 @@ def determine_epics_host_arch():
             if os.path.isfile( epicsHostArchPath ):
                 cmdOutput = subprocess.check_output( [ epicsHostArchPath ] ).splitlines()
                 if len(cmdOutput) == 1:
-                    epics_host_arch = cmdOutput[0]
+                    epics_host_arch = str(cmdOutput[0])
     if  epics_host_arch == '?':
         epics_host_arch = None
     return epics_host_arch
@@ -203,50 +203,50 @@ def export_release_site_file( inputs, debug=False):
     output_file_and_path = './RELEASE_SITE'
     try:
         out_file = open(output_file_and_path, 'w')
-    except IOError, e:
+    except IOError as e:
         sys.stderr.write('Could not open "%s": %s\n' % (output_file_and_path, e.strerror))
         return None
 
-    print >> out_file, '#=============================================================================='
+    print('#==============================================================================', file=out_file)
     if VersionToRelNumber(inputs['EPICS_BASE_VER'], debug=debug) < 3.141205:
-        print >> out_file, '#RELEASE Location of external products'
+        print('#RELEASE Location of external products', file=out_file)
     else:
-        print >> out_file, '# RELEASE_SITE Location of EPICS_SITE_TOP, EPICS_MODULES, and BASE_MODULE_VERSION'
-    print >> out_file, '# Run "gnumake clean uninstall install" in the application'
-    print >> out_file, '# top directory each time this file is changed.'
-    print >> out_file, ''
-    print >> out_file, '#=============================================================================='
+        print('# RELEASE_SITE Location of EPICS_SITE_TOP, EPICS_MODULES, and BASE_MODULE_VERSION', file=out_file)
+    print('# Run "gnumake clean uninstall install" in the application', file=out_file)
+    print('# top directory each time this file is changed.', file=out_file)
+    print('', file=out_file)
+    print('#==============================================================================', file=out_file)
     if VersionToRelNumber(inputs['EPICS_BASE_VER'], debug=debug) < 3.141205:
-        print >> out_file, '# Define the top of the EPICS tree for your site.'
-        print >> out_file, '# We will build some tools/scripts that allow us to'
-        print >> out_file, '# change this easily when relocating software.'
-        print >> out_file, '#=============================================================================='
+        print('# Define the top of the EPICS tree for your site.', file=out_file)
+        print('# We will build some tools/scripts that allow us to', file=out_file)
+        print('# change this easily when relocating software.', file=out_file)
+        print('#==============================================================================', file=out_file)
         if doesPkgNeedMacro( 'BASE_MODULE_VERSION' ):
-            print >> out_file, 'BASE_MODULE_VERSION=%s'%inputs['EPICS_BASE_VER']
+            print('BASE_MODULE_VERSION=%s'%inputs['EPICS_BASE_VER'], file=out_file)
     else:
-        print >> out_file, 'BASE_MODULE_VERSION=%s'%inputs['EPICS_BASE_VER']
-    print >> out_file, 'EPICS_SITE_TOP=%s'    % inputs['EPICS_SITE_TOP'] 
+        print('BASE_MODULE_VERSION=%s'%inputs['EPICS_BASE_VER'], file=out_file)
+    print('EPICS_SITE_TOP=%s'    % inputs['EPICS_SITE_TOP'], file=out_file) 
     if 'BASE_SITE_TOP' in inputs:
-        print >> out_file, 'BASE_SITE_TOP=%s'     % inputs['BASE_SITE_TOP']
+        print('BASE_SITE_TOP=%s'     % inputs['BASE_SITE_TOP'], file=out_file)
     if VersionToRelNumber(inputs['EPICS_BASE_VER'], debug=debug) < 3.141205 \
         or doesPkgNeedMacro( 'MODULES_SITE_TOP' ):
-        print >> out_file, 'MODULES_SITE_TOP=%s'  % inputs['EPICS_MODULES']
+        print('MODULES_SITE_TOP=%s'  % inputs['EPICS_MODULES'], file=out_file)
     if VersionToRelNumber(inputs['EPICS_BASE_VER'], debug=debug) >= 3.141205 \
         or doesPkgNeedMacro( 'EPICS_MODULES' ):
-        print >> out_file, 'EPICS_MODULES=%s'     % inputs['EPICS_MODULES']
+        print('EPICS_MODULES=%s'     % inputs['EPICS_MODULES'], file=out_file)
     if 'IOC_SITE_TOP' in inputs:
-        print >> out_file, 'IOC_SITE_TOP=%s'      % inputs['IOC_SITE_TOP']
+        print('IOC_SITE_TOP=%s'      % inputs['IOC_SITE_TOP'], file=out_file)
     if VersionToRelNumber(inputs['EPICS_BASE_VER'], debug=debug) < 3.141205 \
         or doesPkgNeedMacro( 'EPICS_BASE_VER' ):
-        print >> out_file, 'EPICS_BASE_VER=%s' %inputs['EPICS_BASE_VER']
-    print >> out_file, 'PACKAGE_SITE_TOP=%s'  % inputs['PACKAGE_SITE_TOP']
+        print('EPICS_BASE_VER=%s' %inputs['EPICS_BASE_VER'], file=out_file)
+    print('PACKAGE_SITE_TOP=%s'  % inputs['PACKAGE_SITE_TOP'], file=out_file)
     if 'PSPKG_ROOT' in inputs:
-        print >> out_file, 'PSPKG_ROOT=%s'        % inputs['PSPKG_ROOT']
+        print('PSPKG_ROOT=%s'        % inputs['PSPKG_ROOT'], file=out_file)
     if 'TOOLS_SITE_TOP' in inputs:
-        print >> out_file, 'TOOLS_SITE_TOP=%s'    % inputs['TOOLS_SITE_TOP']
+        print('TOOLS_SITE_TOP=%s'    % inputs['TOOLS_SITE_TOP'], file=out_file)
     if 'ALARM_CONFIGS_TOP' in inputs:
-        print >> out_file, 'ALARM_CONFIGS_TOP=%s' % inputs['ALARM_CONFIGS_TOP']
-    print >> out_file, '#=============================================================================='
+        print('ALARM_CONFIGS_TOP=%s' % inputs['ALARM_CONFIGS_TOP'], file=out_file)
+    print('#==============================================================================', file=out_file)
     if out_file != sys.stdout:
         out_file.close()
 
@@ -259,15 +259,15 @@ def assemble_release_site_inputs( batch=False ):
 
     if not epics_base_ver:
         # base_versions = get_base_versions( epics_site_top )
-        print 'TODO: Provide list of available epics_base_ver options to choose from'
+        print('TODO: Provide list of available epics_base_ver options to choose from')
         epics_base_ver = 'unknown-base-ver'
     input_dict['EPICS_BASE_VER'] = epics_base_ver
     if not batch:
         prompt5 = 'Enter EPICS_BASE_VER or [RETURN] to use "' + epics_base_ver + '">'
-        user_input = raw_input(prompt5).strip()
+        user_input = input(prompt5).strip()
         if user_input:
             input_dict['EPICS_BASE_VER'] = user_input
-    print 'Using EPICS_BASE_VER: ' + input_dict['EPICS_BASE_VER']
+    print('Using EPICS_BASE_VER: ' + input_dict['EPICS_BASE_VER'])
 
     # TODO: Substitute input_dict['EPICS_BASE_VER'] for any substrings below that match
     # the default epics_base_ver we got from the environment before prompting the user.
@@ -278,13 +278,13 @@ def assemble_release_site_inputs( batch=False ):
     input_dict['EPICS_SITE_TOP'] = epics_site_top
     if not batch:
         prompt1 = 'Enter full path for EPICS_SITE_TOP or [RETURN] to use "' + epics_site_top + '">'
-        user_input = raw_input(prompt1).strip()
+        user_input = input(prompt1).strip()
         if user_input:
             input_dict['EPICS_SITE_TOP'] = user_input
-    print 'Using EPICS_SITE_TOP: ' + input_dict['EPICS_SITE_TOP']
+    print('Using EPICS_SITE_TOP: ' + input_dict['EPICS_SITE_TOP'])
 
     input_dict['BASE_SITE_TOP'] = os.path.join( input_dict['EPICS_SITE_TOP'], 'base' )
-    print 'Using BASE_SITE_TOP: ' + input_dict['BASE_SITE_TOP']
+    print('Using BASE_SITE_TOP: ' + input_dict['BASE_SITE_TOP'])
 
     epics_modules_ver = input_dict['EPICS_BASE_VER']
     if epics_modules_ver.startswith( 'base-' ):
@@ -300,15 +300,15 @@ def assemble_release_site_inputs( batch=False ):
         input_dict['EPICS_MODULES'] = epics_modules
     if not batch:
         prompt5 = 'Enter full path for EPICS_MODULES or [RETURN] to use "' + input_dict['EPICS_MODULES'] + '">'
-        user_input = raw_input(prompt5).strip()
+        user_input = input(prompt5).strip()
         if user_input:
             input_dict['EPICS_MODULES'] = user_input
-    print 'Using EPICS_MODULES: ' + input_dict['EPICS_MODULES']
+    print('Using EPICS_MODULES: ' + input_dict['EPICS_MODULES'])
 
     ioc_site_top = os.path.join( input_dict['EPICS_SITE_TOP'], 'iocTop' )
     if os.path.isdir( ioc_site_top ):
         input_dict['IOC_SITE_TOP'] = ioc_site_top
-        print 'Using IOC_SITE_TOP: ' + input_dict['IOC_SITE_TOP']
+        print('Using IOC_SITE_TOP: ' + input_dict['IOC_SITE_TOP'])
 
     package_site_top = getEnv('PACKAGE_TOP')
     if not os.path.isdir( package_site_top ):
@@ -322,10 +322,10 @@ def assemble_release_site_inputs( batch=False ):
     input_dict['PACKAGE_SITE_TOP'] = package_site_top
     if not batch:
         prompt6 = 'Enter full path for PACKAGE_SITE_TOP or [RETURN] to use "' + package_site_top + '">'
-        user_input = raw_input(prompt6).strip()
+        user_input = input(prompt6).strip()
         if user_input:
             input_dict['PACKAGE_SITE_TOP'] = user_input
-    print 'Using PACKAGE_SITE_TOP: ' + input_dict['PACKAGE_SITE_TOP']
+    print('Using PACKAGE_SITE_TOP: ' + input_dict['PACKAGE_SITE_TOP'])
 
     if VersionToRelNumber(input_dict['EPICS_BASE_VER']) >= 3.141205:
         pspkg_root = getEnv('PSPKG_ROOT')
@@ -335,7 +335,7 @@ def assemble_release_site_inputs( batch=False ):
             pspkg_root = '/afs/slac.stanford.edu/g/lcls/pkg_mgr'
         if not os.path.isdir( pspkg_root ):
             pspkg_root = '/afs/slac.stanford.edu/g/pcds/pkg_mgr'
-        print 'Using PSPKG_ROOT:', pspkg_root
+        print('Using PSPKG_ROOT:', pspkg_root)
         input_dict['PSPKG_ROOT'] = pspkg_root
 
     input_dict['TOOLS_SITE_TOP'] = ''
@@ -345,21 +345,21 @@ def assemble_release_site_inputs( batch=False ):
         input_dict['TOOLS_SITE_TOP'] = tools_site_top
         if not batch:
             prompt6 = 'Enter full path for TOOLS_SITE_TOP or [RETURN] to use "' + tools_site_top + '">'
-            user_input = raw_input(prompt6).strip()
+            user_input = input(prompt6).strip()
             if user_input:
                 input_dict['TOOLS_SITE_TOP'] = user_input
         if os.path.isdir( input_dict['TOOLS_SITE_TOP'] ):
-            print 'Using TOOLS_SITE_TOP: ' + input_dict['TOOLS_SITE_TOP']
+            print('Using TOOLS_SITE_TOP: ' + input_dict['TOOLS_SITE_TOP'])
 
             alarm_configs_top = os.path.join( input_dict['TOOLS_SITE_TOP'], 'AlarmConfigsTop' )
             input_dict['ALARM_CONFIGS_TOP'] = alarm_configs_top
             if not batch:
                 prompt6 = 'Enter full path for ALARM_CONFIGS_TOP or [RETURN] to use "' + alarm_configs_top + '">'
-                user_input = raw_input(prompt6).strip()
+                user_input = input(prompt6).strip()
                 if user_input:
                     input_dict['ALARM_CONFIGS_TOP'] = user_input
             if os.path.isdir( input_dict['ALARM_CONFIGS_TOP'] ):
-                print 'Using ALARM_CONFIGS_TOP: ' + input_dict['ALARM_CONFIGS_TOP']
+                print('Using ALARM_CONFIGS_TOP: ' + input_dict['ALARM_CONFIGS_TOP'])
 
     return input_dict
 
@@ -383,10 +383,10 @@ def getPkgReleaseList( top, pkgName ):
     Returns a sorted list of releases, most recent first.'''
     # Loop through the directories looking for releases
     if not os.path.isdir( top ):
-        print "getPkgReleaseList Error: top is not a directory: %s\n" % top
+        print("getPkgReleaseList Error: top is not a directory: %s\n" % top)
     pkgDir = os.path.join( top, pkgName )
     if not os.path.isdir( pkgDir ):
-        print "getPkgReleaseList Error: %s is not a package under %s\n" % ( pkgName, top )
+        print("getPkgReleaseList Error: %s is not a package under %s\n" % ( pkgName, top ))
 
     releaseList = [ ]
     for dirPath, dirs, files in os.walk( pkgDir, topdown=True ):
@@ -424,7 +424,7 @@ def getPkgReleaseList( top, pkgName ):
                 relNumber -= 1e-12
             releaseSet[ relNumber ] = release
 
-        for release in sorted( releaseSet.keys(), reverse = True ):
+        for release in sorted( list(releaseSet.keys()), reverse = True ):
             releaseList += [ releaseSet[ release ] ]
     return releaseList
 
@@ -434,10 +434,10 @@ def getMacrosFromFile( filePath, macroDict, debug = False, required = False ):
     '''
     if not os.path.isfile( filePath ):
         if required:
-            print "getMacrosFromFile Error: unable to open %s" % filePath 
+            print("getMacrosFromFile Error: unable to open %s" % filePath) 
         return macroDict
     if debug:
-        print "getMacrosFromFile %s: %d versions on entry" % ( filePath, len(macroDict) )
+        print("getMacrosFromFile %s: %d versions on entry" % ( filePath, len(macroDict) ))
     in_file = open( filePath, "r" )
     for line in in_file:
         line = line.strip()
@@ -467,7 +467,7 @@ def getMacrosFromFile( filePath, macroDict, debug = False, required = False ):
             macroValue = macroMatch.group(2)
             if macroName and macroValue:
                 if debug:
-                    print "getMacrosFromFile: %s = %s" % ( macroName, macroValue )
+                    print("getMacrosFromFile: %s = %s" % ( macroName, macroValue ))
                 macroDict[ macroName ] = macroValue
                 break
 
@@ -477,7 +477,7 @@ def getMacrosFromFile( filePath, macroDict, debug = False, required = False ):
         macroDict[macroName] = expandMacros( macroValue, macroDict )
 
     if debug:
-        print "getMacrosFromFile %s: %d versions on exit" % ( filePath, len(macroDict) )
+        print("getMacrosFromFile %s: %d versions on exit" % ( filePath, len(macroDict) ))
     return macroDict
 
 def getEpicsPkgDependents( topDir, debug=False ):
@@ -493,7 +493,7 @@ def getEpicsPkgDependents( topDir, debug=False ):
     #releaseFiles += [ os.path.join( topDir, "configure", "RELEASE.local" ) ]
     for releaseFile in releaseFiles:
         if debug:
-            print "getEpicsPkgDependents: Checking release file: %s" % ( releaseFile )
+            print("getEpicsPkgDependents: Checking release file: %s" % ( releaseFile ))
         if not os.path.isfile( releaseFile ):
             continue
         macroDict = getMacrosFromFile( releaseFile, macroDict, debug=debug )
@@ -519,7 +519,7 @@ def getEpicsPkgDependents( topDir, debug=False ):
             pkgVersion = '/'.join( macroValue.split('/')[-3:] )
         if pkgName and pkgVersion:
             if debug:
-                print "getEpicsPkgDependents: %s = %s" % ( pkgName, pkgVersion )
+                print("getEpicsPkgDependents: %s = %s" % ( pkgName, pkgVersion ))
             pkgDependents[ pkgName ] = pkgVersion
 
     return pkgDependents
@@ -570,9 +570,9 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
             if macroName in newMacroVersions:
                 newVersion = newMacroVersions[macroName]
                 if newVersion != oldVersion:
-                    print "Old: %s" %  line,
+                    print("Old: %s" %  line, end=' ')
                     line = string.replace( line, oldVersion, newMacroVersions[macroName] )
-                    print "New: %s" %  line,
+                    print("New: %s" %  line, end=' ')
                     modified = True
                 if macroName == "BASE":
                     using_BASE_MODULE_VERSION = True
@@ -619,22 +619,22 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
                 # We've already defined this macroName
                 if not commentedOut:
                     # Comment out subsequent definitions
-                    print "Old: %s" %  line,
+                    print("Old: %s" %  line, end=' ')
                     line = string.replace( line, originalLine, '#' + originalLine )
-                    print "New: %s" %  line,
+                    print("New: %s" %  line, end=' ')
                     modified = True
             else:
                 definedModules[macroName] = newVersionPath
                 if commentedOut:
                     # Uncomment the line
-                    print "Old: %s" %  line,
+                    print("Old: %s" %  line, end=' ')
                     line = string.strip( line, '# ' )
-                    print "New: %s" %  line,
+                    print("New: %s" %  line, end=' ')
                     modified = True
                 if oldVersionPath != newVersionPath:
-                    print "Old: %s" %  line,
+                    print("Old: %s" %  line, end=' ')
                     line = string.replace( line, oldVersionPath, newVersionPath )
-                    print "New: %s" %  line,
+                    print("New: %s" %  line, end=' ')
                     modified = True
 
         if not "BASE" in newMacroVersions:
@@ -663,8 +663,8 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
             oldLine = line
             line = string.replace( line, oldBaseVersion, newBaseVersion )
             if newBaseVersion in line:
-                print "Old: %s" %  oldLine,
-                print "New: %s" %  line,
+                print("Old: %s" %  oldLine, end=' ')
+                print("New: %s" %  line, end=' ')
                 modified = True
                 lineCache += line
                 continue
@@ -680,8 +680,8 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
             #line = string.replace( line, oldBaseVersion, newBaseVersion )
             #line = string.replace( line, oldVersionPath, baseDirName )
             if True or newBaseVersion in line:
-                print "Old: %s" %  oldLine,
-                print "New: %s" %  line,
+                print("Old: %s" %  oldLine, end=' ')
+                print("New: %s" %  line, end=' ')
             modified = True
 
         if macroName == "EPICS_BASE":
@@ -692,9 +692,9 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
             else:
                 newVersionPath = "$(EPICS_SITE_TOP)/base/%s" % baseDirName 
             if oldVersionPath != newVersionPath:
-                print "Old: %s" %  line,
+                print("Old: %s" %  line, end=' ')
                 line = string.replace( line, oldVersionPath, newVersionPath )
-                print "New: %s" %  line,
+                print("New: %s" %  line, end=' ')
                 modified = True
 
         if macroName == "EPICS_MODULES" or macroName == "MODULES_SITE_TOP":
@@ -703,9 +703,9 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
             else:
                 newVersionPath = "$(EPICS_SITE_TOP)/%s/modules" % newBaseVersion
             if oldVersionPath != newVersionPath:
-                print "Old: %s" %  line,
+                print("Old: %s" %  line, end=' ')
                 line = string.replace( line, oldVersionPath, newVersionPath )
-                print "New: %s" %  line,
+                print("New: %s" %  line, end=' ')
                 modified = True
 
         lineCache += line
@@ -714,7 +714,7 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
     in_file.close()
     if not modified:
         if verbose:
-            print "%s, No change" %  filePath
+            print("%s, No change" %  filePath)
         return 0
 
     # Replace prior version w/ updates
@@ -723,13 +723,13 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
         out_file = open( filePath, 'w' )
         out_file.writelines( lineCache )
         out_file.close()
-    except OSError, e:
+    except OSError as e:
         sys.stderr.write( 'Could not remove "%s": %s\n' % ( filePath, e.strerror ) )
         return 0
-    except IOError, e:
+    except IOError as e:
         sys.stderr.write( 'Could not replace "%s": %s\n' % ( filePath, e.strerror ) )
         return 0
-    print "%s, UPDATED" %  filePath
+    print("%s, UPDATED" %  filePath)
     return 1
 
 def update_pkg_dependency( topDir, pkgSpecs, debug=False, verbose=False ):
@@ -747,10 +747,10 @@ def update_pkg_dependency( topDir, pkgSpecs, debug=False, verbose=False ):
     """
     # Check for a valid top directory
     if not os.path.isdir( topDir ):
-        print "update_pkg_dependency: Invalid topDir: %s" % topDir
+        print("update_pkg_dependency: Invalid topDir: %s" % topDir)
         return 0
     if verbose:
-        print "update_pkg_dependency: %s" % topDir
+        print("update_pkg_dependency: %s" % topDir)
 
     # Get current pkgSpecs
     oldPkgDependents = getEpicsPkgDependents( topDir, debug=debug )
@@ -758,10 +758,10 @@ def update_pkg_dependency( topDir, pkgSpecs, debug=False, verbose=False ):
     for pkgName in oldPkgDependents:
         pkgSpec = pkgName + "/" + oldPkgDependents[pkgName]
         if verbose:
-            print "OLD: %s" % pkgSpec
+            print("OLD: %s" % pkgSpec)
         oldMacroVersions.update( pkgSpecToMacroVersions( pkgSpec ) )
     if len(oldMacroVersions) == 0:
-        print "update_pkg_dependency error: No pkgSpecs found under topDir:\n%s" % topDir
+        print("update_pkg_dependency error: No pkgSpecs found under topDir:\n%s" % topDir)
         return 0
 
     # Convert the list of pkgSpecs into a list of macroVersions
@@ -769,11 +769,11 @@ def update_pkg_dependency( topDir, pkgSpecs, debug=False, verbose=False ):
     newMacroVersions = {}
     for pkgSpec in pkgSpecs:
         if verbose:
-            print "NEW: %s" % pkgSpec
+            print("NEW: %s" % pkgSpec)
         newMacroVersions.update( pkgSpecToMacroVersions( pkgSpec ) )
     if len(newMacroVersions) == 0:
-        print "update_pkg_dependency error: No valid converions for pkgSpecs:"
-        print pkgSpecs
+        print("update_pkg_dependency error: No valid converions for pkgSpecs:")
+        print(pkgSpecs)
         return 0
 
     count = 0

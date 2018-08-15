@@ -60,11 +60,11 @@ def pkgNameAddMacroName( pkgName, macroName ):
     else:
         if _macroNameToPkgName[macroName] != pkgName:
             if _macroNameToPkgName[macroName] is None:
-                print	"pkgNameAddMacroName Error: Pkg %s Macro %s is not a valid pkgName" % \
-                        ( pkgName, macroName )
+                print("pkgNameAddMacroName Error: Pkg %s Macro %s is not a valid pkgName" % \
+                        ( pkgName, macroName ))
             else:
-                print	"pkgNameAddMacroName Error: Pkg %s Macro %s already mapped to %s" % \
-                        ( pkgName, macroName, _macroNameToPkgName[macroName] )
+                print("pkgNameAddMacroName Error: Pkg %s Macro %s already mapped to %s" % \
+                        ( pkgName, macroName, _macroNameToPkgName[macroName] ))
 
 # Automatically populate most of our macro names for packages
 # by converting the git directory name to uppercase
@@ -72,7 +72,7 @@ if os.path.isdir( DEF_GIT_MODULES_PATH ):
     for d in os.listdir( DEF_GIT_MODULES_PATH ):
         if not '.git' in d:
             continue
-        pkgName = string.replace( d, '.git', '' )
+        pkgName = d.replace( '.git', '' )
         pkgNameAddMacroName( pkgName, pkgName.upper() )
 else:
     # For systems w/o AFS

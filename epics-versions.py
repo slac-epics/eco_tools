@@ -1,8 +1,9 @@
 #!/usr/bin/env python
+from __future__ import print_function
 import re
 import sys
 import optparse
-import commands
+import subprocess
 import fileinput
 import glob
 import os
@@ -87,7 +88,7 @@ def ExpandModulePath( topDir, module, opt ):
     # See if it exists
     if not os.path.isdir( modPath ):
         if opt.debug:
-            print "ExpandModulePath: %s not found" % ( modPath )
+            print("ExpandModulePath: %s not found" % ( modPath ))
         return []
 
     # See if this is a screens release
@@ -96,7 +97,7 @@ def ExpandModulePath( topDir, module, opt ):
         screenArg   = True
 
     if opt.debug:
-        print "ExpandModulePath: Expanding %s ..." % ( modPath )
+        print("ExpandModulePath: Expanding %s ..." % ( modPath ))
 
     selectedReleases = [ ]
     for dirPath, dirs, files in os.walk( modPath, topdown=True ):
@@ -127,7 +128,7 @@ def ExpandModulePath( topDir, module, opt ):
             buildPath = os.path.join( release, "build" )
             if os.path.isfile( verPath ) or os.path.isdir( buildPath ):
                 if opt.debug:
-                    print "ExpandModulePath: Found ", release
+                    print("ExpandModulePath: Found ", release)
                 releases += [ release ]
 
         if len( releases ) == 0:
@@ -146,17 +147,17 @@ def ExpandModulePath( topDir, module, opt ):
         #   print "ExpandModulePath Module Releases: "
         #   pp.pprint( releaseSet )
 
-        for release in sorted( releaseSet.keys(), reverse = True ):
+        for release in sorted( list(releaseSet.keys()), reverse = True ):
             selectedReleases += [ releaseSet[ release ] ]
 
     if opt.debug:
-        print "ExpandModulePath Selected Releases: "
+        print("ExpandModulePath Selected Releases: ")
         pp.pprint( selectedReleases )
     return selectedReleases
 
 def ReportReleases( moduleTop, module, releases, opt ):
     if opt.debug:
-        print "ReportReleases: ", module
+        print("ReportReleases: ", module)
     found = False
     priorModule = None
     for release in releases:
@@ -171,14 +172,14 @@ def ReportRelease( moduleTop, release, priorModule, opt ):
     cmdList = [ "readlink", "-e", release ]
     cmdOutput = subprocess.check_output( cmdList ).splitlines()
     if len(cmdOutput) == 1:
-        release = cmdOutput[0]
+        release = str(cmdOutput[0])
     ( relPath, moduleVersion ) = os.path.split( release )
     # Simplify the module path by removing the default module release
     # portion of the path
     cmdList = [ "readlink", "-e", moduleTop ]
     cmdOutput = subprocess.check_output( cmdList ).splitlines()
     if len(cmdOutput) == 1:
-        moduleTop = cmdOutput[0]
+        moduleTop = str(cmdOutput[0])
     #relPath = relPath.replace( "slac.stanford.edu", "slac" )
     relPath = relPath.replace( moduleTop + "/", "" )
 
@@ -199,7 +200,7 @@ def ReportRelease( moduleTop, release, priorModule, opt ):
         baseVer = moduleVersion
 
     if baseVer != "?" and opt.debug:
-        print "%s BaseVersion: %s" % ( moduleTop, baseVer )
+        print("%s BaseVersion: %s" % ( moduleTop, baseVer ))
 
     buildPath = os.path.join( release, "build" )
     if os.path.isdir( buildPath ):
@@ -217,11 +218,11 @@ def ReportRelease( moduleTop, release, priorModule, opt ):
 
     # Print the module and version, along with base version if any
     if opt.wide:
-        print "%s/%s %s" % ( module, moduleVersion, baseVerPrompt ),
+        print("%s/%s %s" % ( module, moduleVersion, baseVerPrompt ), end=' ')
     #elif module.startswith('/'):
     #	print "%-37/%s" % ( release, baseVerPrompt )
     else:
-        print "%18s/%-20s %s" % ( module, moduleVersion, baseVerPrompt )
+        print("%18s/%-20s %s" % ( module, moduleVersion, baseVerPrompt ))
 
     # Show pkgDependents for --verbose
     if opt.verbose:
@@ -230,13 +231,13 @@ def ReportRelease( moduleTop, release, priorModule, opt ):
             depVersion = pkgDependents[ depRoot ]
             if opt.wide:
                 # Don't print newline in wide mode 
-                print " %s/%s" % ( depRoot, depVersion ),
+                print(" %s/%s" % ( depRoot, depVersion ), end=' ')
             elif '/' in depVersion:
-                print "%20s%18s %s" % ( '', depRoot, depVersion )
+                print("%20s%18s %s" % ( '', depRoot, depVersion ))
             else:
-                print "%20s%18s %19s/%s" % ( '', depRoot, depRoot, depVersion )
+                print("%20s%18s %19s/%s" % ( '', depRoot, depRoot, depVersion ))
     if opt.wide:
-        print
+        print()
 
     if opt.verbose and os.path.isdir( buildPath ) :
         # Templated IOC
@@ -259,11 +260,11 @@ def ReportRelease( moduleTop, release, priorModule, opt ):
                         parentRelease = os.path.join( parentTail, parentRelease ) 
                     if opt.wide:
                         # Don't print newline in wide mode 
-                        print " %s/%s" % ( iocName, parentRelease ),
+                        print(" %s/%s" % ( iocName, parentRelease ), end=' ')
                     else:
-                        print "%-4s %20s/%s" % ( '', iocName, parentRelease )
+                        print("%-4s %20s/%s" % ( '', iocName, parentRelease ))
         if opt.wide:
-            print
+            print()
 
     return module
 
@@ -295,7 +296,7 @@ def ExpandPackagesForTop( topDir, packages, opt ):
         # If the package is a directory, assume it's a release dir
         if os.path.isdir( package ) and isEpicsPackage( package ):
             if not ReportRelease( topDir, package, None, opt ):
-                print "%s: No releases found.\n" % ( package )
+                print("%s: No releases found.\n" % ( package ))
             else:
                 numReleasesForTop += 1
             continue
@@ -317,12 +318,12 @@ def ExpandPackagesForTop( topDir, packages, opt ):
         if len(releases) == 0 or not os.path.isdir( releases[0] ):
             continue
         if not opt.wide and topDirShown == False:
-            print "Releases under %s:" % topDir
+            print("Releases under %s:" % topDir)
             topDirShown = True
 
         # Report all releases for this package
         if not ReportReleases( topDir, package, releases, opt ):
-            print "%s/%s: No releases found matching specification.\n" % ( topDir, package )
+            print("%s/%s: No releases found matching specification.\n" % ( topDir, package ))
         numReleasesForTop += len(releases)
         # Clear releases before checking next package
         releases = []
@@ -406,9 +407,9 @@ try:
     else:
         epics_base_ver = determine_epics_base_ver()
         if not epics_base_ver:
-            print "epics-versions: Unable to determine EPICS Base version."
-            print "Please define via at least one of these env variables:"
-            print "  EPICS_BASE, EPICS_BASE_VER, EPICS_VER, BASE_MODULE_VERSION"
+            print("epics-versions: Unable to determine EPICS Base version.")
+            print("Please define via at least one of these env variables:")
+            print("  EPICS_BASE, EPICS_BASE_VER, EPICS_VER, BASE_MODULE_VERSION")
             epics_base_ver = 'unknown-base-ver'
 
     releaseCount = 0
@@ -463,18 +464,18 @@ try:
         for module in args:
             errorMsg += " "
             errorMsg += module
-        raise ValidateError, errorMsg
+        raise ValidateError(errorMsg)
 
     # All done!
     sys.exit(0)
 
 except ValidateError:
-    print "Error: %s\n" % sys.exc_value 
+    print("Error: %s\n" % sys.exc_info()[1]) 
     parser.print_usage()
     sys.exit(6)
 
 except KeyboardInterrupt:
-    print "\nERROR: interrupted by user."
+    print("\nERROR: interrupted by user.")
     sys.exit(2)
 
 except SystemExit:
@@ -482,6 +483,6 @@ except SystemExit:
 
 except:
     if debugScript:
-        traceback.print_tb(sys.exc_traceback)
-    print "%s exited with ERROR:\n%s\n" % ( sys.argv[0], sys.exc_value )
+        traceback.print_tb(sys.exc_info()[2])
+    print("%s exited with ERROR:\n%s\n" % ( sys.argv[0], sys.exc_info()[1] ))
     sys.exit( 1 )
