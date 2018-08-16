@@ -105,7 +105,8 @@ def parseCVSModulesTxt( cvsRepoRoot=None, verbose=False ):
         os.environ['CVSROOT'] = DEF_CVS_ROOT
     cvsModulesTxtFile = os.path.join( os.environ['CVSROOT'], 'CVSROOT', 'modules')
     if not os.path.exists(cvsModulesTxtFile):
-        print "Cannot determine CVS modules from modules file."
+        if verbose:
+            print "CVS modules file not accessible: Unable to load CVS module list."
         return package2Location
     
     with open(cvsModulesTxtFile, 'r') as f:
