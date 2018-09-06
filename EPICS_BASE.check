@@ -1,14 +1,14 @@
 # EPICS_BASE.check
 #
 # Check for undefined EPICS_BASE
-ifndef EPICS_BASE
+ifneq (file,$(origin EPICS_BASE))
 
 # Show which RELEASE_SITE files are found
 ifneq ($(wildcard "$(TOP)/../../RELEASE_SITE"),)
-$(info RELEASE_SITE Found: $(TOP)/../../RELEASE_SITE)
+$(info RELEASE_SITE Found: $$(TOP)/../../RELEASE_SITE)
 endif
 ifneq ($(wildcard "$(TOP)/RELEASE_SITE"),)
-$(info RELEASE_SITE Found: $(TOP)/RELEASE_SITE)
+$(info RELEASE_SITE Found: $$(TOP)/RELEASE_SITE)
 endif
 
 # Bail w/ an error
