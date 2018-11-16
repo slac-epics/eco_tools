@@ -77,30 +77,30 @@ def debug_signal_handler(signal, frame):
     pdb.set_trace()
 signal.signal(signal.SIGINT, debug_signal_handler)
 
-def ExpandModulePath( topDir, module, opt ):
+def ExpandPackagePath( topDir, pkgSpec, opt ):
     # See if "modules" is in both parts of the path
-    if "modules" in topDir and "modules" in module:
+    if "modules" in topDir and "modules" in pkgSpec:
         topDir = os.path.dirname( topDir )
 
-    # Create the path to module
-    modPath = os.path.join( topDir, module )
+    # Create the path to package
+    pkgPath = os.path.join( topDir, pkgSpec )
 
     # See if it exists
-    if not os.path.isdir( modPath ):
+    if not os.path.isdir( pkgPath ):
         if opt.debug:
-            print("ExpandModulePath: %s not found" % ( modPath ))
+            print("ExpandPackagePath: %s not found" % ( pkgPath ))
         return []
 
     # See if this is a screens release
     screenArg   = False
-    if "screens" in modPath:
+    if "screens" in pkgPath:
         screenArg   = True
 
     if opt.debug:
-        print("ExpandModulePath: Expanding %s ..." % ( modPath ))
+        print("ExpandPackagePath: Expanding %s ..." % ( pkgPath ))
 
     selectedReleases = [ ]
-    for dirPath, dirs, files in os.walk( modPath, topdown=True ):
+    for dirPath, dirs, files in os.walk( pkgPath, topdown=True ):
         if len( dirs ) == 0:
             continue
         if '.git' in dirs:
@@ -114,7 +114,7 @@ def ExpandModulePath( topDir, module, opt ):
         releases = [ ]
         dirs.sort()
         for dir in dirs[:]:
-            if dirPath != modPath:
+            if dirPath != pkgPath:
                 # Remove from list so we don't search recursively beyond one level
                 dirs.remove( dir )
             if not isReleaseCandidate(dir):
@@ -128,7 +128,7 @@ def ExpandModulePath( topDir, module, opt ):
             buildPath = os.path.join( release, "build" )
             if os.path.isfile( verPath ) or os.path.isdir( buildPath ):
                 if opt.debug:
-                    print("ExpandModulePath: Found ", release)
+                    print("ExpandPackagePath: Found ", release)
                 releases += [ release ]
 
         if len( releases ) == 0:
@@ -144,30 +144,30 @@ def ExpandModulePath( topDir, module, opt ):
             releaseSet[ relNumber ] = release
 
         #if opt.debug:
-        #   print "ExpandModulePath Module Releases: "
+        #   print "ExpandPackagePath Module Releases: "
         #   pp.pprint( releaseSet )
 
         for release in sorted( list(releaseSet.keys()), reverse = True ):
             selectedReleases += [ releaseSet[ release ] ]
 
     if opt.debug:
-        print("ExpandModulePath Selected Releases: ")
+        print("ExpandPackagePath Selected Releases: ")
         pp.pprint( selectedReleases )
     return selectedReleases
 
-def ReportReleases( moduleTop, module, releases, opt ):
+def ReportReleases( pkgPath, pkgSpec, releases, opt ):
     if opt.debug:
-        print("ReportReleases: ", module)
+        print("ReportReleases: ", pkgSpec)
     found = False
     priorModule = None
     for release in releases:
-        reportedModule = ReportRelease( moduleTop, release, priorModule, opt )
+        reportedModule = ReportRelease( pkgPath, release, priorModule, opt )
         if reportedModule != None:
             found = True
             priorModule = reportedModule
     return found
 
-def ReportRelease( moduleTop, release, priorModule, opt ):
+def ReportRelease( pkgPath, release, priorModule, opt ):
     ''' Get the module and version from the release string. '''
     cmdList = [ "readlink", "-e", release ]
     cmdOutput = subprocess.check_output( cmdList ).splitlines()
@@ -176,12 +176,12 @@ def ReportRelease( moduleTop, release, priorModule, opt ):
     ( relPath, moduleVersion ) = os.path.split( release )
     # Simplify the module path by removing the default module release
     # portion of the path
-    cmdList = [ "readlink", "-e", moduleTop ]
+    cmdList = [ "readlink", "-e", pkgPath ]
     cmdOutput = subprocess.check_output( cmdList ).splitlines()
     if len(cmdOutput) == 1:
-        moduleTop = str(cmdOutput[0])
+        pkgPath = str(cmdOutput[0])
     #relPath = relPath.replace( "slac.stanford.edu", "slac" )
-    relPath = relPath.replace( moduleTop + "/", "" )
+    relPath = relPath.replace( pkgPath + "/", "" )
 
     # At most just show the last 3 directory levels
     relPath = '/'.join( relPath.split('/')[-3:] )
@@ -200,7 +200,7 @@ def ReportRelease( moduleTop, release, priorModule, opt ):
         baseVer = moduleVersion
 
     if baseVer != "?" and opt.debug:
-        print("%s BaseVersion: %s" % ( moduleTop, baseVer ))
+        print("%s BaseVersion: %s" % ( pkgPath, baseVer ))
 
     buildPath = os.path.join( release, "build" )
     if os.path.isdir( buildPath ):
@@ -278,7 +278,7 @@ def ExpandPackageForTopVariants( siteTop, package, opt ):
 
     releases = []
     for topDir in topVariants:
-        releases += ExpandModulePath( topDir, package, opt )
+        releases += ExpandPackagePath( topDir, package, opt )
     return releases
 
 def isEpicsTopVariant( topDir ):
@@ -293,7 +293,8 @@ def ExpandPackagesForTop( topDir, packages, opt ):
     releases = []
     numReleasesForTop = 0
     for package in packages:
-        # If the package is a directory, assume it's a release dir
+        # If the package is a valid directory path, assume it's a release dir
+        # Note that relative paths are allowed, so package could be "." for $CWD
         if os.path.isdir( package ) and isEpicsPackage( package ):
             if not ReportRelease( topDir, package, None, opt ):
                 print("%s: No releases found.\n" % ( package ))
@@ -301,7 +302,7 @@ def ExpandPackagesForTop( topDir, packages, opt ):
                 numReleasesForTop += 1
             continue
         elif package not in defEpicsTopVariants:
-            releases += ExpandModulePath( topDir, package, opt )
+            releases += ExpandPackagePath( topDir, package, opt )
         #elif isEpicsTopVariant( topDir ):
         elif topDir.endswith(package):
             for dirPath, dirs, files in os.walk( topDir, topdown=True ):
@@ -310,7 +311,7 @@ def ExpandPackagesForTop( topDir, packages, opt ):
                 for dir in dirs[:]:
                     # Remove from list so we don't search recursively
                     dirs.remove( dir )
-                    releases += ExpandModulePath( topDir, dir, opt )
+                    releases += ExpandPackagePath( topDir, dir, opt )
 
         # validate the package specification
         if len(releases) == 0 or not os.path.isdir( releases[0] ):
@@ -318,7 +319,7 @@ def ExpandPackagesForTop( topDir, packages, opt ):
         if len(releases) == 0 or not os.path.isdir( releases[0] ):
             continue
         if not opt.wide and topDirShown == False:
-            print("Releases under %s:" % topDir)
+            print("Releases under %s/" % topDir)
             topDirShown = True
 
         # Report all releases for this package
@@ -442,7 +443,7 @@ try:
             # 	continue
             #releaseCount += ExpandPackagesForTop( site_top, args, opt )
             #continue
-            # Move to ExpandModulePath()?
+            # Move to ExpandPackagePath()?
             for dirPath, dirs, files in os.walk( site_top, topdown=True ):
                 if len( dirs ) == 0:
                     continue
