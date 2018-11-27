@@ -552,7 +552,6 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
     using_MODULE_VERSION = {}
     definedModules = {}
     using_BASE_MODULE_VERSION = False
-    using_EPICS_BASE_VER = False
     modified   = False
     lineCache  = []
     in_file = open( filePath, "r" )
