@@ -7,6 +7,7 @@ import subprocess
 import Repo
 from repo_defaults import *
 from cvs_utils import *
+from site_utils import *
 from version_utils import *
 
 class cvsError( Exception ):

@@ -37,13 +37,6 @@ from eco_version import eco_tools_version
 
 from repo_defaults import *
 
-def getEnv( envVar ):
-    result = os.getenv( envVar )
-    if not result:
-        result = '?'
-    return result
-
-
 def build_modules( options ):
     if options.top:
         if not os.path.isdir( options.top ):

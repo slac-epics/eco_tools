@@ -13,6 +13,7 @@ import traceback
 import subprocess
 
 from repo_defaults import *
+from site_utils import *
 from version_utils import *
 from pkgNamesToMacroNames import *
 from eco_version import eco_tools_version

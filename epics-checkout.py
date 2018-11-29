@@ -56,6 +56,7 @@ from cram_utils import *
 from cvs_utils import *
 from git_utils import *
 from svn_utils import *
+from site_utils import *
 from version_utils import *
 import cvs2git_utils
 

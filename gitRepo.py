@@ -6,6 +6,7 @@ import subprocess
 
 import Repo
 from git_utils import *
+from site_utils import *
 from version_utils import *
 from repo_defaults import *
 

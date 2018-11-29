@@ -21,13 +21,6 @@ class svnRepo( Repo.Repo ):
         self._svnStub1	= DEF_SVN_STUB1
         self._svnStub2	= DEF_SVN_STUB2
         self._svnRepo	= DEF_SVN_REPO
-        # Make sure we have a valid EPICS_SITE_TOP
-        #defaultEpicsSiteTop = DEF_EPICS_TOP_LCLS 
-        #if not os.path.isdir( defaultEpicsSiteTop ):
-        #	defaultEpicsSiteTop = DEF_EPICS_TOP_AFS
-        #if not os.path.isdir( defaultEpicsSiteTop ):
-        #	raise Releaser.ValidateError, ( "Can't find EPICS_SITE_TOP at %s" % defaultEpicsSiteTop )
-        #self._prefix	= determine_epics_site_top()
 
 #	def __repr__( self ):
 #		return "svnRepo"
