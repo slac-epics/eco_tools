@@ -85,6 +85,15 @@ def ExpandPackagePath( topDir, pkgSpec, opt ):
     # Create the path to package
     pkgPath = os.path.join( topDir, pkgSpec )
 
+    if not os.path.isdir( pkgPath ) and opt.base:
+        if not opt.base in topDir:
+            topDir = os.path.join( topDir, opt.base )
+        if not "modules" in topDir and not "modules" in pkgSpec:
+            topDir = os.path.join( topDir, "modules" )
+        modPath = os.path.join( topDir, pkgSpec )
+        if os.path.isdir( modPath ):
+            pkgPath = modPath
+
     # See if it exists
     if not os.path.isdir( pkgPath ):
         if opt.debug:
@@ -415,10 +424,11 @@ try:
 
     releaseCount = 0
     # See which epicsTop to search
-    if not opt.epicsTop and epics_site_top:
-        # --top not specified, look for EPICS_MODULES_TOP in environment
+    if not opt.epicsTop and os.path.isdir( epics_site_top ):
+        # --top not specified, start from epics_site_top
         opt.epicsTop = os.path.join( epics_site_top, epics_base_ver, "modules" )
-        if not opt.epicsTop or not os.path.isdir( opt.epicsTop ):
+        # If opt.EpicsTop is invalid, look in environment
+        if not os.path.isdir( opt.epicsTop ):
             opt.epicsTop = os.environ.get( "EPICS_MODULES_TOP" )
         if not opt.epicsTop or not os.path.isdir( opt.epicsTop ):
             opt.epicsTop = os.environ.get( "EPICS_MODULES" )
