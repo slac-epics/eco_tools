@@ -228,17 +228,13 @@ def getEpicsPkgDependents( topDir, debug=False ):
     macroDict = {}
     macroDict['TOP'] = topDir
     # Get the base and dependent modules from RELEASE files
-    releaseFiles = [ os.path.join( topDir, "configure", "RELEASE" ) ]
-    #releaseFiles += [ os.path.join( topDir, "..", "..", "RELEASE_SITE" ) ]
-    #releaseFiles += [ os.path.join( topDir, "RELEASE_SITE" ) ]
-    #releaseFiles += [ os.path.join( topDir, "configure", "RELEASE.local" ) ]
-    for releaseFile in releaseFiles:
-        if debug:
-            print("getEpicsPkgDependents: Checking release file: %s" % ( releaseFile ))
-        if not os.path.isfile( releaseFile ):
-            continue
-        macroDict = getMacrosFromFile( releaseFile, macroDict, debug=debug )
-        #pkgDependents.update( releaseVersions )
+    releaseFile = os.path.join( topDir, "configure", "RELEASE" )
+    if debug:
+        print("getEpicsPkgDependents: Checking release file: %s" % ( releaseFile ))
+    if not os.path.isfile( releaseFile ):
+        continue
+    macroDict = getMacrosFromFile( releaseFile, macroDict, debug=debug )
+
     pkgDependents = {}
     epicsModules = None
     if 'EPICS_MODULES' in macroDict:
