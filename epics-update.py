@@ -17,7 +17,6 @@ import readline
 import shutil
 import tempfile
 import textwrap
-import json
 import Repo
 import gitRepo
 import svnRepo
@@ -29,6 +28,200 @@ from version_utils import *
 from eco_version import eco_tools_version
 
 from repo_defaults import *
+
+def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=False ):
+    """
+    update_pkg_dep_file(
+        filePath,		 	#  path to file
+        oldMacroVersions,	#  dict of old macro versions: macroVersion[macroName] = version
+        newMacroVersions,	#  dict of new macro versions: macroVersion[macroName] = version
+        verbose=False		#  show progress )
+    Update the specified package dependencies, (module or base versions).
+    newMacroVersions can specify a subset of the old macroNames
+    Checks and updates the specfied file if needed.
+    Returns 1 if modified, else 0
+    """
+    using_MODULE_VERSION = {}
+    definedModules = {}
+    using_BASE_MODULE_VERSION = False
+    modified   = False
+    lineCache  = []
+    in_file = open( filePath, "r" )
+    for line in in_file:
+        strippedLine = line.strip()
+        if len(strippedLine) == 0:
+            lineCache += line
+            continue
+
+        # XXX_MODULE_VERSION = YYYYYYYYY
+        match = moduleVersionRegExp.search( line )
+        if match:
+            macroName  = match.group(1)
+            oldVersion = match.group(2)
+            if macroName in newMacroVersions:
+                newVersion = newMacroVersions[macroName]
+                if newVersion != oldVersion:
+                    print("Old: %s" %  line, end=' ')
+                    line = string.replace( line, oldVersion, newMacroVersions[macroName] )
+                    print("New: %s" %  line, end=' ')
+                    modified = True
+                if macroName == "BASE":
+                    using_BASE_MODULE_VERSION = True
+                else:
+                    using_MODULE_VERSION[macroName] = True
+            lineCache += line
+            continue
+
+        # #* XXX = YYYYYYYYYYYYYYYYYYYYYYYYYYYY
+        # Matches any macro definition, even if commented out
+        match = condMacroRegExp.search( line )
+        if not match:
+            lineCache += line
+            continue
+
+        # Parse the macro match
+        originalLine   = match.group(0)
+        commentedOut   = match.group(1).startswith('#')
+        macroName      = match.group(2)
+        oldVersionPath = match.group(3)
+
+        # Is this macro related to the base version
+        #isMacroBaseRelated = False
+        #if macroName in [ "EPICS_BASE", "EPICS_BASE_VER", "EPICS_MODULES", "MODULES_SITE_TOP" ]:
+        #	isMacroBaseRelated = True
+
+        if macroName in newMacroVersions:
+            pkgName = macroNameToPkgName(macroName)
+            if not pkgName:
+                continue
+            if pkgName == 'base':
+                if 'BASE_MODULE_VERSION' in oldMacroVersions:
+                    newVersionPath = "$(EPICS_SITE_TOP)/base/$(BASE_MODULE_VERSION)"
+                else:
+                    newVersionPath = "$(EPICS_SITE_TOP)/base/%s" % ( newMacroVersions[macroName] )
+                #print '1. newVersionPath = %s' % newVersionPath
+            elif using_MODULE_VERSION.get( macroName, False ):
+                newVersionPath = "$(EPICS_MODULES)/%s/$(%s_MODULE_VERSION)" % ( pkgName, macroName )
+                #print '2. newVersionPath = %s' % newVersionPath
+            else:
+                newVersionPath = "$(EPICS_MODULES)/%s/%s" % ( pkgName, newMacroVersions[macroName] )
+                #print '3. newVersionPath = %s' % newVersionPath
+            if macroName in definedModules:
+                # We've already defined this macroName
+                if not commentedOut:
+                    # Comment out subsequent definitions
+                    print("Old: %s" %  line, end=' ')
+                    line = string.replace( line, originalLine, '#' + originalLine )
+                    print("New: %s" %  line, end=' ')
+                    modified = True
+            else:
+                definedModules[macroName] = newVersionPath
+                if commentedOut:
+                    # Uncomment the line
+                    print("Old: %s" %  line, end=' ')
+                    line = string.strip( line, '# ' )
+                    print("New: %s" %  line, end=' ')
+                    modified = True
+                if oldVersionPath != newVersionPath:
+                    print("Old: %s" %  line, end=' ')
+                    line = string.replace( line, oldVersionPath, newVersionPath )
+                    print("New: %s" %  line, end=' ')
+                    modified = True
+
+        if not "BASE" in newMacroVersions:
+            lineCache += line
+            continue
+
+        # Handle BASE related macros
+        #if not isMacroBaseRelated:
+        if macroName in [ "EPICS_BASE", "EPICS_BASE_VER", "EPICS_MODULES", "MODULES_SITE_TOP" ]:
+            lineCache += line
+            continue
+
+        newBaseVersion = newMacroVersions["BASE"]
+        oldBaseVersion = oldMacroVersions["BASE"]
+        if oldBaseVersion == newBaseVersion:
+            lineCache += line
+            continue
+
+        if VersionToRelNumber(newBaseVersion) < 3.141205:
+            baseDirName = "base-%s" % newBaseVersion
+        else:
+            baseDirName = newBaseVersion
+
+        if VersionToRelNumber(oldBaseVersion) >= 3.141205:
+            # For these, just replace all old instances of base version w/ new version
+            oldLine = line
+            line = string.replace( line, oldBaseVersion, newBaseVersion )
+            if newBaseVersion in line:
+                print("Old: %s" %  oldLine, end=' ')
+                print("New: %s" %  line, end=' ')
+                modified = True
+                lineCache += line
+                continue
+
+            if	   "EPICS_BASE_VER" in oldVersionPath \
+                or "BASE_MODULE_VERSION" in oldVersionPath:
+                lineCache += line
+                continue
+
+        # Handle fixing unusual paths
+        if macroName == "EPICS_BASE_VER":
+            oldLine = line
+            #line = string.replace( line, oldBaseVersion, newBaseVersion )
+            #line = string.replace( line, oldVersionPath, baseDirName )
+            if True or newBaseVersion in line:
+                print("Old: %s" %  oldLine, end=' ')
+                print("New: %s" %  line, end=' ')
+            modified = True
+
+        if macroName == "EPICS_BASE":
+            if   "BASE_MODULE_VERSION" in oldVersionPath:
+                newVersionPath = "$(EPICS_SITE_TOP)/base/$(BASE_MODULE_VERSION)"
+            elif "EPICS_BASE_VER" in oldVersionPath:
+                newVersionPath = "$(EPICS_SITE_TOP)/base/$(EPICS_BASE_VER)"
+            else:
+                newVersionPath = "$(EPICS_SITE_TOP)/base/%s" % baseDirName 
+            if oldVersionPath != newVersionPath:
+                print("Old: %s" %  line, end=' ')
+                line = string.replace( line, oldVersionPath, newVersionPath )
+                print("New: %s" %  line, end=' ')
+                modified = True
+
+        if macroName == "EPICS_MODULES" or macroName == "MODULES_SITE_TOP":
+            if   "BASE_MODULE_VERSION" in oldVersionPath:
+                newVersionPath = "$(EPICS_SITE_TOP)/$(BASE_MODULE_VERSION)/modules"
+            else:
+                newVersionPath = "$(EPICS_SITE_TOP)/%s/modules" % newBaseVersion
+            if oldVersionPath != newVersionPath:
+                print("Old: %s" %  line, end=' ')
+                line = string.replace( line, oldVersionPath, newVersionPath )
+                print("New: %s" %  line, end=' ')
+                modified = True
+
+        lineCache += line
+        continue
+
+    in_file.close()
+    if not modified:
+        if verbose:
+            print("%s, No change" %  filePath)
+        return 0
+
+    # Replace prior version w/ updates
+    try:
+        os.remove( filePath )
+        out_file = open( filePath, 'w' )
+        out_file.writelines( lineCache )
+        out_file.close()
+    except OSError as e:
+        sys.stderr.write( 'Could not remove "%s": %s\n' % ( filePath, e.strerror ) )
+        return 0
+    except IOError as e:
+        sys.stderr.write( 'Could not replace "%s": %s\n' % ( filePath, e.strerror ) )
+        return 0
+    print("%s, UPDATED" %  filePath)
+    return 1
 
 def process_options(argv):
     if argv is None:
