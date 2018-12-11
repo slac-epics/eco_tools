@@ -1,3 +1,12 @@
+R2.13	2018-12-11 Bruce Hill
+    Fixed some python2 vs python3 compatibility issues.
+	Reorganized some functions into new files to facilitate reuse of
+		module dependency code by iocAdmin module.
+    Fixed some epics-versions cases for handling --top
+    Modified build checks of macros to test origin instead of just ifdef.
+		Catches build problems where build gets EPICS_BASE, etc from env but
+		EPICS convertRelease.pl fails due to undefined macros in RELEASE files.
+
 R2.12	2018-08-14 Bruce Hill
 	Fixes paths from eco_modulelist when GIT_TOP is different. i.e. prod, offsite, etc
 	Added ver soft link and tweaked default verbosity
