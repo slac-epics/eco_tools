@@ -272,60 +272,6 @@ def pkgSpecToMacroVersions( pkgSpec, verbose=False ):
         macroVersions[ macroName ] = pkgVersion
     return macroVersions
 
-def update_pkg_dependency( topDir, pkgSpecs, debug=False, verbose=False ):
-    """
-    update_pkg_dependency(
-        topDir,			#  path to top directory of epics package
-        pkgSpecs,       #  array of pkg specification strings: pkgPath/pkgVersion, ex asyn/R4.31
-        verbose=False   #  show progress )
-    Update the specified package dependencies, (module or base versions).
-    Checks and updates as needed:
-        TOP/RELEASE_SITE
-        TOP/configure/RELEASE
-        TOP/configure/RELEASE.local
-    Returns count of how many files were updated.
-    """
-    # Check for a valid top directory
-    if not os.path.isdir( topDir ):
-        print("update_pkg_dependency: Invalid topDir: %s" % topDir)
-        return 0
-    if verbose:
-        print("update_pkg_dependency: %s" % topDir)
-
-    # Get current pkgSpecs
-    oldPkgDependents = getEpicsPkgDependents( topDir, debug=debug )
-    oldMacroVersions = {}
-    for pkgName in oldPkgDependents:
-        pkgSpec = pkgName + "/" + oldPkgDependents[pkgName]
-        if verbose:
-            print("OLD: %s" % pkgSpec)
-        oldMacroVersions.update( pkgSpecToMacroVersions( pkgSpec ) )
-    if len(oldMacroVersions) == 0:
-        print("update_pkg_dependency error: No pkgSpecs found under topDir:\n%s" % topDir)
-        return 0
-
-    # Convert the list of pkgSpecs into a list of macroVersions
-    # Each macroVersion is a tuple of ( macroName, version )
-    newMacroVersions = {}
-    for pkgSpec in pkgSpecs:
-        if verbose:
-            print("NEW: %s" % pkgSpec)
-        newMacroVersions.update( pkgSpecToMacroVersions( pkgSpec ) )
-    if len(newMacroVersions) == 0:
-        print("update_pkg_dependency error: No valid converions for pkgSpecs:")
-        print(pkgSpecs)
-        return 0
-
-    count = 0
-
-    for fileName in [	"RELEASE_SITE",
-                        os.path.join( "configure", "RELEASE" ),
-                        os.path.join( "configure", "RELEASE.local" ) ]:
-        filePath = os.path.join( topDir, fileName )
-        if os.access( filePath, os.R_OK ):
-            count += update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose )
-    return count
-
 # Check if any file inside configure/ has included a ../../RELEASE_SITE file
 def hasIncludeDotDotReleaseSite():
     if not os.path.isdir( 'configure' ):
