@@ -61,9 +61,9 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
             if macroName in newMacroVersions:
                 newVersion = newMacroVersions[macroName]
                 if newVersion != oldVersion:
-                    print("Old: %s" %  line, end=' ')
+                    print "Old: %s" %  line,
                     line = string.replace( line, oldVersion, newMacroVersions[macroName] )
-                    print("New: %s" %  line, end=' ')
+                    print "New: %s" %  line,
                     modified = True
                 if macroName == "BASE":
                     using_BASE_MODULE_VERSION = True
@@ -110,22 +110,22 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
                 # We've already defined this macroName
                 if not commentedOut:
                     # Comment out subsequent definitions
-                    print("Old: %s" %  line, end=' ')
+                    print "Old: %s" %  line,
                     line = string.replace( line, originalLine, '#' + originalLine )
-                    print("New: %s" %  line, end=' ')
+                    print "New: %s" %  line,
                     modified = True
             else:
                 definedModules[macroName] = newVersionPath
                 if commentedOut:
                     # Uncomment the line
-                    print("Old: %s" %  line, end=' ')
+                    print "Old: %s" %  line,
                     line = string.strip( line, '# ' )
-                    print("New: %s" %  line, end=' ')
+                    print "New: %s" %  line,
                     modified = True
                 if oldVersionPath != newVersionPath:
-                    print("Old: %s" %  line, end=' ')
+                    print "Old: %s" %  line,
                     line = string.replace( line, oldVersionPath, newVersionPath )
-                    print("New: %s" %  line, end=' ')
+                    print "New: %s" %  line,
                     modified = True
 
         if not "BASE" in newMacroVersions:
@@ -154,8 +154,8 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
             oldLine = line
             line = string.replace( line, oldBaseVersion, newBaseVersion )
             if newBaseVersion in line:
-                print("Old: %s" %  oldLine, end=' ')
-                print("New: %s" %  line, end=' ')
+                print "Old: %s" %  oldLine,
+                print "New: %s" %  line,
                 modified = True
                 lineCache += line
                 continue
@@ -171,8 +171,8 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
             #line = string.replace( line, oldBaseVersion, newBaseVersion )
             #line = string.replace( line, oldVersionPath, baseDirName )
             if True or newBaseVersion in line:
-                print("Old: %s" %  oldLine, end=' ')
-                print("New: %s" %  line, end=' ')
+                print "Old: %s" %  oldLine,
+                print "New: %s" %  line,
             modified = True
 
         if macroName == "EPICS_BASE":
@@ -183,9 +183,9 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
             else:
                 newVersionPath = "$(EPICS_SITE_TOP)/base/%s" % baseDirName 
             if oldVersionPath != newVersionPath:
-                print("Old: %s" %  line, end=' ')
+                print "Old: %s" %  line,
                 line = string.replace( line, oldVersionPath, newVersionPath )
-                print("New: %s" %  line, end=' ')
+                print "New: %s" %  line,
                 modified = True
 
         if macroName == "EPICS_MODULES" or macroName == "MODULES_SITE_TOP":
@@ -194,9 +194,9 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
             else:
                 newVersionPath = "$(EPICS_SITE_TOP)/%s/modules" % newBaseVersion
             if oldVersionPath != newVersionPath:
-                print("Old: %s" %  line, end=' ')
+                print "Old: %s" %  line,
                 line = string.replace( line, oldVersionPath, newVersionPath )
-                print("New: %s" %  line, end=' ')
+                print "New: %s" %  line,
                 modified = True
 
         lineCache += line
