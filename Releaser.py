@@ -410,7 +410,7 @@ class Releaser(object):
 
     def DoTestBuild( self ):
         try:
-            status = self.BuildRelease( self._tmpDir )
+            status = self.BuildRelease( self._tmpDir, rmFailed=True )
             self.DoCleanup()
         except BuildError:
             print "DoTestBuild: %s Build error from BuildRelease in %s" % ( self._packageName, self._tmpDir )
@@ -504,7 +504,7 @@ class Releaser(object):
             self._grpOwner = DEF_PCDS_GROUP_OWNER
 
         try:
-            result = self.BuildRelease( self._installDir, force=force )
+            result = self.BuildRelease( self._installDir, force=force, rmFailed=rmFailed, verbose=self._verbose )
             if result != 0:
                 status = result
             if self._verbose:
