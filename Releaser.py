@@ -288,7 +288,8 @@ class Releaser(object):
             pass
         return hasBuilt
 
-    def BuildRelease( self, buildDir, force=False, verbose=False, outputPipe = subprocess.PIPE ):
+    def BuildRelease( self, buildDir, force=False, rmFailed=False, verbose=False, outputPipe = subprocess.PIPE ):
+        status = 0
         if not buildDir:
             raise BuildError, "Build dir not defined!"
         if self._verbose:
@@ -316,7 +317,7 @@ class Releaser(object):
             else:
                 #if self._verbose:
                 print "BuildRelease %s: Already built!" % ( buildDir )
-                return
+                return status
 
         print "\nBuildRelease: %s ..." % ( buildDir )
         sys.stdout.flush()
@@ -365,7 +366,9 @@ class Releaser(object):
                         print "BuildRelease: Checking dep: package=%s" % ( package )
                     release = find_release( package, verbose=self._verbose )
                     if release is not None:
-                        release.InstallPackage( epics_modules_top )
+                        result = release.InstallPackage( epics_modules_top )
+                        if result != 0:
+                            status = result
 
             print "\nBuilding Release in %s ..." % ( buildDir )
             sys.stdout.flush()
@@ -383,9 +386,12 @@ class Releaser(object):
             if hasBuilt == False and not buildDirExists:
                 cmdList = [ "rm", "-rf",    buildDir + "-FAILED" ]
                 subprocess.call( cmdList )
-                cmdList = [ "mv", buildDir, buildDir + "-FAILED" ]
+                if rmFailed:
+                    cmdList = [ "rm", "-rf",    buildDir ]
+                else:
+                    cmdList = [ "mv", buildDir, buildDir + "-FAILED" ]
+                    buildDir += "-FAILED"
                 subprocess.call( cmdList )
-                buildDir += "-FAILED"
             raise BuildError, "BuildRelease FAILED in %s" % ( buildDir )
 
         sys.stdout.flush()
@@ -400,27 +406,32 @@ class Releaser(object):
         except RuntimeError, e:
             print e
             pass
+        return status
 
     def DoTestBuild( self ):
         try:
-            self.BuildRelease( self._tmpDir )
+            status = self.BuildRelease( self._tmpDir )
             self.DoCleanup()
         except BuildError:
             print "DoTestBuild: %s Build error from BuildRelease in %s" % ( self._packageName, self._tmpDir )
             self.DoCleanup()
+            status = -1
             raise
         except subprocess.CalledProcessError, e:
             print "DoTestBuild: %s CalledProcessError from BuildRelease in %s" % ( self._packageName, self._tmpDir )
             print e
+            status = -1
             pass
+        return status
 
-    def InstallPackage( self, installTop=None, force=False ):
+    def InstallPackage( self, installTop=None, force=False, rmFailed=False ):
         '''Use InstallPackage to automatically determine the buildDir from installTop and the repo specs.
         If you already know where to build you can just call BuildRelease() directly.'''
         if self._verbose:
             self._repo.ShowRepo( titleLine="InstallPackage: " + self._packageName, prefix="	" )
             print self
 
+        status = 0
         if not self._installDir:
             # See if we can get the releaseDir from cram
             releaseDir = getCramReleaseDir( self._repo.GetUrl(), self._repo.GetTag() )
@@ -431,7 +442,9 @@ class Releaser(object):
             epics_site_top	= determine_epics_site_top()
             if not installTop and not epics_site_top:
                 print "InstallPackage Error: Need valid installTop to determine installDir!"
-                return
+                return status
+
+            # Is Package a module?
             if	os.path.split( self._packagePath )[0] == 'modules' \
             or  self._repo.GetUrl().find('modules') >= 0:
                 # Package is a module
@@ -446,20 +459,36 @@ class Releaser(object):
                     epics_modules_top = determine_epics_modules_top()
                     if not epics_modules_top:
                         print "InstallPackage Error: Unable to determine EPICS modules installTop!"
-                        return
+                        return status
                     installTop = epics_modules_top
 
+            # Is Package an extension?
             if not installTop:
                 if		self._packagePath.find('extensions') >= 0 \
                      or	self._repo.GetUrl().find('extensions') >= 0:
                     installTop = os.path.join( epics_site_top, 'extensions' ) 
+
+            # Is Package an IOC?
+            if		installTop is None \
+                and	(	os.path.split( self._packagePath )[0].startswith('ioc') \
+                    or  self._repo.GetUrl().find('ioc') >= 0 ):
+                # Package is an IOC
+                topVariants = [ epics_site_top ]
+                for topVariant in defEpicsTopVariants:
+                    topVariants.append( os.path.join( epics_site_top, topVariant ) )
+                for topVariant in topVariants:
+                    epics_ioc_top = os.path.join( topVariant, os.path.split(self._packagePath)[0] )
+                    if os.path.isdir( epics_ioc_top ):
+                        installTop = os.path.join( topVariant, self._packagePath )
+                        if not os.path.isdir( installTop ):
+                            os.makedirs( installTop, 0775 )
  
             if not installTop:
                 print "InstallPackage Error: Unable to determine installTop!"
-                return
+                return -1
             if not os.path.isdir( installTop ):
                 print "InstallPackage Error: Invalid installTop:", installTop
-                return
+                return -1
             # Canonicalize installTop
             cmdList = [ "readlink", "-e", installTop ]
             cmdOutput = subprocess.check_output( cmdList ).splitlines()
@@ -475,14 +504,19 @@ class Releaser(object):
             self._grpOwner = DEF_PCDS_GROUP_OWNER
 
         try:
-            self.BuildRelease( self._installDir, force=force )
+            result = self.BuildRelease( self._installDir, force=force )
+            if result != 0:
+                status = result
             if self._verbose:
                 print "InstallPackage: %s installed to:\n%s" % ( self._packageName, os.path.realpath(self._installDir) )
         except BuildError, e:
             print "InstallPackage: %s Build error from BuildRelease in %s" % ( self._packageName, os.path.realpath(self._installDir) )
             print e
+            status = -1
             pass
         except subprocess.CalledProcessError, e:
             print "InstallPackage: %s CalledProcessError from BuildRelease in %s" % ( self._packageName, os.path.realpath(self._installDir) )
             print e
+            status = -1
             pass
+        return status

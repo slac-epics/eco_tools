@@ -413,7 +413,9 @@ try:
 
     # Install package
     # pkgReleaser.InstallPackage( repo_installDir	)
-    pkgReleaser.InstallPackage( )
+    result = pkgReleaser.InstallPackage( )
+    if result != 0:
+        sys.exit( 1 )
 
     # All done!
     sys.exit(0)

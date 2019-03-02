@@ -38,16 +38,24 @@ from eco_version import eco_tools_version
 from repo_defaults import *
 
 def build_modules( options ):
+    status = 0
     if options.top:
         if not os.path.isdir( options.top ):
             print "Invalid --top %s" % options.top
     try:
         releases = find_releases( options )
-        for release in releases:
-            release.InstallPackage( installTop=options.top, force=options.force )
+        if len(releases) == 0:
+            status = 1
+        else:
+            for release in releases:
+                result = release.InstallPackage( installTop=options.top, force=options.force, rmFailed=options.rmFailed )
+                if status == 0:
+                    status = result
     except:
         print sys.exc_value
         print 'build_modules: Not all packages were installed!'
+        return 1
+    return status
  
 def find_releases( options ):
     releases = []
@@ -60,6 +68,7 @@ def find_releases( options ):
     return releases
 
 def buildDependencies( pkgTop, verbose=False ):
+    status = 0
     # Check Dependendents
     print "Checking dependents for %s" % ( pkgTop )
     buildDep = getEpicsPkgDependents( pkgTop )
@@ -71,7 +80,10 @@ def buildDependencies( pkgTop, verbose=False ):
         if release is None:
             print "Error: Could not find package %s" % package
             continue
-        release.InstallPackage( )
+        result = release.InstallPackage( )
+        if result != 0:
+            status = 1
+    return status
 
 def process_options(argv):
     if argv is None:
@@ -98,6 +110,7 @@ def process_options(argv):
     parser.add_argument( '-t', '--top',      action='store',  help='Top of release area.' )
     parser.add_argument( '--dep',            action='store',  help='Build dependencies for specified directory.' )
     parser.add_argument( '--force',          action='store_true',  help='Force rebuild.' )
+    parser.add_argument( '--rmFailed',       action='store_true',  help='Remove failed builds.' )
     parser.add_argument( '-v', '--verbose',  action="store_true", help='show more verbose output.' )
     parser.add_argument( '--version',        action="version", version=eco_tools_version )
 
@@ -133,14 +146,14 @@ def main(argv=None):
         in_file.close()
 
     if options.dep:
-        buildDependencies( options.dep, verbose=options.verbose )
+        result = buildDependencies( options.dep, verbose=options.verbose )
+        if result != 0:
+            return  
     elif len( options.packages ) == 0:
         print 'Error: No module/release packages specified!'
-        return -1
+        return  
 
-    build_modules( options )
-
-    return 0
+    return build_modules( options )
 
 if __name__ == '__main__':
     status = main()

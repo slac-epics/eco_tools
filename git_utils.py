@@ -11,6 +11,10 @@ from version_utils import *
 
 import gc
 
+'''TODO: Fix error msg on svn epics-release:
+fatal: Not a git repository (or any parent up to mount point /reg/g/pcds)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).'''
+
 LCLS_TOOLS			= '/afs/slac/g/lcls/tools'
 if 'TOOLS' in os.environ:
     TOOLS_SITE_TOP	= os.environ['TOOLS']
