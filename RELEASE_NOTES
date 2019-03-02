@@ -1,3 +1,7 @@
+R2.15	2019-03-01 Bruce Hill
+	Added epics-build --rmBuild option and make launch scripts exit w/ non-zero status on failures.
+	Needed for EPICS jenkins build server use cases.
+
 R2.14	2018-12-19 Bruce Hill
     Fixed another python2 vs python3 issue w/ epics-update
 
