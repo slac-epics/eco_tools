@@ -58,6 +58,9 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
         if match:
             macroName  = match.group(1)
             oldVersion = match.group(2)
+            if macroName + "_MODULE_VERSION" in newMacroVersions:
+                # newMacroVersions contains full XXX_MODULE_VERSION patterns
+                macroName = macroName + "_MODULE_VERSION"
             if macroName in newMacroVersions:
                 newVersion = newMacroVersions[macroName]
                 if newVersion != oldVersion:
@@ -277,6 +280,48 @@ def update_pkg_dependency( topDir, pkgSpecs, debug=False, verbose=False ):
             count += update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose )
     return count
 
+def update_stable( topDir='.', debug=False ):
+    curDep = getEpicsPkgDependents( topDir, debug=debug )
+    if 'base' not in curDep:
+        print "Error: unable to determine base version"
+        return 0
+    epicsSiteTop = determine_epics_site_top()
+    modulesStableVersionPath = os.path.join( epicsSiteTop, curDep['base'], 'modules', 'MODULES_STABLE_VERSION' )
+    if not os.path.isfile( modulesStableVersionPath ):
+        print "Error: unable to find %s" % modulesStableVersionPath 
+        return 0
+
+    macroDict = {}
+    stableVersions = getMacrosFromFile( modulesStableVersionPath, macroDict, debug=debug )
+
+# TODO: Check for conflicts vs MODULE_STABLE_VERSION
+#	updateVersions = {}
+#	for dep in curDep:
+#		if dep == 'base':
+#			continue
+#		if dep in stableVersions:
+#			stableVerPath = os.path.join( epicsSiteTop, curDep['base'], 'modules', dep, stableVersions[dep] )
+#			stableVerDep  = getEpicsPkgDependents( stableVerPath, debug=debug )
+#			for sDep in stableVerDep:
+#				if sDep in stableVersions and stableVerDep[sDep] != stableVersions[sDep]:
+#					print "Error: %s depends on %s, but MODULES_STABLE_VERSION has %s" % ( dep, sDep, stableVersions[sDep] )
+#					return -1
+#				updateVersions[sDep] = stableVerDep[sDep]
+#			updateVersions[dep] = stableVersions[dep]
+#	for dep in updateVersions:
+#		print "Need to update %s to %s" % ( dep, updateVersions[dep] )
+    
+    count = 0
+
+    for fileName in [	os.path.join( "configure", "RELEASE" ),
+                        os.path.join( "configure", "RELEASE.local" ) ]:
+        filePath = os.path.join( topDir, fileName )
+        if os.access( filePath, os.R_OK ):
+            oldMacroVersions = getMacrosFromFile( filePath, {}, debug=debug )
+            count += update_pkg_dep_file( filePath, oldMacroVersions, stableVersions, verbose=debug )
+
+    return count
+
 def process_options(argv):
     if argv is None:
         argv = sys.argv[1:]
@@ -290,6 +335,7 @@ def process_options(argv):
                         help='EPICS module-name/release-version. Ex: asyn/R4.30-1.0.1', default=[] )
     parser.add_argument( '-f', '--input_file_path', action='store', help='Read list of module releases from this file' )
     parser.add_argument( '-r', '--RELEASE_SITE', action='store_true',  help='Update RELEASE_SITE' )
+    parser.add_argument( '-s', '--stable',   action='store_true', help='Update module dependencies to latest stable versions.' )
     parser.add_argument( '-t', '--top',      action='store',  default='.', help='Top of release area.' )
     parser.add_argument( '-v', '--verbose',  action="store_true", help='show more verbose output.' )
     parser.add_argument( '--version',  		 action="version", version=eco_tools_version )
@@ -335,6 +381,9 @@ def main(argv=None):
         export_release_site_file( inputs, debug=options.verbose )
         os.chdir( curDir )
         count += 1
+
+    if options.stable:
+        count += update_stable( debug=options.verbose )
 
     if len( options.packages ) > 0:
         count += update_pkg_dependency( options.top, options.packages, verbose=options.verbose )
