@@ -47,7 +47,7 @@ def VersionToRelNumber( version, debug=False ):
             m = numberRegExp.search( n )
             if m and m.group(1):
                 relNumber += float(m.group(1)) / scale
-            scale *= 100.0
+                scale *= 100.0
     except:
         pass
     if debug:
