@@ -5,8 +5,8 @@
 # For gitRecommitBranch.py and other migration tools, use add-to-env.sh
 # instead of this script.
 #
-if [ ! -z "`echo $0 | fgrep get_eco_common_env.sh`" ]; then
-	echo "Usage: source path/to/eco_tools/get_eco_common_env.sh"
+if [ ! -z "`echo $0 | fgrep setup_eco_env.sh`" ]; then
+	echo "Usage: source path/to/eco_tools/setup_eco_env.sh"
 	exit 1
 fi
 
