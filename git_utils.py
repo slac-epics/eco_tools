@@ -230,7 +230,7 @@ def initBareRepo( gitRepoPath, verbose=False ):
     ( parentFolder, module )  = os.path.split( gitRepoPath )
     if not os.path.isdir( parentFolder ):
         if verbose: print "Pre-creating parent folder for " + gitRepoPath
-        os.mkdir( parentFolder )
+        os.makedirs( parentFolder, 0775 )
 
     if verbose: print "Creating a new bare repo in " + gitRepoPath
     subprocess.check_call(["git", "init", "--bare", "--template=%s/templates" % DEF_GIT_MODULES_PATH, gitRepoPath])

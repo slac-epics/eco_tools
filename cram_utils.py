@@ -15,7 +15,7 @@ def createCramPackageInfo(packageName, apptype):
     packageInfo['type'] = apptype
 
     if not os.path.exists('.cram'):
-        os.makedirs('.cram')
+        os.makedirs('.cram', 0775 )
     packageInfofile = os.path.join('.cram', 'packageinfo')
     with open(packageInfofile, 'w') as pkginfof:
         json.dump(packageInfo, pkginfof)

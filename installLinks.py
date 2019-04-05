@@ -66,7 +66,7 @@ def make_links( buildTop, installTop, subdir, arch=None, force=False, is_site_pa
 
         # Make sure the sub-directory path exists
         if not os.path.isdir( os.path.join( installTop, subdir ) ):
-            os.makedirs( os.path.join( installTop, subdir ) )
+            os.makedirs( os.path.join( installTop, subdir ), 0775 )
 
         # Create symlink filename
         if ( subdir == 'bin' or subdir == 'lib' ) and arch is not None:
