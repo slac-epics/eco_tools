@@ -47,28 +47,36 @@ class ValidateError( Exception ):
 class InstallError( Exception ):
     pass
 
-def find_release( packageSpec, verbose=False ):
+def find_release( packageSpec, repo_url=None, verbose=False ):
     '''packageSpec should be packageName/Version.  Ex: ADCore/R2.6-0.1.0
        packageSpec can include one or two parent directories to help specify the package,
        of which the last component is the packageName.
-       Ex. ioc/amo/gigECam, extensions/caqtdm'''
+       Ex. ioc/amo/gigECam/R3.1.1, extensions/caqtdm/R0.5'''
     release = None
     repo = None
     if verbose:
-        print "find_release( packageSpec=%s" % ( packageSpec )
+        print "find_release packageSpec=%s" % ( packageSpec )
     ( packagePath, packageVersion ) = os.path.split( packageSpec )
     packageName = os.path.split(packagePath)[1]
-    (git_url, git_tag) = gitFindPackageRelease( packagePath, packageVersion, debug=False, verbose=verbose )
-    if git_url is not None:
-        repo = gitRepo.gitRepo( git_url, None, packageName, git_tag )
-        release = Releaser( repo, packagePath, None, git_tag, verbose=verbose )
-    if release is None:
-        (svn_url, svn_branch, svn_tag) = svnFindPackageRelease( packagePath, packageVersion, debug=False, verbose=verbose )
-        if svn_url is not None:
-            if verbose:
-                print "find_release: Found svn_url=%s, svn_path=%s, svn_tag=%s" % ( svn_url, svn_branch, svn_tag )
-            repo = svnRepo.svnRepo( svn_url, svn_branch, packageName, svn_tag )
-            release = Releaser( repo, packagePath, verbose=verbose )
+    if repo_url is not None:
+        if repo_url.endswith( '.git' ):
+            repo = gitRepo.gitRepo( repo_url, None, packageName, packageVersion )
+            release = Releaser( repo, packagePath, None, packageVersion, verbose=verbose )
+        elif repo_url.find( 'svn' ) >= 0:
+            repo = svnRepo.svnRepo( repo_url, repo_url, packageName, packageVersion )
+            release = Releaser( repo, packagePath, None, packageVersion, verbose=verbose )
+    else:
+        (git_url, git_tag) = gitFindPackageRelease( packagePath, packageVersion, debug=False, verbose=verbose )
+        if git_url is not None:
+            repo = gitRepo.gitRepo( git_url, None, packageName, git_tag )
+            release = Releaser( repo, packagePath, None, git_tag, verbose=verbose )
+        if release is None:
+            (svn_url, svn_branch, svn_tag) = svnFindPackageRelease( packagePath, packageVersion, debug=False, verbose=verbose )
+            if svn_url is not None:
+                if verbose:
+                    print "find_release: Found svn_url=%s, svn_path=%s, svn_tag=%s" % ( svn_url, svn_branch, svn_tag )
+                repo = svnRepo.svnRepo( svn_url, svn_branch, packageName, svn_tag )
+                release = Releaser( repo, packagePath, verbose=verbose )
     if verbose:
         if repo is not None:
             repo.ShowRepo( titleLine="find_release found: " + packageSpec, prefix=" " )

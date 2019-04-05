@@ -295,8 +295,7 @@ try:
                 packageSpec = os.path.join( packageSpec, opt.release )
         if opt.verbose:
             print "epics-release main: packageSpec=%s, args=%s" % ( packageSpec, args )
-        # TODO: Why aren't we passing the repo URL to find_release()?
-        release = find_release( packageSpec, opt.verbose )
+        release = find_release( packageSpec, repo_url=repo.GetUrl(), verbose=opt.verbose )
         if release:
             repo = release._repo
             packageName = release._packageName
