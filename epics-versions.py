@@ -56,7 +56,7 @@ from eco_version import eco_tools_version
 #           SNMP_MODULE_VERSION             = R1.1.0-1.5.0
 #
 #
-# Copyright 2011,2012,2016,2017 Stanford University
+# Copyright 2011,2012,2016,2017,2018,2019 Stanford University
 # Photon Controls and Data Systems
 # Author: Bruce Hill <bhill@slac.stanford.edu>
 #

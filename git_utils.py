@@ -345,9 +345,14 @@ def gitGetWorkingBranch( debug = False, verbose = False ):
             if line is None:
                 break
             tokens = line.split()
-            if tokens[0] == 'origin':
+            if tokens[0] == 'origin':			# Use remote 'origin' if found
                 repo_url = tokens[1]
                 break
+            if tokens[0].find('origin') >= 0:	# Backup is last remote containing 'origin'
+                repo_url = tokens[1]
+            if repo_url is None:				# If all else fails just use first remote
+                repo_url = tokens[1]
+
         if repo_url:
             # Remove any trailing path separator
             ( repoPath, repoPkg ) = os.path.split( repo_url )

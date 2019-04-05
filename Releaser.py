@@ -375,7 +375,7 @@ class Releaser(object):
             sys.stderr.flush()
             if		os.path.isfile( os.path.join( buildDir, 'makefile' )) \
                 or	os.path.isfile( os.path.join( buildDir, 'Makefile' )) \
-                or	buildDir.find( 'modules' ):
+                or	buildDir.find( 'modules' ) >= 0:
                 buildOutput = self.execute( "make -C %s" % buildDir, outputPipe )
 
             # Build succeeded!   Update the built_cookie

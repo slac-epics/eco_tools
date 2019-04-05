@@ -241,9 +241,12 @@ try:
             ( urlPath, packageGitDir ) = os.path.split( urlPath )
 
         # Find the packageName
-        packageMatch = re.match( r"(\S+).git", packageGitDir )
-        if packageMatch:
-            packageName = packageMatch.group(1)
+        if packageGitDir == '.git':
+            ( urlPath, packageName ) = os.path.split( urlPath )
+        else:
+            packageMatch = re.match( r"(\S+).git", packageGitDir )
+            if packageMatch:
+                packageName = packageMatch.group(1)
 
         # Find the packagePath
         ( packageHead, packageTail ) = os.path.split( urlPath )
@@ -260,7 +263,7 @@ try:
             ( packageHead, packageTail ) = os.path.split( packageHead )
             packagePath = os.path.join( packageTail, packagePath )
 
-        # Create a gitRepo for this url
+        # Create a gitRepo object for this url
         repo = gitRepo.gitRepo( git_url, git_branch, packageName, opt.release )
         if git_tag == opt.release:
             opt.noTag = True
@@ -288,9 +291,11 @@ try:
         packageSpec = args[0]
         packagePath = packageSpec
         if opt.release:
-            packageSpec = os.path.join( packageSpec, opt.release )
+            if os.path.split(packageSpec)[1] != opt.release:
+                packageSpec = os.path.join( packageSpec, opt.release )
         if opt.verbose:
             print "epics-release main: packageSpec=%s, args=%s" % ( packageSpec, args )
+        # TODO: Why aren't we passing the repo URL to find_release()?
         release = find_release( packageSpec, opt.verbose )
         if release:
             repo = release._repo
