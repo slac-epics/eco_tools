@@ -33,7 +33,7 @@ def makeDirsWritable( dirPathTop ):
         # Make it writable.
         try:
             os.chmod( dirPath, pathStatus.st_mode | (stat.S_IWUSR | stat.S_IWGRP) )
-        except e, OSError:
+        except OSError, e:
             print "Error: Unable to make %s writable!" % buildDir
             print e.strerror
             raise
@@ -117,8 +117,8 @@ class Releaser(object):
         if  self._EpicsHostArch is None:
             self._EpicsHostArch = 'unknown-host-arch'
         self._retcode	= 0
-        # Create a directory where files will be checked-out
-        self._tmpDir	= tempfile.mktemp("-epics-release")
+        # Create a directory where files will be checked-out (mktemp() is deprecated)
+        self._tmpDir	= tempfile.NamedTemporaryFile( suffix="-epics-release", delete=False )
         self._grpOwner	= None
 
     def __str__( self ):
