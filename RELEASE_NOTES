@@ -1,3 +1,6 @@
+R2.17	2019-04-11 Bruce Hill
+	Fix bad arg to find_release() and replaced deprecated mktemp()
+
 R2.16	2019-04-04 Bruce Hill
 	Added support for epics-update --stable
 	Fixes some package and repo handling for building and releasing IOC's.
