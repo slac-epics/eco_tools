@@ -118,7 +118,7 @@ class Releaser(object):
             self._EpicsHostArch = 'unknown-host-arch'
         self._retcode	= 0
         # Create a directory where files will be checked-out (mktemp() is deprecated)
-        self._tmpDir	= tempfile.NamedTemporaryFile( suffix="-epics-release", delete=False )
+        self._tmpDir	= tempfile.mkdtemp( suffix="-epics-release" )
         self._grpOwner	= None
 
     def __str__( self ):
@@ -136,7 +136,7 @@ class Releaser(object):
         strRep += "%s ReleasePath:  %s\n" % ( self.__class__.__name__, self._ReleasePath   if self._ReleasePath else 'None' )
         strRep += "%s installDir:   %s\n" % ( self.__class__.__name__, self._installDir    if self._installDir else 'None' )
         strRep += "%s EpicsHostArch:%s\n" % ( self.__class__.__name__, self._EpicsHostArch if self._EpicsHostArch else 'None' )
-        strRep += "%s tmpDir:       %s\n" % ( self.__class__.__name__, self._tmpDir    	if self._tmpDir else 'None' )
+        strRep += "%s tmpDir:       %s\n" % ( self.__class__.__name__, self._tmpDir		if self._tmpDir else 'None' )
         strRep += "%s grpOwner:     %s\n" % ( self.__class__.__name__, self._grpOwner   if self._grpOwner else 'None' )
         return strRep
 
