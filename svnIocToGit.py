@@ -86,7 +86,7 @@ if __name__ == '__main__':
 The trunk and one tags branch are derived from the IOC name.
 Additional paths for both branches and tags may be added if desired either way.
 ''')
-    parser.add_argument( '-i', '--iocSpec',  action='store',  help='svn ioc specification to import. (trunk is $CTRL_REPO/trunk/pcds/epics/ioc/IOC_SPEC/current)' )
+    parser.add_argument( '-i', '--iocSpec',  action='store',  help='svn ioc specification to import. (trunk is $CTRL_REPO/trunk/pcds/epics/IOC_SPEC/current)  Example: svnIocToGit -i ioc/common/gigECam' )
     parser.add_argument( '-T', '--trunk',    action='store',  help='svn trunk path  to import. (relative to env CTRL_REPO)', default=None )
     parser.add_argument( '-b', '--branches', action='append', help='svn branch(es)  to import. (relative to env CTRL_REPO)', default=[] )
     parser.add_argument( '-t', '--tags',     action='append', help='svn tag paths   to import. (relative to env CTRL_REPO)', default=[] )
