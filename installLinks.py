@@ -155,7 +155,41 @@ def main():
     #
     # Parse the arguments.
     #
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser( formatter_class=argparse.RawDescriptionHelpFormatter, description='''
+Must have --buildTop arg as a src
+Optional: --installTop to specify destination TOP or defaults to current dir
+
+Directories are created to match each BUILD_TOP subdir,
+where subir is one of: bin doc documentation helpFiles html javalib jca lib share include
+
+Example:
+mkdir $INSTALL_TOP/bin       if $BUILD_TOP/bin      exists
+mkdir $INSTALL_TOP/bin/dir1  if $BUILD_TOP/bin/dir1 exists
+...
+Soft links are created recursively for each file under BUILD_TOP
+$INSTALL_TOP/bin/file1 -> $BUILD_TOP/bin/file1
+$INSTALL_TOP/bin/file2 -> $BUILD_TOP/bin/file2
+...
+$INSTALL_TOP/lib/file1 -> $BUILD_TOP/lib/file1
+...
+
+For linux package to EPICS package, use --arch
+installLinks.py --buildTop $PROCSERV_TOP --installTop $EXTENSION_TOP --arch linux-x86
+$EXTENSION_TOP/bin/linux-x86/file1 -> $PROCSERV_TOP/bin/file1
+$EXTENSION_TOP/bin/linux-x86/file2 -> $PROCSERV_TOP/bin/file2
+...
+$EXTENSION_TOP/lib/linux-x86/file2 -> $PROCSERV_TOP/lib/file2
+...
+
+For EPICS builds to EPICS installations, --arch is not used as all built architectures will be linked
+installLinks.py --buildTop $GATEWAY_TOP --installTop $EXTENSION_TOP
+$EXTENSION_TOP/bin/linux-x86/file1    -> $GATEWAY_TOP/bin/linux-x86/file1
+$EXTENSION_TOP/bin/linux-x86/file2    -> $GATEWAY_TOP/bin/linux-x86/file2
+...
+$EXTENSION_TOP/bin/linux-x86_64/file1 -> $GATEWAY_TOP/bin/linux-x86_64/file1
+$EXTENSION_TOP/bin/linux-x86_64/file2 -> $GATEWAY_TOP/bin/linux-x86_64/file2
+...
+''')
     parser.add_argument( '-i', '--installTop', default='.', help='Install top.  Soft links created to make buildTop files accessible via paths w/ installTop.  Defaults to current dir.' )
     parser.add_argument( '-f', '--file',   help='Read release macros from a file.' )
     parser.add_argument( '-b', '--buildTop',   help='Build top.  Soft links created to bin executables, libs, etc under build top.' )
