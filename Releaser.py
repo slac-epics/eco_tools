@@ -20,15 +20,13 @@ def makeDirsWritable( dirPathTop ):
     userId  = os.geteuid()
     for dirPath, dirs, files in os.walk(dirPathTop):
         dirName = os.path.split( dirPath )[-1]
-        if dirName == 'edl' or dirName.endswith( 'Screens' ):
-            continue	# Leave edl directories read-only to avoid inadvertant edm save ops
         pathStatus = os.stat( dirPath )
         if pathStatus.st_mode & stat.S_IWGRP:
             continue
         # See if user owns the directory
         if userId != pathStatus.st_uid:
             print "Error: %s does not own %s and cannot make it writable!"
-            return
+            return 1
         
         # Make it writable.
         try:
@@ -37,6 +35,7 @@ def makeDirsWritable( dirPathTop ):
             print "Error: Unable to make %s writable!" % buildDir
             print e.strerror
             raise
+    return 0
 
 class BuildError( Exception ):
     pass
@@ -205,9 +204,11 @@ class Releaser(object):
             pass
 
         if not buildRemoved:
-            makeDirsWritable( buildDir )
-            shutil.rmtree( buildDir )
-        print "Successfully removed build dir: %s ..." % ( buildDir )
+            if makeDirsWritable( buildDir ) == 0:
+                shutil.rmtree( buildDir )
+                buildRemoved = True
+        if buildRemoved:
+            print "Successfully removed build dir: %s ..." % ( buildDir )
 
     # TODO: Move this to a standalone function usable
     # by any class
@@ -230,29 +231,28 @@ class Releaser(object):
         dirModeAllow = stat.S_IWUSR | stat.S_IWGRP | \
                        stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH	| \
                        stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
-        # Deny write access to files
-        fileModeDeny = stat.S_IWUSR | stat.S_IWGRP
+        modeUserGroupWrite = stat.S_IWUSR | stat.S_IWGRP
         for dirPath, dirs, files in os.walk(dir):
             pathStatus = os.stat( dirPath )
             dirName = os.path.split( dirPath )[-1]
-            if dirName == '.git' or dirName == '.svn' or dirName == 'CVS':
-                continue
             if userId == pathStatus.st_uid:
+                isRepoPath = '.git' in dirPath or '.svn' in dirPath or 'CVS' in dirPath
                 if dirName == 'edl' or dirName.endswith( 'Screens' ):
                     # Leave edl directories read-only to avoid edm replacing release screens
-                    os.chmod( dirPath, pathStatus.st_mode )
+                    os.chmod( dirPath, pathStatus.st_mode & ~modeUserGroupWrite )
                 else:
                     os.chmod( dirPath, pathStatus.st_mode | dirModeAllow )
                 if groupId >= 0 and groupId != pathStatus.st_gid:
                     os.chown( dirPath, -1, groupId )
-            for fileName in files:
-                filePath   = os.path.join( dirPath, fileName )
-                pathStatus = os.lstat( filePath )
-                if userId == pathStatus.st_uid:
+                for fileName in files:
+                    filePath   = os.path.join( dirPath, fileName )
+                    pathStatus = os.lstat( filePath )
                     if os.path.islink(filePath) and hasattr(os, 'lchmod' ):
-                        os.lchmod( filePath, pathStatus.st_mode & ~fileModeDeny )
+                        os.lchmod( filePath, pathStatus.st_mode & ~modeUserGroupWrite )
+                    elif isRepoPath:
+                        os.chmod( filePath, pathStatus.st_mode | modeUserGroupWrite )
                     else:
-                        os.chmod( filePath, pathStatus.st_mode & ~fileModeDeny )
+                        os.chmod( filePath, pathStatus.st_mode & ~modeUserGroupWrite )
                     if groupId >= 0 and groupId != pathStatus.st_gid:
                         os.lchown( filePath, -1, groupId )
 
@@ -383,7 +383,7 @@ class Releaser(object):
             sys.stderr.flush()
             if		os.path.isfile( os.path.join( buildDir, 'makefile' )) \
                 or	os.path.isfile( os.path.join( buildDir, 'Makefile' )) \
-                or	buildDir.find( 'modules' ) >= 0:
+                or	'modules' in buildDir:
                 buildOutput = self.execute( "make -C %s" % buildDir, outputPipe )
 
             # Build succeeded!   Update the built_cookie
