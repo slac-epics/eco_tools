@@ -19,19 +19,20 @@ svnRepoRoot         = os.environ[svnRepoEnvVar]
 
 def importIOC( iocSpec, name=None, trunk=None, branches=[], tags=[], verbose=False ):
     if  trunk is None: 
-        trunk = os.path.join( svnRepoRoot, svnRepoTrunkPath, iocSpec, "current" )
+        trunk = os.path.join( svnRepoTrunkPath, iocSpec, "current" )
     print "Importing svn IOC %s from %s" % ( iocSpec, trunk )
-    svn_tags  = [ os.path.join( svnRepoRoot, svnRepoTagsPath, iocSpec ) ]
+    svn_tags  = [ os.path.join( svnRepoTagsPath, iocSpec ) ]
     svn_tags += tags
     if name is None:
         name = iocSpec
-    importTrunk( trunk, name, branches=branches, tags=svn_tags, verbose=verbose )
+    importTrunk( trunk, name, gitEpicsRoot, branches=branches, tags=svn_tags, verbose=verbose )
 
-def importTrunk( trunk, name, branches=[], tags=[], verbose=False ):
+ # TODO: In both svnIocToGit.py and svnModuleToGit.py.  Move to git_utils.py
+def importTrunk( trunk, name, gitRoot, branches=[], tags=[], verbose=False ):
     # Create a tmp folder to work in
     tpath = tempfile.mkdtemp()
     tmpGitRepoPath = os.path.join( tpath, name )
-    svnGitRepoPath = os.path.join( gitEpicsRoot, name + '.git' )
+    svnGitRepoPath = os.path.join( gitRoot, name + '.git' )
     if os.path.isdir( svnGitRepoPath ):
         print "svn import of repo already exists:", svnGitRepoPath
         return
@@ -46,7 +47,7 @@ def importTrunk( trunk, name, branches=[], tags=[], verbose=False ):
     for t in tags:
         git_cmd.extend( [ "--tags", t ] )
 
-    print "Import svn trunk %s to %s:" % ( trunk, svnGitRepoPath )
+    print "Import svn trunk %s\n   to %s:" % ( trunk, svnGitRepoPath )
     git_cmd.extend( [ svnRepoRoot, tmpGitRepoPath ] )
 
     if verbose:
@@ -86,7 +87,7 @@ if __name__ == '__main__':
 The trunk and one tags branch are derived from the IOC name.
 Additional paths for both branches and tags may be added if desired either way.
 ''')
-    parser.add_argument( '-i', '--iocSpec',  action='store',  help='svn ioc specification to import. (trunk is $CTRL_REPO/trunk/pcds/epics/IOC_SPEC/current)  Example: svnIocToGit -i ioc/common/gigECam' )
+    parser.add_argument( '-i', '--iocSpec',  action='store',  help='svn ioc specification to import. (trunk from epics/trunk/IOC_SPEC/current, tags from epics/tags/IOC_SPEC)  Example: svnIocToGit -i ioc/common/gigECam' )
     parser.add_argument( '-T', '--trunk',    action='store',  help='svn trunk path  to import. (relative to env CTRL_REPO)', default=None )
     parser.add_argument( '-b', '--branches', action='append', help='svn branch(es)  to import. (relative to env CTRL_REPO)', default=[] )
     parser.add_argument( '-t', '--tags',     action='append', help='svn tag paths   to import. (relative to env CTRL_REPO)', default=[] )

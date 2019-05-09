@@ -20,19 +20,20 @@ svnRepoRoot         = os.environ[svnRepoEnvVar]
 
 def importModule( module, name=None, trunk=None, branches=[], tags=[], verbose=False ):
     if  trunk is None: 
-        trunk = os.path.join( svnRepoRoot, svnRepoTrunkPath, module, "current" )
+        trunk = os.path.join( svnRepoTrunkPath, module, "current" )
     print "Importing svn module %s from %s" % ( module, trunk )
     svn_tags  = [ os.path.join( svnRepoTagsPath, module ) ]
     svn_tags += tags
     if name is None:
         name = module
-    importTrunk( trunk, name, branches=branches, tags=svn_tags )
+    importTrunk( trunk, name, moduleDestDir, branches=branches, tags=svn_tags, verbose=verbose )
 
-def importTrunk( trunk, name, branches=[], tags=[], verbose=False ):
+ # TODO: In both svnIocToGit.py and svnModuleToGit.py.  Move to git_utils.py
+def importTrunk( trunk, name, gitRoot, branches=[], tags=[], verbose=False ):
     # Create a tmp folder to work in
     tpath = tempfile.mkdtemp()
     tmpGitRepoPath = os.path.join( tpath, name )
-    svnGitRepoPath = os.path.join( moduleDestDir, name + '.git' )
+    svnGitRepoPath = os.path.join( gitRoot, name + '.git' )
     if os.path.isdir( svnGitRepoPath ):
         print "svn import of repo already exists:", svnGitRepoPath
         return
@@ -47,13 +48,18 @@ def importTrunk( trunk, name, branches=[], tags=[], verbose=False ):
     for t in tags:
         git_cmd.extend( [ "--tags", t ] )
 
+    print "Import svn trunk %s\n   to %s:" % ( trunk, svnGitRepoPath )
     git_cmd.extend( [ svnRepoRoot, tmpGitRepoPath ] )
 
     if verbose:
-        print "Running cmd:",
+        print "git cmd:",
         for arg in git_cmd:
             print arg,
         print
+
+    confirmResp = raw_input( 'Proceed (Y/n)?' )
+    if len(confirmResp) != 0 and confirmResp != "Y" and confirmResp != "y":
+        return
 
     # Run git svn clone
     subprocess.check_call( git_cmd )
@@ -83,7 +89,7 @@ If you specify a module, the trunk and one tags branch are derived from the modu
 If you do NOT specify a module, you must specify a package name and either a single trunk path, or at least one branch to import.
 Additional paths for both branches and tags may be added if desired either way.
 ''')
-    parser.add_argument( '-m', '--module',   action='store',  help='svn module name to import. (trunk is $CTRL_REPO/trunk/pcds/epics/modules/MODULE_NAME/current)' )
+    parser.add_argument( '-m', '--module',   action='store',  help='svn module name to import. (trunk from trunk/pcds/epics/modules/MODULE_NAME/current, tags from epics/tags/modules/MODULE_NAME)' )
     parser.add_argument( '-T', '--trunk',    action='store',  help='svn trunk path  to import. (relative to env CTRL_REPO)', default=None )
     parser.add_argument( '-b', '--branches', action='append', help='svn branch(es)  to import. (relative to env CTRL_REPO)', default=[] )
     parser.add_argument( '-t', '--tags',     action='append', help='svn tag paths   to import. (relative to env CTRL_REPO)', default=[] )
@@ -101,7 +107,7 @@ Additional paths for both branches and tags may be added if desired either way.
                       tags=args.tags, verbose=args.verbose )
     elif args.trunk is not None or len(args.branches) > 0:
         if not args.name:
-            print 'Please provide a name for git repo'    
+            print 'Please provide a name for git repo'
             sys.exit()
         if  args.trunk is None:
             args.trunk = args.branches[0]

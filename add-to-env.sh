@@ -32,7 +32,7 @@ fi
 # for a python installation supporting python/2.7.5, GitPython/2.0.8,
 # gitdb/0.6.4, and cvs2svn/2.4.0 along w/ ipython 
 export PSPKG_RELEASE=git-utils-0.3.0
-source $PSPKG_ROOT/etc/add_env_pkg.sh
+source $PSPKG_ROOT/etc/add_env_pkg.sh $PSPKG_RELEASE
 
 # Make sure we have a pathmunge function defined
 if [ -z "`declare -f pathmunge`" ]; then
