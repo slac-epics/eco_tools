@@ -1,7 +1,13 @@
+R2.19	2019-05-08 Bruce Hill
+	Made git svn clone cmd compatible w/ newer git versions
+	Leave git repo writable in releases.
+	Added confirmation prompt in svnModuleToGit before running git svn clone.
+	Revert accidental replacement of svnModuleToGit.py w/ a bash script.
+
 R2.18	2019-04-24 Bruce Hill
 	Added svnIocToGit script and launchers.
-	Added confirmation prompt in svnModuleToGit before running git svn clone.
 	Use tempfile.mkdtemp instead of NamedTemporaryFile to create temp directories.
+	Accidentally replaced svnModuleToGit.py w/ a bash script.
 
 R2.17	2019-04-11 Bruce Hill
 	Fix bad arg to find_release() and replaced deprecated mktemp()
