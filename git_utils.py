@@ -7,6 +7,7 @@ import fileinput
 import subprocess
 import sys
 from repo_defaults import *
+from svn_utils import *
 from version_utils import *
 
 import gc

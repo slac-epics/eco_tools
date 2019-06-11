@@ -49,7 +49,6 @@ import optparse
 import readline
 import shutil
 import tempfile
-import json
 import re
 
 from cram_utils import *

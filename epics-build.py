@@ -25,7 +25,6 @@ import readline
 import shutil
 import tempfile
 import textwrap
-import json
 import Repo
 import gitRepo
 import svnRepo
