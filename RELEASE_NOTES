@@ -1,3 +1,7 @@
+R2.20	2019-06-12 Bruce Hill
+	Improved epics-release cmd line validation error handling.
+	Cleanup imports
+
 R2.19	2019-05-08 Bruce Hill
 	Made git svn clone cmd compatible w/ newer git versions
 	Leave git repo writable in releases.
