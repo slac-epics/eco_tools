@@ -99,6 +99,8 @@ class Releaser(object):
         self._packagePath= packagePath
         if self._packagePath:
             self._packageName = os.path.split( self._packagePath )[1]
+        else:
+            self._packageName = None
         self._version	= ""
         self._dryRun	= dryRun
         self._batch		= batch

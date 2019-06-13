@@ -220,6 +220,10 @@ try:
 
     # Parse the command line arguments
     ( opt, args ) = parser.parse_args()
+
+    if not opt.release:
+        raise ValidateError, ( "Release tag not specified!" )
+
     if opt.verbose:
         print "epics-release main: opt.message=%s, args=%s" % ( opt.message, args )
 
@@ -297,6 +301,8 @@ try:
             print "epics-release main: packageSpec=%s, args=%s" % ( packageSpec, args )
         release = find_release( packageSpec, repo_url=repo.GetUrl(), verbose=opt.verbose )
         if release:
+            if not release._packageName:
+                raise ValidateError, ( "Invalid package specified: %s" % packageSpec )
             repo = release._repo
             packageName = release._packageName
 
