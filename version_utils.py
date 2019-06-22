@@ -4,6 +4,7 @@ import os
 import re
 import sys
 import glob
+#import pprint
 import subprocess
 from pkgNamesToMacroNames import *
 #
@@ -20,7 +21,7 @@ from pkgNamesToMacroNames import *
 
 # Pre-compile regular expressions for speed
 numberRegExp        = re.compile( r"(\d+)" )
-releaseRegExp       = re.compile( r"(|[a-zA-Z0-9_-]*-)R(\d+)[-_.](\d+)(.*)" )
+releaseRegExp       = re.compile( r"(|[a-zA-Z0-9_-]*[-_])R(\d+)[-_.](\d+)(.*)" )
 macroNameRegExp     = re.compile( r"^\s*([a-zA-Z0-9_]*)\s*=\s*(\S*)\s*$" )
 condMacroRegExp     = re.compile( r"^(#*)\s*([a-zA-Z0-9_]+)\s*=\s*(\S*)\s*$" )
 macroRefRegExp      = re.compile( r"^(.*)\$\(([a-zA-Z0-9_]+)\)(.*)$" )
@@ -315,3 +316,92 @@ def doesPkgNeedMacro( macroName ):
     if needsMacro and definesMacro:
         needsMacro = False
     return needsMacro
+
+def ExpandPackagePath( topDir, pkgSpec, base=None, debug=False ):
+    '''Takes a topDir directory path and looks for packages
+    which match the pkgSpec.'''
+    # See if "modules" is in both parts of the path
+    if "modules" in topDir and "modules" in pkgSpec:
+        topDir = os.path.dirname( topDir )
+
+    # Create the path to package
+    pkgPath = os.path.join( topDir, pkgSpec )
+
+    if not os.path.isdir( pkgPath ) and base:
+        if not base in topDir:
+            topDir = os.path.join( topDir, base )
+        if not "modules" in topDir and not "modules" in pkgSpec:
+            topDir = os.path.join( topDir, "modules" )
+        modPath = os.path.join( topDir, pkgSpec )
+        if os.path.isdir( modPath ):
+            pkgPath = modPath
+
+    # See if it exists
+    if not os.path.isdir( pkgPath ):
+        if debug:
+            print("ExpandPackagePath: %s not found" % ( pkgPath ))
+        return []
+
+    # See if this is a screens release
+    screenArg   = False
+    if "screens" in pkgPath:
+        screenArg   = True
+
+    if debug:
+        print("ExpandPackagePath: Expanding %s ..." % ( pkgPath ))
+
+    selectedReleases = [ ]
+    for dirPath, dirs, files in os.walk( pkgPath, topdown=True ):
+        if len( dirs ) == 0:
+            continue
+        if '.git' in dirs:
+            dirs.remove( '.git' )
+        if '.svn' in dirs:
+            dirs.remove( '.svn' )
+        if 'CVS' in dirs:
+            dirs.remove( 'CVS' )
+
+        # Loop through the directories looking for releases
+        releases = [ ]
+        dirs.sort()
+        for dir in dirs[:]:
+            if dirPath != pkgPath:
+                # Remove from list so we don't search recursively beyond one level
+                dirs.remove( dir )
+            if not isReleaseCandidate(dir):
+                continue
+            release = os.path.join( dirPath, dir )
+            if screenArg:
+                verPath = os.path.join( release, "Makefile" )
+            else:
+                verPath = os.path.join( release, "configure", "RELEASE" )
+
+            buildPath = os.path.join( release, "build" )
+            if os.path.isfile( verPath ) or os.path.isdir( buildPath ):
+                if debug:
+                    print("ExpandPackagePath: Found ", release)
+                releases += [ release ]
+
+        if len( releases ) == 0:
+            continue;
+
+        # Create the release set so we can order the releases by version number
+        releaseSet  = { }
+        for release in releases:
+            ( reldir, ver ) = os.path.split( release )
+            relNumber = VersionToRelNumber( ver )
+            while relNumber in releaseSet:
+                relNumber -= 1e-12
+            releaseSet[ relNumber ] = release
+
+        #if debug:
+        #   print "ExpandPackagePath Module Releases: "
+        #   pp.pprint( releaseSet )
+
+        for release in sorted( list(releaseSet.keys()), reverse = True ):
+            selectedReleases += [ releaseSet[ release ] ]
+
+    if debug:
+        print("ExpandPackagePath Selected Releases: %s" % selectedReleases )
+    return selectedReleases
+
