@@ -90,6 +90,32 @@ def ReportReleases( pkgPath, pkgSpec, releases, opt ):
             priorModule = reportedModule
     return found
 
+def ReportDependents( module, pkgDependents, wide=False, recurse=True ):
+    if "base" in pkgDependents and recurse:
+        epicsModules = os.path.join( determine_epics_site_top(), pkgDependents['base'], "modules" )
+        for depRoot in sorted( pkgDependents.keys() ):
+            depVersion = pkgDependents[ depRoot ]
+            subDeps = getEpicsPkgDependents( os.path.join( epicsModules, depRoot, depVersion ) )
+            for subDep in subDeps:
+                if subDep not in pkgDependents:
+                    pkgDependents[subDep] = subDeps[subDep]
+                elif pkgDependents[subDep] != subDeps[subDep]:
+                    print( "Mismatch: %s depends on %s/%s" % ( module,  subDep, pkgDependents[subDep] ) )
+                    print( "Mismatch: %s depends on %s/%s" % ( depRoot, subDep, subDeps[subDep] ) )
+
+    for depRoot in sorted( pkgDependents.keys() ):
+        if depRoot == "base":
+            continue
+        # Print dependent info w/o newline (trailing ,)
+        depVersion = pkgDependents[ depRoot ]
+        if opt.wide:
+            # Don't print newline in wide mode 
+            print(" %s/%s" % ( depRoot, depVersion ), end=' ')
+        elif '/' in depVersion:
+            print("%20s%18s %s" % ( '', depRoot, depVersion ))
+        else:
+            print("%20s%18s %19s/%s" % ( '', depRoot, depRoot, depVersion ))
+
 def ReportRelease( pkgPath, release, priorModule, opt ):
     ''' Get the module and version from the release string. '''
     cmdList = [ "readlink", "-e", release ]
@@ -117,7 +143,7 @@ def ReportRelease( pkgPath, release, priorModule, opt ):
     # We should always get a base version if there is one
     if 'base' in pkgDependents:
         baseVer = pkgDependents['base']
-        del pkgDependents['base']
+        #del pkgDependents['base']
 
     if module == 'base':
         baseVer = moduleVersion
@@ -149,16 +175,7 @@ def ReportRelease( pkgPath, release, priorModule, opt ):
 
     # Show pkgDependents for --verbose
     if opt.verbose:
-        for depRoot in sorted( pkgDependents.keys() ):
-            # Print dependent info w/o newline (trailing ,)
-            depVersion = pkgDependents[ depRoot ]
-            if opt.wide:
-                # Don't print newline in wide mode 
-                print(" %s/%s" % ( depRoot, depVersion ), end=' ')
-            elif '/' in depVersion:
-                print("%20s%18s %s" % ( '', depRoot, depVersion ))
-            else:
-                print("%20s%18s %19s/%s" % ( '', depRoot, depRoot, depVersion ))
+        ReportDependents( module, pkgDependents, wide=opt.wide )
     if opt.wide:
         print()
 

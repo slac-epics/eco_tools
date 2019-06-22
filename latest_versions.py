@@ -15,8 +15,18 @@ def update_latest( top='.' ):
     epicsModules = os.path.join( epicsSiteTop, pkgDep['base'], 'modules' )
     pkgReleases = {}
     for pkg in pkgDep:
-        pkgReleases[pkg] = getPkgReleaseList( epicsModules, pkg )
-        print "%s releases: " % pkg
+        if pkg == "base":
+            continue
+        l1 = getPkgReleaseList( epicsModules, pkg )
+        l2 = ExpandPackagePath( epicsModules, pkg )
+        if len(l1) != len(l2):
+            print "getPkgReleaseList: %s %d releases: " % ( pkg, len(l1) )
+            print "ExpandPackageList: %s %d releases: " % ( pkg, len(l2) )
+        elif l1 != l2:
+            print "getPkgReleaseList: %s releases: %s" % ( pkg, l1 )
+            print "ExpandPackageList: %s releases: %s" % ( pkg, l2 )
+        pkgReleases[pkg] = l1
+        #print "%s %d releases: " % ( pkg, len(pkgReleases) )
     pprint( pkgReleases )
 
     #latestVersions = getVersionsFromFile( modulesStableVersionPath )
