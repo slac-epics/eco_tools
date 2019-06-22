@@ -18,6 +18,7 @@ from pkgNamesToMacroNames import *
 # Released under the GPLv2 licence <http://www.gnu.org/licenses/gpl-2.0.html>
 #
 
+epics7_submodules = [ "normativeTypesCPP", "pvAccessCPP", "pvDataCPP", "pvDatabaseCPP", "pva2pva", "pvaClient" ]
 
 # Pre-compile regular expressions for speed
 numberRegExp        = re.compile( r"(\d+)" )
@@ -257,6 +258,14 @@ def getEpicsPkgDependents( topDir, debug=False ):
             if debug:
                 print("getEpicsPkgDependents: %s = %s" % ( pkgName, pkgVersion ))
             pkgDependents[ pkgName ] = pkgVersion
+
+    if "base" in pkgDependents:
+        baseVersion = pkgDependents["base"]
+        if VersionToRelNumber(baseVersion) >= 7:
+            # Strip out epics7 submodules
+            for m in epics7_submodules:
+                if m in pkgDependents:
+                    del pkgDependents[m]
 
     return pkgDependents
 
