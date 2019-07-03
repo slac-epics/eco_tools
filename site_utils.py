@@ -149,6 +149,8 @@ def export_release_site_file( inputs, debug=False):
         or doesPkgNeedMacro( 'EPICS_BASE_VER' ):
         print('EPICS_BASE_VER=%s' %inputs['EPICS_BASE_VER'], file=out_file)
     print('PACKAGE_SITE_TOP=%s'  % inputs['PACKAGE_SITE_TOP'], file=out_file)
+    if 'MATLAB_PACKAGE_TOP' in inputs:
+        print('MATLAB_PACKAGE_TOP=%s'        % inputs['MATLAB_PACKAGE_TOP'], file=out_file)
     if 'PSPKG_ROOT' in inputs:
         print('PSPKG_ROOT=%s'        % inputs['PSPKG_ROOT'], file=out_file)
     if 'TOOLS_SITE_TOP' in inputs:
@@ -235,6 +237,20 @@ def assemble_release_site_inputs( batch=False ):
         if user_input:
             input_dict['PACKAGE_SITE_TOP'] = user_input
     print('Using PACKAGE_SITE_TOP: ' + input_dict['PACKAGE_SITE_TOP'])
+
+    matlab_package_top = getEnv('MATLAB_PACKAGE_TOP')
+    if not os.path.isdir( matlab_package_top ):
+        matlab_root = getEnv('MATLAB_ROOT')
+        if os.path.isdir( matlab_root ):
+            matlab_package_top = os.path.split(matlab_root)[0]
+    if not os.path.isdir( matlab_package_top ):
+        matlab_package_top = '/usr/local/matlab'
+    if not os.path.isdir( matlab_package_top ):
+        matlab_package_top = '/reg/common/package/matlab'
+    if not os.path.isdir( matlab_package_top ):
+        matlab_package_top = '/afs/slac.stanford.edu/g/lcls/package/matlab'
+    print('Using MATLAB_PACKAGE_TOP:', matlab_package_top)
+    input_dict['MATLAB_PACKAGE_TOP'] = matlab_package_top
 
     if VersionToRelNumber(input_dict['EPICS_BASE_VER']) >= 3.141205:
         pspkg_root = getEnv('PSPKG_ROOT')
