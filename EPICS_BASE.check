@@ -12,7 +12,7 @@ $(info RELEASE_SITE Found: $$(TOP)/RELEASE_SITE)
 endif
 
 # Bail w/ an error
-$(error EPICS_BASE not defined!)
+$(error EPICS_BASE not defined in RELEASE_SITE file!)
 
 else
 # Check for valid EPICS_BASE

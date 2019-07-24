@@ -23,7 +23,7 @@ $(info RELEASE_SITE Found: $$(TOP)/RELEASE_SITE)
 endif
 
 # Bail w/ an error
-$(error EPICS_MODULES not defined!)
+$(error EPICS_MODULES not defined in RELEASE_SITE file!)
 
 else
 # Check for valid EPICS_MODULES
@@ -35,5 +35,5 @@ endif
 
 # Check BASE_MODULE_VERSION
 ifneq (file,$(origin BASE_MODULE_VERSION))
-$(error BASE_MODULE_VERSION not defined!)
+$(error BASE_MODULE_VERSION not defined in RELEASE_SITE file!)
 endif
