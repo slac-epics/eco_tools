@@ -188,8 +188,9 @@ def gitGetRemoteTags( url, debug = False, verbose = False ):
 
 def gitGetRemoteTag( url, tag, debug = False, verbose = False ):
     '''Fetchs tags from a git repo url and looks for a match w/ the desired tag.
-    Returns a tuple of ( url, tag ), ( None, None ) on error.
+    Returns a tuple of ( sha, tag ), ( None, None ) on error.
     For a matching git remote, url must be a valid string and tag must be found.'''
+    tag_sha		= None
     git_url     = None
     git_tag     = None
     url_valid   = False
@@ -203,6 +204,7 @@ def gitGetRemoteTag( url, tag, debug = False, verbose = False ):
         if tag in tags:
             git_url = url
             git_tag = tag
+            tag_sha = tags[tag]
 
     except OSError, e:
         if debug:
@@ -214,12 +216,24 @@ def gitGetRemoteTag( url, tag, debug = False, verbose = False ):
         pass
     if verbose:
         if git_url:
-            print "gitGetRemoteTag: Found git_tag %s in git_url %s" % ( git_tag, git_url )
+            print "gitGetRemoteTag: Found git_tag %s %7.7s in git_url %s" % ( git_tag, tag_sha, git_url )
         elif url_valid:
             print "gitGetRemoteTag: Unable to find tag %s in git url %s" % ( tag, url )
         else:
             print "gitGetRemoteTag: Invalid git url %s" % ( url )
-    return ( git_url, git_tag )
+    return ( tag_sha, git_tag )
+
+def gitGetTagSha( tag ):
+    tagSha = None
+    try:
+        # Get the tagSha
+        cmdList = [ "git", "show-ref", tag ]
+        gitOutput = subprocess.check_output( cmdList ).splitlines()
+        if len(gitOutput) == 1:
+            tagSha = gitOutput[0].split()[0]
+    except:
+        pass
+    return tagSha
 
 def initBareRepo( gitRepoPath, verbose=False ):
     if not gitRepoPath.endswith( ".git" ):

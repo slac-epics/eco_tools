@@ -115,12 +115,7 @@ class gitRepo( Repo.Repo ):
             cmdList = [ "git", "fetch", "origin", "refs/tags/" + self._tag ]
             subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
 
-            # Get the tagSha
-            tagSha = None
-            cmdList = [ "git", "show-ref", self._tag ]
-            gitOutput = subprocess.check_output( cmdList ).splitlines()
-            if len(gitOutput) == 1:
-                tagSha = gitOutput[0].split()[0]
+            tagSha = gitGetTagSha( self._tag )
 
             if branchSha and branchSha != tagSha:
                 # Rename the branch to put it aside till we delete it later
