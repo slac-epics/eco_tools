@@ -105,6 +105,12 @@ def determine_epics_base_ver():
     # Returns None if not found
     return epics_base_ver
 
+def strContainsMacros( strWithMacros ):
+    macroMatch = macroRefRegExp.search( strWithMacros )
+    if macroMatch:
+        return True
+    return False
+
 def expandMacros( strWithMacros, macroDict ):
     while True:
         macroMatch = macroRefRegExp.search( strWithMacros )

@@ -111,7 +111,7 @@ def ValidateArgs( repo, packageSpec, opt ):
     if not re.match( r"(\S*R\d+([\-\.]\d+)-\d+\.\d+\.\d+?)|(\S*R\d+[\.\-]\d+([\-\.]\d+)?)", opt.release ):
         raise ValidateError, "%s is an invalid release tag: Must be R[<orig_release>-]<major>.<minor>.<bugfix>" % opt.release
 
-    if not opt.noTag:
+    if not opt.noTag and repo_tag != opt.release:
         # validate release message
         if not opt.message:
             print "Please enter a release comment (end w/ ctrl-d on blank line):"
@@ -234,6 +234,7 @@ try:
 
     # See if this is a git working dir
     ( git_url, git_branch, git_tag ) = gitGetWorkingBranch()
+    repo_tag = git_tag
 
     if git_url:
         if opt.verbose:
@@ -272,8 +273,6 @@ try:
         if git_tag == opt.release:
             opt.noTag = True
             opt.noTestBuild	= True
-            # Make sure the tag has been pushed
-            repo.PushTag( opt.release )
     else:
         # See if this is an svn working dir
         ( svn_url, svn_branch, svn_tag ) = svnGetWorkingBranch()
@@ -349,6 +348,8 @@ try:
         topDirDependents = getEpicsPkgDependents( os.getcwd(), debug=debugScript )
         if 'base' in topDirDependents:
             epics_base_ver = topDirDependents['base']
+            if strContainsMacros( epics_base_ver ):
+                raise ValidateError, "Unable to determine EPICS base version from RELEASE files"
         if not packageName:
             raise ValidateError, "No release package specified"
         if os.path.split( packagePath )[0] == 'modules':
@@ -374,6 +375,15 @@ try:
         print "DryRun:      True"
     if	opt.noTag:
         opt.noTestBuild	= True
+
+    if opt.verbose and git_url:
+        if git_tag != opt.release:
+            print "Need to tag %s\n" % opt.release
+        # Make sure the tag has been pushed
+        (remote_tag_sha, remote_tag ) = gitGetRemoteTag( git_url, opt.release )
+        local_tag_sha = gitGetTagSha( opt.release )
+        if remote_tag != opt.release or remote_tag_sha != local_tag_sha:
+            print "Need to push tag %s\n" % opt.release
 
     # Confirm buildDir, installDir, and tag
     if not opt.batch and not opt.dryRun:
@@ -417,9 +427,15 @@ try:
     if not opt.noTestBuild:
         pkgReleaser.DoTestBuild()
 
-    # release tag
     if not opt.noTag:
-        pkgReleaser.TagRelease( message=opt.message )
+        # release tag
+        if repo_tag != opt.release:
+            pkgReleaser.TagRelease( message=opt.message )
+
+        if git_url:
+            # Make sure the tag has been pushed
+            if gitGetRemoteTag( git_url, opt.release )[1] is None:
+                repo.PushTag( opt.release )
 
     # Install package
     # pkgReleaser.InstallPackage( repo_installDir	)
