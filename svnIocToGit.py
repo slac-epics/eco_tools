@@ -92,8 +92,8 @@ Additional paths for both branches and tags may be added if desired either way.
     parser.add_argument( '-b', '--branches', action='append', help='svn branch(es)  to import. (relative to env CTRL_REPO)', default=[] )
     parser.add_argument( '-t', '--tags',     action='append', help='svn tag paths   to import. (relative to env CTRL_REPO)', default=[] )
     parser.add_argument( '-v', '--verbose',  action="store_true", help='show more verbose output.' )
-    parser.add_argument( '-n', '--name',     help='name of GitHub Repo.' )
-    parser.add_argument( '-U', '--URL',      help='URL of GitHub Repo.' )
+    parser.add_argument( '-n', '--name',     help='name of git repo.' )
+    parser.add_argument( '-U', '--URL',      help='URL of git repo.' )
 
     args = parser.parse_args( )
 
