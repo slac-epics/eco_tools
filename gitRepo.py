@@ -187,7 +187,7 @@ class gitRepo( Repo.Repo ):
         if verbose:
             print "Tagging %s release %s ..." % ( packagePath, release )
         comment = "Release %s/%s: %s" % ( packagePath, release, message )
-        cmdList = [ "git", "tag", release, "-m", comment ]
+        cmdList = [ "git", "tag", release, 'HEAD', "-m", comment ]
         subprocess.check_call( cmdList )
         subprocess.check_call( [ 'git', 'push', '-u', 'origin' ] )
         subprocess.check_call( [ 'git', 'push', 'origin', release ] )
