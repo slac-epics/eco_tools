@@ -4,7 +4,6 @@ EPICS_MODULES       = $(EPICS_SITE_TOP)/$(BASE_MODULE_VERSION)/modules
 EPICS_HOST_ARCH     = $(shell $(EPICS_SITE_TOP)/base/$(BASE_MODULE_VERSION)/startup/EpicsHostArch)
 PACKAGE_SITE_TOP    = /afs/slac/g/lcls/package
 PSPKG_ROOT          = /afs/slac/g/lcls/pkg_mgr
-KERNEL_DRIVER_HOME  = $(PACKAGE_SITE_TOP)/linuxKernel_Modules
 
 $(info Setting BASE_MODULE_VERSION=$(BASE_MODULE_VERSION) from $(lastword $(MAKEFILE_LIST)))
 
