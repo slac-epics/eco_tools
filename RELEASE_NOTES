@@ -1,3 +1,16 @@
+R2.21	2019-09-03 Bruce Hill
+	Add recursive support to epics-versions along w/ version mismatch check.
+	Don't return EPICS 7 modules as dependents when base release >= 7
+	Misc small updates:
+		Default depth=None in CheckoutRelease.
+		Make sure git.TagRelease() tags the HEAD instead of index.
+		Added check for valid BASE version.
+		Broke out code from checkoutRelease for new func gitGetTagSha()
+		Improved checks in RELEASE_SITE.check and EPICS_BASE.check
+		Add define of MATLAB_PACKAGE_TOP to RELEASE_SITE file.
+			(Needed to build labca in PROD and DEV as matlab package paths shared no common root.)
+		Made ExpandPackagePath() handle pkgSpec's w/ release and topDir w/ base release.
+
 R2.20	2019-06-12 Bruce Hill
 	Improved epics-release cmd line validation error handling.
 	Cleanup imports
