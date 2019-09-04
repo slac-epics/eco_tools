@@ -34,7 +34,7 @@ class gitRepo( Repo.Repo ):
     def GetTag( self ):
         return self._tag
 
-    def CheckoutRelease( self, buildDir, verbose=True, quiet=False, dryRun=False, depth=-1 ):
+    def CheckoutRelease( self, buildDir, verbose=True, quiet=False, dryRun=False, depth=None ):
         if verbose:
             print "Checking out: %s\nto build dir: %s ..." % ( self._url, buildDir )
         if dryRun:
@@ -79,13 +79,13 @@ class gitRepo( Repo.Repo ):
 
         if not os.path.isdir( os.path.join( buildDir, '.git' ) ):
             try:
-                # Clone the repo
                 if depth == -1:
                     # Default to shallow depth for tagged releases
                     if self._tag:
                         depth = DEF_GIT_RELEASE_DEPTH
                     else:
                         depth = None
+                # Clone the repo
                 cloneMasterRepo( self._url, buildDir, '', branch=self._tag, depth=depth )
                 os.chdir( buildDir )
             except RuntimeError, e:
