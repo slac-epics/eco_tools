@@ -455,15 +455,18 @@ def gitFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
     # See if the package was listed in $TOOLS/eco_modulelist/modulelist.txt
     if packageName in git_package2Location:
         url_path = determinePathToGitRepo( packageName, verbose=verbose )
-        (repo_url, repo_tag) = gitGetRemoteTag( url_path, tag, verbose=verbose )
+        (repo_sha, repo_tag) = gitGetRemoteTag( url_path, tag, verbose=verbose )
+        if repo_sha:
+            repo_url = url_path
     else:
         for url_root in [ DEF_GIT_MODULES_PATH, DEF_GIT_EXTENSIONS_PATH, DEF_GIT_EPICS_PATH, DEF_GIT_REPO_PATH ]:
             if repo_url is not None:
                 break
             for p in [ packageName, packagePath ]:
                 url_path = '%s/%s.git' % ( url_root, p )
-                (repo_url, repo_tag) = gitGetRemoteTag( url_path, tag, verbose=verbose )
-                if repo_url is not None:
+                (repo_sha, repo_tag) = gitGetRemoteTag( url_path, tag, verbose=verbose )
+                if repo_sha is not None:
+                    repo_url = url_path
                     break
                 if packageName == packagePath:
                     break
