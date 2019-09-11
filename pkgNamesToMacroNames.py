@@ -21,6 +21,7 @@ _macroNameToPkgName[ 'EVR_MODULE' ] = None
 _macroNameToPkgName[ 'IOC_SITE_TOP' ] = None
 _macroNameToPkgName[ 'LINUX_KERNEL_MODULES' ] = None
 _macroNameToPkgName[ 'MAKE_TEST_IOC_APP' ] = None
+_macroNameToPkgName[ 'MATLAB_PACKAGE_TOP' ] = None
 _macroNameToPkgName[ 'MODULES_SITE_TOP' ] = None
 _macroNameToPkgName[ 'MY_MODULES' ] = None
 _macroNameToPkgName[ 'PACKAGE_SITE_TOP' ] = None
