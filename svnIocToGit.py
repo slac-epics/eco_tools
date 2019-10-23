@@ -17,7 +17,7 @@ gitEpicsRoot        = "/afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics"
 authorsFile         = "/afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/modules/authors.txt"
 svnRepoRoot         = os.environ[svnRepoEnvVar]
 
-def importIOC( iocSpec, name=None, trunk=None, branches=[], tags=[], verbose=False ):
+def importIOC( iocSpec, name=None, trunk=None, branches=[], tags=[], gitUrl=None, verbose=False ):
     if  trunk is None: 
         trunk = os.path.join( svnRepoTrunkPath, iocSpec, "current" )
     print "Importing svn IOC %s from %s" % ( iocSpec, trunk )
@@ -25,16 +25,17 @@ def importIOC( iocSpec, name=None, trunk=None, branches=[], tags=[], verbose=Fal
     svn_tags += tags
     if name is None:
         name = iocSpec
-    importTrunk( trunk, name, gitEpicsRoot, branches=branches, tags=svn_tags, verbose=verbose )
+    if not gitUrl:
+        gitUrl = os.path.join( gitEpicsRoot, name + '.git' )
+    importTrunk( trunk, name, gitUrl, branches=branches, tags=svn_tags, verbose=verbose )
 
  # TODO: In both svnIocToGit.py and svnModuleToGit.py.  Move to git_utils.py
-def importTrunk( trunk, name, gitRoot, branches=[], tags=[], verbose=False ):
+def importTrunk( trunk, name, gitUrl, branches=[], tags=[], verbose=False ):
     # Create a tmp folder to work in
     tpath = tempfile.mkdtemp()
     tmpGitRepoPath = os.path.join( tpath, name )
-    svnGitRepoPath = os.path.join( gitRoot, name + '.git' )
-    if os.path.isdir( svnGitRepoPath ):
-        print "svn import of repo already exists:", svnGitRepoPath
+    if os.path.isdir( gitUrl ):
+        print "svn import of repo already exists:", gitUrl
         return
 
     # Create the git svn clone command
@@ -47,7 +48,7 @@ def importTrunk( trunk, name, gitRoot, branches=[], tags=[], verbose=False ):
     for t in tags:
         git_cmd.extend( [ "--tags", t ] )
 
-    print "Import svn trunk %s\n   to %s:" % ( trunk, svnGitRepoPath )
+    print "Import svn trunk %s\n   to %s:" % ( trunk, gitUrl )
     git_cmd.extend( [ svnRepoRoot, tmpGitRepoPath ] )
 
     if verbose:
@@ -79,7 +80,7 @@ def importTrunk( trunk, name, gitRoot, branches=[], tags=[], verbose=False ):
     os.chdir(curDir)
 
     # Create a bare master repo for the new git repository, cloned from our tmp repo
-    subprocess.check_call([ "git", "clone", "--bare", tmpGitRepoPath, svnGitRepoPath ])
+    subprocess.check_call([ "git", "clone", "--bare", tmpGitRepoPath, gitUrl ])
     shutil.rmtree(tpath)
 
 if __name__ == '__main__':
@@ -87,13 +88,13 @@ if __name__ == '__main__':
 The trunk and one tags branch are derived from the IOC name.
 Additional paths for both branches and tags may be added if desired either way.
 ''')
-    parser.add_argument( '-i', '--iocSpec',  action='store',  help='svn ioc specification to import. (trunk from epics/trunk/IOC_SPEC/current, tags from epics/tags/IOC_SPEC)  Example: svnIocToGit -i ioc/common/gigECam' )
+    parser.add_argument( '-i', '--iocSpec',  action='store',  help='Example: svnIocToGit -i ioc/common/NewportAgilis (trunk imported from SVN_REPO/epics/trunk/IOC_SPEC/current, tags from SVN_REPO/epics/tags/IOC_SPEC)' )
     parser.add_argument( '-T', '--trunk',    action='store',  help='svn trunk path  to import. (relative to env CTRL_REPO)', default=None )
     parser.add_argument( '-b', '--branches', action='append', help='svn branch(es)  to import. (relative to env CTRL_REPO)', default=[] )
     parser.add_argument( '-t', '--tags',     action='append', help='svn tag paths   to import. (relative to env CTRL_REPO)', default=[] )
     parser.add_argument( '-v', '--verbose',  action="store_true", help='show more verbose output.' )
     parser.add_argument( '-n', '--name',     help='name of git repo.' )
-    parser.add_argument( '-U', '--URL',      help='URL of git repo.' )
+    parser.add_argument( '-U', '--URL',      help='URL of git repo. Def GIT_TOP/package/epics/IOC_SPEC' )
 
     args = parser.parse_args( )
 
@@ -103,7 +104,7 @@ Additional paths for both branches and tags may be added if desired either way.
 
     if args.iocSpec:
         importIOC( args.iocSpec, name=args.name, trunk=args.trunk, branches=args.branches,
-                      tags=args.tags, verbose=args.verbose )
+                      tags=args.tags, gitUrl=args.URL, verbose=args.verbose )
     elif args.trunk is not None or len(args.branches) > 0:
         if not args.name:
             print 'Please provide a name for git repo'
