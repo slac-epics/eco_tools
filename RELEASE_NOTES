@@ -1,3 +1,6 @@
+R2.23	2019-10-23 Bruce Hill
+	Implemented git URL arg in svnIocToGit
+
 R2.22	2019-09-10 Bruce Hill
 	Fix error in gitFindPackageRelease that returned a sha in place of a url.
 	Fixes epics-build failures w/ msg: InstallPackage Error: Unable to determine installTop!
