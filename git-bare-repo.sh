@@ -15,9 +15,8 @@ if [ -z "$1" -o "$1" == "-h" -o "$1" == "--help" ]; then
 	exit 1
 fi
 GIT_DIR=$1
-if [ -d $GIT_DIR ]; then
-	echo "Error: $GIT_DIR already exists!"
-	exit 1
+if [ "$GIT_DIR" == "${GIT_DIR%%.git}" ]; then
+	GIT_DIR=${GIT_DIR}.git
 fi
 
 # Make bash exit if any of the following cmds fail
@@ -30,6 +29,10 @@ fi
 PARENT_DIR=$GIT_TOP/package/epics/modules
 TEMPLATES=$GIT_TOP/package/epics/epics-git-templates-git/templates
 cd $PARENT_DIR
+if [ -d $GIT_DIR ]; then
+	echo "Error: $GIT_DIR already exists!"
+	exit 1
+fi
 
 # Create a bare it repo using our local templates directory
 git init --bare --template=$TEMPLATES $GIT_DIR
