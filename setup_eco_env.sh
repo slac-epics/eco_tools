@@ -11,7 +11,7 @@ if [ ! -z "`echo $0 | fgrep setup_eco_env.sh`" ]; then
 fi
 
 # Make sure we have a canonical path to eco_tools
-this_script=`readlink -f $BASH_ARGV`
+this_script=`readlink -f ${BASH_SOURCE[0]}`
 eco_tools_dir=`readlink -f $(dirname $this_script)`
 
 # Make sure we have PSPKG_ROOT and TOOLS_SITE_TOP
