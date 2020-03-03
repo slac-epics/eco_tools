@@ -1,3 +1,9 @@
+R2.24	2020-03-03 Bruce Hill
+	Fixed some issues related to tagging and tag push.
+	Use BASH_SOURCE for determining script filename and path in launchers.
+	Add RFCommon to pkgNamesToMacroNames.py
+	git-bare-repo.sh: Make sure target dir ends in .git and doesn't already exist.
+
 R2.23	2019-10-23 Bruce Hill
 	Implemented git URL arg in svnIocToGit
 
