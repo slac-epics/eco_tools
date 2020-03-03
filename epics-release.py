@@ -270,9 +270,6 @@ try:
 
         # Create a gitRepo object for this url
         repo = gitRepo.gitRepo( git_url, git_branch, packageName, opt.release )
-        if git_tag == opt.release:
-            opt.noTag = True
-            opt.noTestBuild	= True
     else:
         # See if this is an svn working dir
         ( svn_url, svn_branch, svn_tag ) = svnGetWorkingBranch()
@@ -328,8 +325,9 @@ try:
         opt.noTag		= True
 
     # Will we tag?
-    if	opt.noTag:
-        # Not tagging, no need for msg or TestBuild
+    #if	opt.noTag:
+    if opt.noTag or git_tag == opt.release:
+        # Already tagging, no need for msg or TestBuild
         opt.noMsg		= True
         opt.noTestBuild	= True
 
@@ -384,6 +382,7 @@ try:
         local_tag_sha = gitGetTagSha( opt.release )
         if remote_tag != opt.release or remote_tag_sha != local_tag_sha:
             print "Need to push tag %s\n" % opt.release
+            #repo.PushTag( opt.release, verbose=opt.verbose, dryRun=opt.dryRun )
 
     # Confirm buildDir, installDir, and tag
     if not opt.batch and not opt.dryRun:
@@ -431,6 +430,10 @@ try:
         # release tag
         if repo_tag != opt.release:
             pkgReleaser.TagRelease( message=opt.message )
+        
+        if remote_tag != opt.release or remote_tag_sha != local_tag_sha:
+            print "Need to push tag %s\n" % opt.release
+            #repo.PushTag( opt.release, verbose=opt.verbose, dryRun=opt.dryRun )
 
         if git_url:
             # Make sure the tag has been pushed
