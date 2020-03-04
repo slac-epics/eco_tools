@@ -374,14 +374,15 @@ try:
     if	opt.noTag:
         opt.noTestBuild	= True
 
-    if opt.verbose and git_url:
-        if git_tag != opt.release:
+    if git_url:
+        if opt.verbose and git_tag != opt.release:
             print "Need to tag %s\n" % opt.release
         # Make sure the tag has been pushed
         (remote_tag_sha, remote_tag ) = gitGetRemoteTag( git_url, opt.release )
         local_tag_sha = gitGetTagSha( opt.release )
         if remote_tag != opt.release or remote_tag_sha != local_tag_sha:
-            print "Need to push tag %s\n" % opt.release
+            if opt.verbose:
+                print "Need to push tag %s\n" % opt.release
             #repo.PushTag( opt.release, verbose=opt.verbose, dryRun=opt.dryRun )
 
     # Confirm buildDir, installDir, and tag
@@ -430,14 +431,11 @@ try:
         # release tag
         if repo_tag != opt.release:
             pkgReleaser.TagRelease( message=opt.message )
-        
-        if remote_tag != opt.release or remote_tag_sha != local_tag_sha:
-            print "Need to push tag %s\n" % opt.release
-            #repo.PushTag( opt.release, verbose=opt.verbose, dryRun=opt.dryRun )
 
         if git_url:
             # Make sure the tag has been pushed
-            if gitGetRemoteTag( git_url, opt.release )[1] is None:
+            (remote_tag_sha, remote_tag ) = gitGetRemoteTag( git_url, opt.release )
+            if remote_tag != opt.release or remote_tag_sha != local_tag_sha:
                 repo.PushTag( opt.release )
 
     # Install package
