@@ -4,8 +4,10 @@
 # SLAC EPICS module development
 #
 
+this_script=`readlink -f ${BASH_SOURCE[0]}`
+eco_tools_dir=`readlink -f $(dirname $this_script)`
 if [ "$1" == "--version" ]; then
-	grep eco_tools_version `dirname $0`/eco_version.py
+	grep eco_tools_version $eco_tools_dir/eco_version.py
 	exit 1
 fi
 if [ -z "$1" -o "$1" == "-h" -o "$1" == "--help" ]; then
@@ -15,6 +17,10 @@ if [ -z "$1" -o "$1" == "-h" -o "$1" == "--help" ]; then
 	exit 1
 fi
 GIT_DIR=$1
+if [ -d $GIT_DIR ]; then
+	echo "Error: $GIT_DIR already exists!"
+	exit 1
+fi
 if [ "$GIT_DIR" == "${GIT_DIR%%.git}" ]; then
 	GIT_DIR=${GIT_DIR}.git
 fi
