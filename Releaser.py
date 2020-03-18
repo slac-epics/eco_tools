@@ -448,6 +448,8 @@ class Releaser(object):
             releaseDir = getCramReleaseDir( self._repo.GetUrl(), self._repo.GetTag() )
             if releaseDir:
                 self._installDir = os.path.join( releaseDir, self._repo.GetTag() )
+            if self._installDir and self._verbose:
+                print "CRAM releaseDir: %s" % releaseDir
 
         if not self._installDir:
             epics_site_top	= determine_epics_site_top()

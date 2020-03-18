@@ -339,6 +339,8 @@ try:
         releaseDir = getCramReleaseDir( )
         if releaseDir:
             opt.installDir = os.path.join(	releaseDir, opt.release	)
+        if opt.installDir and opt.verbose:
+            print "CRAM releaseDir: %s" % releaseDir
 
     if not opt.installDir:
         # See if we can derive the releaseDir from the packagePath
