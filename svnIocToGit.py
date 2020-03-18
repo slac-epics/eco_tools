@@ -8,6 +8,7 @@ import shutil
 import tempfile
 import subprocess
 from git_utils import *
+from repo_defaults import *
 
 svnRepoEnvVar       = 'CTRL_REPO'
 svnRepoBranchPath   = 'branches/merge/epics'
@@ -80,7 +81,9 @@ def importTrunk( trunk, name, gitUrl, branches=[], tags=[], verbose=False ):
     os.chdir(curDir)
 
     # Create a bare master repo for the new git repository, cloned from our tmp repo
-    subprocess.check_call([ "git", "clone", "--bare", tmpGitRepoPath, gitUrl ])
+    subprocess.check_call([ "git", "clone", "--bare",
+                            "--template=%s/templates" % DEF_GIT_MODULES_PATH,
+                            tmpGitRepoPath, gitUrl ])
     shutil.rmtree(tpath)
 
 if __name__ == '__main__':
@@ -111,7 +114,7 @@ Additional paths for both branches and tags may be added if desired either way.
             sys.exit()
         if  args.trunk is None:
             args.trunk = args.branches[0]
-        importTrunk( args.trunk, args.name, args.branches[1:], args.tags, args.verbose )
+        importTrunk( args.trunk, args.name, args.URL, args.branches[1:], args.tags, args.verbose )
     else:
         parser.print_help()
         print 'Please provide a iocSpec name, or one or more branches to import'
