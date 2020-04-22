@@ -1,3 +1,11 @@
+R2.25	2020-04-22 Bruce Hill
+	Enhanced ck for svnRepoRoot and better error msgs for incorrect cmd line args.
+	Removed obsolete backoff for epics_module_top.
+	Update svnIocToGit.py to create AFS repo using SLAC template.
+	Fix devIsegHal capitalization to match collab.
+	Add verbose diag if releaseDir overridden by cram packageinfo.
+	More protection added to git-bare-repo.sh.
+
 R2.24	2020-03-03 Bruce Hill
 	Fixed some issues related to tagging and tag push.
 	Use BASH_SOURCE for determining script filename and path in launchers.
