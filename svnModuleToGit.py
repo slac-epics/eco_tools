@@ -16,7 +16,9 @@ svnRepoTrunkPath    = 'trunk/pcds/epics/modules'
 gitModuleDir        = "/afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/modules"
 moduleDestDir       = "/afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/modules/from-svn"
 authorsFile         = "/afs/slac.stanford.edu/g/cd/swe/git/repos/package/epics/modules/authors.txt"
-svnRepoRoot         = os.environ[svnRepoEnvVar]
+svnRepoRoot         = 'file:///afs/slac/g/pcds/vol2/svn/pcds'
+if svnRepoEnvVar in os.environ:
+    svnRepoRoot = os.environ[svnRepoEnvVar]
 
 def importModule( module, name=None, trunk=None, branches=[], tags=[], verbose=False ):
     if  trunk is None: 
@@ -38,14 +40,24 @@ def importTrunk( trunk, name, gitRoot, branches=[], tags=[], verbose=False ):
         print "svn import of repo already exists:", svnGitRepoPath
         return
 
+    if trunk.startswith( svnRepoRoot ):
+        print "Error: trunk path should not include base svn repo path: %s" % trunk
+        return
+
     # Create the git svn clone command
     git_cmd = [ "git","svn","clone",
                     "--authors-file",   authorsFile,
                     "--trunk", trunk ]
     for b in branches:
+        if b.startswith( svnRepoRoot ):
+            print "Error: branch path should not include base svn repo path: %s" % b
+            return
         git_cmd.extend( [ "--branches", b ] )
 
     for t in tags:
+        if t.startswith( svnRepoRoot ):
+            print "Error: tags path should not include base svn repo path: %s" % t
+            return
         git_cmd.extend( [ "--tags", t ] )
 
     print "Import svn trunk %s\n   to %s:" % ( trunk, svnGitRepoPath )
