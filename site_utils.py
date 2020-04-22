@@ -77,9 +77,7 @@ def determine_epics_modules_top():
         else:
             epics_modules_top = os.path.join( epics_site_top, 'modules', 'R3-14-12' )
         if not os.path.isdir( epics_modules_top ):
-            epics_modules_top = os.path.join( epics_site_top, 'modules' )
-        if not os.path.isdir( epics_modules_top ):
-            print("determine_epics_modules_top Error: Unable to determine valid EPICS_MODULES_TOP!")
+            print("determine_epics_modules_top Error: %s is not a directory!" % epics_modules_top)
             epics_modules_top = None
     return epics_modules_top
 
