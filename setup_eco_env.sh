@@ -20,8 +20,8 @@ eco_tools_dir=`readlink -f $(dirname $this_script)`
 if [ -z "$PSPKG_ROOT" -o -z "$TOOLS_SITE_TOP" ]; then
 	if [ ! -z "$CONFIG_SITE_TOP" -a -f $CONFIG_SITE_TOP/common_dirs.sh ]; then
 		source $CONFIG_SITE_TOP/common_dirs.sh
-	elif [  -f $FACILIITY_ROOT/epics/config/common_dirs.sh ]; then
-		source $FACILIITY_ROOT/epics/config/common_dirs.sh
+	elif [  -f $FACILITY_ROOT/epics/config/common_dirs.sh ]; then
+		source $FACILITY_ROOT/epics/config/common_dirs.sh
 	elif [  -f /usr/local/lcls/epics/config/common_dirs.sh ]; then
 		source /usr/local/lcls/epics/config/common_dirs.sh
 	elif [  -f /usr/local/facet/epics/config/common_dirs.sh ]; then
