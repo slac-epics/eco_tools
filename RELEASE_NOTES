@@ -1,3 +1,6 @@
+R2.26	2020-04-29 Bruce Hill
+	Fix typo in setup_eco_env.sh
+
 R2.25	2020-04-22 Bruce Hill
 	Enhanced ck for svnRepoRoot and better error msgs for incorrect cmd line args.
 	Removed obsolete backoff for epics_module_top.
