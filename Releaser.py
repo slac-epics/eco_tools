@@ -263,7 +263,7 @@ class Releaser(object):
             return self._CookieJarPath 
         # TODO: Derive _EpicsHostArch from the module's RELEASE_SITE file instead of env
         if os.path.isdir( os.path.join( self._ReleasePath, "build" ) ):
-            return os.path.join( self._ReleasePath, "build", "configure", "O." + self._EpicsHostArch )
+            return os.path.join( self._ReleasePath, "O." + self._EpicsHostArch )
         else:
             return os.path.join( self._ReleasePath, "configure", "O." + self._EpicsHostArch )
 
@@ -329,6 +329,7 @@ class Releaser(object):
                 print "BuildRelease %s: Already built!" % ( buildDir )
                 return status
 
+        # TODO: Add a --minimizeRepoAccess option that suppresses all but one git request if possible
         print "\nBuildRelease: %s ..." % ( buildDir )
         sys.stdout.flush()
         sys.stderr.flush()
