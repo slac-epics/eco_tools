@@ -70,6 +70,7 @@ def pkgNameAddMacroName( pkgName, macroName ):
 # Populate macro names for packages
 # Most of these are all just simple mappings to uppercase
 pkgNameAddMacroName( 'acqiris',				'ACQIRIS' )
+pkgNameAddMacroName( 'ADPgpCamlink',		'ADPGPCAMLINK' )
 pkgNameAddMacroName( 'ADCore',				'ADCORE' )
 pkgNameAddMacroName( 'ADCrayDl',			'ADCRAYDL' )
 pkgNameAddMacroName( 'ADCSimDetector',		'ADCSIMDETECTOR' )
