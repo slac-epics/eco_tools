@@ -1,3 +1,8 @@
+R2.27	2020-10-16 Bruce Hill
+	Add ADPgpCamlink to pkgNamesToMacroNames.py
+	Fix cookie location for templated IOC's
+	Add alternate macro names for perfMeasure and ADSimDetector
+
 R2.26	2020-04-29 Bruce Hill
 	Fix typo in setup_eco_env.sh
 
