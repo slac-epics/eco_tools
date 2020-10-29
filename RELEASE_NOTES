@@ -1,4 +1,9 @@
-R2.27	2020-10-16 Bruce Hill
+
+R2.29	2020-10-29 Bruce Hill
+	eco fix for CVS mps module.
+	Support new /cds and old /reg pcds paths
+
+R2.28	2020-10-16 Bruce Hill
 	Add ADPgpCamlink to pkgNamesToMacroNames.py
 	Fix cookie location for templated IOC's
 	Add alternate macro names for perfMeasure and ADSimDetector
