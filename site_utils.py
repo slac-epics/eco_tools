@@ -20,6 +20,8 @@ def isPCDSPath(path):
     More tests can be added if needed.'''
     if path.startswith( DEF_EPICS_TOP_PCDS ):
         return True
+    if path.startswith( DEF_EPICS_TOP_PCDS_OLD ):
+        return True
     if path.startswith( '/afs/slac/g/pcds' ): # /afs/slac symbolic link might be part of pcds pathnames
         return True
     if path.startswith( DEF_EPICS_TOP_AFS ):
@@ -53,6 +55,8 @@ def determine_epics_site_top():
     if epics_site_top == '?':
         if os.path.isdir(    DEF_EPICS_TOP_PCDS ):
             epics_site_top = DEF_EPICS_TOP_PCDS 
+        elif os.path.isdir(  DEF_EPICS_TOP_PCDS_OLD ):
+            epics_site_top = DEF_EPICS_TOP_PCDS_OLD
         elif os.path.isdir(  DEF_EPICS_TOP_LCLS ):
             epics_site_top = DEF_EPICS_TOP_LCLS
         elif os.path.isdir(  DEF_EPICS_TOP_AFS ):
@@ -223,7 +227,7 @@ def assemble_release_site_inputs( batch=False ):
     if not os.path.isdir( package_site_top ):
         package_site_top = getEnv('PACKAGE_SITE_TOP')
     if not os.path.isdir( package_site_top ):
-        package_site_top = '/reg/g/pcds/package'
+        package_site_top = '/cds/group/pcds/package'
     if not os.path.isdir( package_site_top ):
         package_site_top = '/afs/slac.stanford.edu/g/lcls/package'
     if not os.path.isdir( package_site_top ):
@@ -253,7 +257,7 @@ def assemble_release_site_inputs( batch=False ):
     if VersionToRelNumber(input_dict['EPICS_BASE_VER']) >= 3.141205:
         pspkg_root = getEnv('PSPKG_ROOT')
         if not os.path.isdir( pspkg_root ):
-            pspkg_root = '/reg/g/pcds/pkg_mgr'
+            pspkg_root = '/cds/group/pcds/pkg_mgr'
         if not os.path.isdir( pspkg_root ):
             pspkg_root = '/afs/slac.stanford.edu/g/lcls/pkg_mgr'
         if not os.path.isdir( pspkg_root ):

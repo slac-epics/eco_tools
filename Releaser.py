@@ -516,6 +516,8 @@ class Releaser(object):
 
         if self._installDir.startswith( DEF_EPICS_TOP_PCDS ):
             self._grpOwner = DEF_PCDS_GROUP_OWNER
+        if self._installDir.startswith( DEF_EPICS_TOP_PCDS_OLD ):
+            self._grpOwner = DEF_PCDS_GROUP_OWNER
 
         try:
             result = self.BuildRelease( self._installDir, force=force, rmFailed=rmFailed, verbose=self._verbose )
