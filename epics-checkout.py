@@ -71,8 +71,10 @@ cvs_modules2Location = parseCVSModulesTxt()
 def assemble_env_inputs_from_term(options):
 
     packageName = None
+    packageSpec = None
     if options.module:
-        packageName = options.module
+        packageSpec = options.module
+        packageName = os.path.split(packageSpec)[1]
 
     packageNames = set().union(git_package2Location.keys(), cvs_modules2Location.keys())
 
@@ -87,7 +89,8 @@ def assemble_env_inputs_from_term(options):
     readline.parse_and_bind("tab: complete")
 
     while not packageName:
-        packageName = raw_input('Enter name of module/package to checkout: ').strip()
+        packageSpec = raw_input('Enter name of module/package to checkout: ').strip()
+        packageName = os.path.split(packageSpec)[1]
 
     # Remove completer after we are done...
     readline.set_completer()
@@ -96,27 +99,34 @@ def assemble_env_inputs_from_term(options):
 
     dirName     = ""
     tagName     = ""
+    repoPath	= None
     if hasattr(options, 'tag') and options.tag:
         tagName = options.tag
     else:
         tags = []
-        pathToGitRepo = determinePathToGitRepo( packageName )
-        if pathToGitRepo:
-            if "svn" in pathToGitRepo:
-                # svn REPO
-                if not dirName:
-                    dirName = "current"
-                tags = svnGetRemoteTags( pathToGitRepo, verbose=options.verbose )
-            else:
-                # git REPO
-                if not dirName:
-                    dirName = packageName + "-git"
-                tags = gitGetRemoteTags( pathToGitRepo, verbose=options.verbose )
-        elif os.path.isdir( DEF_CVS_ROOT ):            
+        if packageName in cvs_modules2Location and os.path.isdir( DEF_CVS_ROOT ):            
             # cvs REPO
             if not dirName:
                 dirName = 'MAIN_TRUNK'
             tags = cvsGetRemoteTags( packageName )
+            repoPath = cvs_modules2Location[packageName]
+        elif packageSpec in git_package2Location:
+            repoPath = git_package2Location[packageSpec]
+        elif packageName in git_package2Location:
+            repoPath = git_package2Location[packageName]
+        else:
+            pathToGitRepo = determinePathToGitRepo( packageSpec, verbose=options.verbose )
+            if pathToGitRepo:
+                if "svn" in pathToGitRepo:
+                    # svn REPO
+                    if not dirName:
+                        dirName = "current"
+                    tags = svnGetRemoteTags( pathToGitRepo, verbose=options.verbose )
+                else:
+                    # git REPO
+                    if not dirName:
+                        dirName = packageName + "-git"
+                    tags = gitGetRemoteTags( pathToGitRepo, verbose=options.verbose )
 
         if len(tags) > 0:            
             def tagCompleter(text, state):
@@ -136,6 +146,9 @@ def assemble_env_inputs_from_term(options):
         readline.set_completer()
         readline.parse_and_bind('tab: self-insert')
 
+    if not dirName:
+        dirName = packageName + "-git"
+
     if tagName == "":
         if  dirName == 'MAIN_TRUNK':
             tagName = dirName
@@ -145,9 +158,6 @@ def assemble_env_inputs_from_term(options):
         destinationPath = options.destination
     else:
         ( parent_dir, cur_basename ) = os.path.split( os.getcwd() )
-        if not dirName:
-            print "Error, dirName not specified!"
-            return None
         destinationPath = dirName
         if os.path.isdir(packageName):
             # Already a folder for different checkouts of this packageName.  Use it.
@@ -156,18 +166,29 @@ def assemble_env_inputs_from_term(options):
         # Don't create packageName/packageName/dirName
         if cur_basename != packageName:
             # svn and CVS default to creating parent packageName folder
-            # git only creates the parent directory if user selects --createParent
+            # git only creates the parent directory if options.createParent is set
             if options.createParent or dirName != (packageName + "-git"):
                 destinationPath = os.path.join( packageName, dirName )
 
-    checkOutModule( packageName, tagName, destinationPath, options )
+    checkOutModule( packageSpec, repoPath, tagName, destinationPath, options )
 
 # Determine the package and tag to checkout
-def assemble_env_inputs_from_file(packageName, tagName, options):
+def assemble_env_inputs_from_file(packageSpec, tagName, options):
+    repoPath	= None
+    packageName = os.path.split(packageSpec)[1]
+    if packageSpec in cvs_modules2Location and os.path.isdir( DEF_CVS_ROOT ):            
+        # cvs REPO
+        repoPath = cvs_modules2Location[packageSpec]
+    elif packageSpec in git_package2Location:
+        repoPath = git_package2Location[packageSpec]
+    elif packageName in git_package2Location:
+        repoPath = git_package2Location[packageName]
+    else:
+        repoPath = determinePathToGitRepo( packageSpec )
+
     if tagName == "" or tagName == 'HEAD':
-        pathToGitRepo = determinePathToGitRepo( packageName )
-        if pathToGitRepo:
-            if "svn" in pathToGitRepo:
+        if repoPath:
+            if "svn" in repoPath:
                 # svn REPO
                 dirName = "current"
             else:
@@ -193,14 +214,15 @@ def assemble_env_inputs_from_file(packageName, tagName, options):
         if options.createParent or dirName != (packageName + "-git"):
             destinationPath = os.path.join( packageName, dirName )
 
-    checkOutModule( packageName, tagName, destinationPath, options, from_file=True )
+    checkOutModule( packageSpec, repoPath, tagName, destinationPath, options, from_file=True )
  
-def checkOutModule(packageName, tag, destinationPath, options, from_file=False ):
+def checkOutModule(packageSpec, repoPath, tag, destinationPath, options, from_file=False ):
     '''Checkout the module from GIT/CVS. 
     We first check to see if GIT has the module; if so, we clone the repo from git and do a headless checkout for the selected tag.
     Otherwise, we issue a command to CVS.
     '''
 
+    packageName = os.path.split(packageSpec)[1]
     if tag == '':
         print "Checkout %s to sandbox directory %s" % ( packageName, destinationPath )
     else:
@@ -232,29 +254,32 @@ def checkOutModule(packageName, tag, destinationPath, options, from_file=False )
     # Share common logic w/ epics-build and epics-release
     #
 
-    # See if we can find it in with the git repos
-    pathToGitRepo = determinePathToGitRepo(packageName)
+    if not repoPath:
+        # See if we can find it in with the git repos
+        repoPath = determinePathToGitRepo(packageSpec)
+    if not repoPath:
+        print "Unable to determine repo path for %s" % packageSpec
+        return
 
-    if not pathToGitRepo and len(parseCVSModulesTxt()) > 0:
+    if "git" not in repoPath and "svn" not in repoPath and cvs_modules2Location is not None:
+        # Do CVS checkout
         if (tag == 'MAIN_TRUNK'):
-            cmd='cvs checkout -P -d ' + destinationPath + ' ' + packageName    
+            cmd='cvs checkout -P -d ' + destinationPath + ' ' + packageSpec    
             print cmd
         else:
-            cmd='cvs checkout -P -r '+ tag +' -d '+ destinationPath +' ' + packageName    
+            cmd='cvs checkout -P -r '+ tag +' -d '+ destinationPath +' ' + packageSpec    
             print cmd
         os.system(cmd)
         if not os.path.isdir(destinationPath):
-            sys.stderr.write( "Error: unable to do cvs checkout of %s\n" % packageName )
+            sys.stderr.write( "Error: unable to do cvs checkout of %s\n" % packageSpec )
             sys.exit(1)
         os.chdir(destinationPath)
     else:
-        if not pathToGitRepo:
-            pathToGitRepo = os.path.join( determineGitRoot(), 'package/epics/modules', packageName + '.git' )
         pathToSvnRepo = None
-        if  pathToGitRepo.startswith("file:///"):
-            pathToSvnRepo = pathToGitRepo
-        if  pathToGitRepo.startswith("svn:///"):
-            pathToSvnRepo = pathToGitRepo.replace("svn:///", "file:///")
+        if  repoPath.startswith("file:///"):
+            pathToSvnRepo = repoPath
+        if  repoPath.startswith("svn:///"):
+            pathToSvnRepo = repoPath.replace("svn:///", "file:///")
         if  pathToSvnRepo:
             if ( not tag or tag == 'current' ):
                 pathToSvnRepo = pathToSvnRepo.replace("tags","trunk")
@@ -271,7 +296,7 @@ def checkOutModule(packageName, tag, destinationPath, options, from_file=False )
                 sys.exit(1)
             os.chdir(destinationPath)
         else:
-            print packageName, "is a git package.\nCloning the repository at", pathToGitRepo
+            print packageName, "is a git package.\nCloning the repository at", repoPath
             if os.path.exists(destinationPath):
                 print "The folder", os.path.abspath(destinationPath), "already exists. If you intended to update the checkout, please do a git pull to pull in the latest changes."
                 print "Aborting....."
@@ -283,7 +308,7 @@ def checkOutModule(packageName, tag, destinationPath, options, from_file=False )
                 branch = tag
                 # Don't do shallow clone for eco as users may want to fix bugs, retag, and push from there.
                 # depth  = DEF_GIT_RELEASE_DEPTH
-            cloneMasterRepo( pathToGitRepo, destinationPath, '', branch=branch, depth=depth, verbose=options.verbose )
+            cloneMasterRepo( repoPath, destinationPath, '', branch=branch, depth=depth, verbose=options.verbose )
             os.chdir(destinationPath)
             if (tag != ''):
                 # Do a headless checkout to the specified tag
@@ -296,7 +321,6 @@ def checkOutModule(packageName, tag, destinationPath, options, from_file=False )
             # 3. github-master
             # 4. lcls-trunk
             # 5. pcds-trunk
-
 
     # See if we need to create or update a RELEASE_SITE file
     # Not needed if this is an EPICS base package
@@ -334,18 +358,24 @@ def initGitBareRepo( options ):
         os.environ['CVSROOT'] = DEF_CVS_ROOT
  
     if options.module:
-        packageName = options.module
+        packageSpec = options.module
     else:
         # Ask the user for the name of the package
-        packageName = subprocess.check_output(["zenity", "--entry", "--title", "Package Name", "--text", "Please enter the name of the package"]).strip()
+        packageSpec = subprocess.check_output(["zenity", "--entry", "--title", "Package Name", "--text", "Please enter the name of the package"]).strip()
         showStatusZenity = True
+    packageName = os.path.split(packageSpec)[1]
 
-    if packageName in git_package2Location or packageName in cvs_modules2Location:
-        if packageName in git_package2Location:
-            packageLocation = git_package2Location[packageName]
-        elif packageName in cvs_modules2Location:
-            packageLocation = os.path.join(os.environ['CVSROOT'], cvs_modules2Location[packageName])
-        print "Error: The package " + packageName + " is already registered and exists in:\n" + packageLocation
+    packageLocation = None
+    if packageSpec in git_package2Location:
+        packageLocation = git_package2Location[packageSpec]
+    elif packageName in git_package2Location:
+        packageLocation = git_package2Location[packageName]
+    elif packageSpec in cvs_modules2Location:
+        packageLocation = os.path.join(os.environ['CVSROOT'], cvs_modules2Location[packageSpec])
+    elif packageName in cvs_modules2Location:
+        packageLocation = os.path.join(os.environ['CVSROOT'], cvs_modules2Location[packageName])
+    if packageLocation:
+        print "Error: The package " + packageSpec + " is already registered and exists in:\n" + packageLocation
         if showStatusZenity:
             subprocess.check_call(["zenity", "--error", "--title", "Error", "--text", "The package " + packageName + " is already registered and exists in " + packageLocation])
         return
@@ -386,12 +416,12 @@ def initGitBareRepo( options ):
     os.chdir(curDir)
     shutil.rmtree(tpath)
     
-    addPackageToEcoModuleList(packageName, gitRepoPath)
+    addPackageToEcoModuleList(packageSpec, gitRepoPath)
     
-    print "Done creating bare repo for package ", packageName, ". Use eco to clone this repo into your working directory."
+    print "Done creating bare repo for package ", packageSpec, ". Use eco to clone this repo into your working directory."
     if showStatusZenity:
-        subprocess.check_call(	["zenity", "--info", "--title", "Repo created for " + packageName,
-                                "--text", "Done creating bare repo for package " + packageName +
+        subprocess.check_call(	["zenity", "--info", "--title", "Repo created for " + packageSpec,
+                                "--text", "Done creating bare repo for package " + packageSpec +
                                 ". Use eco to clone this repo into your working directory."] )
 
 def importFromCVS( options ):
