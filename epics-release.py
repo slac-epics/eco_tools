@@ -252,6 +252,8 @@ try:
             packageMatch = re.match( r"(\S+).git", packageGitDir )
             if packageMatch:
                 packageName = packageMatch.group(1)
+            else:
+                packageName = packageGitDir
 
         # Find the packagePath
         ( packageHead, packageTail ) = os.path.split( urlPath )
