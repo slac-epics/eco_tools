@@ -34,7 +34,8 @@ import textwrap
 import Repo
 import gitRepo
 import svnRepo
-import Releaser 
+import Releaser
+import json
 from git_utils import *
 from svn_utils import *
 from version_utils import *
@@ -48,12 +49,16 @@ def build_modules( options ):
         if not os.path.isdir( options.top ):
             print "Invalid --top %s" % options.top
     try:
-        releases = find_releases( options )
+        #TODO: remove hard coded install top
+        test_installTop = "/var/lib/jenkins/jobs/" + options.packages[0] + "/testWorkspace"
+        releases = find_releases_config( options )
         if len(releases) == 0:
             status = 1
         else:
             for release in releases:
-                result = release.InstallPackage( installTop=options.top, force=options.force, rmFailed=options.rmFailed )
+                #result = release.InstallPackage( installTop=options.top, force=options.force, rmFailed=options.rmFailed )
+                
+                result = release.InstallPackage( installTop=test_installTop, force=options.force, rmFailed=options.rmFailed )
                 if status == 0:
                     status = result
     except:
@@ -71,6 +76,22 @@ def find_releases( options ):
         else:
             releases += [ release ]
     return releases
+
+def find_releases_config( options ):
+    jenkins_config = import_config(".")
+    package_split = options.packages[0].split("/")
+    package = package_split[0] + "/" + package_split[-1]
+    release = Releaser.find_release( package, verbose=options.verbose )
+    if release is None:
+        print "Error: Could not find packageSpec: %s" % package
+    else:
+        return [release]
+    return
+
+def import_config(config_path):
+    with open("/cds/home/l/lking/eco_tools/jenkins-config.json") as filename:
+        jenkins_config = json.load(filename)
+    return jenkins_config
 
 def buildDependencies( pkgTop, verbose=False ):
     status = 0

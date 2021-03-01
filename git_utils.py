@@ -437,6 +437,23 @@ def determinePathToGitRepo( packagePath, verbose = False ):
         return svn_url
     return None
 
+def gitIfTag( tag ):
+    # Regex to check if it is tag first
+    if tag[0]=="R" and re.match("^[0-9\.]*$", tag[1:]):
+        return True
+    try:
+         cmdList = [ "git", "show-ref", tag ]
+         gitOutput = subprocess.check_output( cmdList ).splitlines()
+         commit_path = gitOutput[0].split()[1]
+         # If the name is a branch name 
+         if "/heads/" in commit_path:
+             return False
+         # If the name is a tag
+         elif "/tags/" in commit_path:
+             return True
+    except:
+        return False
+
 def gitFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
     (repo_url, repo_tag) = (None, None)
     if verbose:
@@ -455,7 +472,13 @@ def gitFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
     # See if the package was listed in $TOOLS/eco_modulelist/modulelist.txt
     if packageName in git_package2Location:
         url_path = determinePathToGitRepo( packageName, verbose=verbose )
-        (repo_sha, repo_tag) = gitGetRemoteTag( url_path, tag, verbose=verbose )
+        if gitIfTag( tag ):
+            (repo_sha, repo_tag) = gitGetRemoteTag( url_path, tag, verbose=verbose )
+	else:
+            # validate that the branch name exists, paste in lower section as well
+            branch_name = "refs/remotes/origin/" + tag
+            repo_sha = gitGetTagSha( branch_name )
+            repo_tag = tag  
         if repo_sha:
             repo_url = url_path
     else:
@@ -464,7 +487,16 @@ def gitFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
                 break
             for p in [ packageName, packagePath ]:
                 url_path = '%s/%s.git' % ( url_root, p )
-                (repo_sha, repo_tag) = gitGetRemoteTag( url_path, tag, verbose=verbose )
+                print "Url Path %s " % url_path
+                # Regex to determine that the input is a tag
+                if gitIfTag( tag ):
+                    (repo_sha, repo_tag) = gitGetRemoteTag( url_path, tag, verbose=verbose )
+                # Assume it is a git branch name, format to work with show-ref
+                else:
+                    branch_name = "refs/remotes/origin/" + tag
+                    repo_sha = gitGetTagSha( branch_name )
+                    print "branch name %s repo %s" % (branch_name, repo_sha)
+                    repo_tag = tag
                 if repo_sha is not None:
                     repo_url = url_path
                     break

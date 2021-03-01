@@ -66,9 +66,18 @@ def find_release( packageSpec, repo_url=None, verbose=False ):
             release = Releaser( repo, packagePath, None, packageVersion, verbose=verbose )
     else:
         (git_url, git_tag) = gitFindPackageRelease( packagePath, packageVersion, debug=False, verbose=verbose )
+        installDir_path = "/var/lib/jenkins/jobs/" + packageName
         if git_url is not None:
-            repo = gitRepo.gitRepo( git_url, None, packageName, git_tag )
-            release = Releaser( repo, packagePath, None, git_tag, verbose=verbose )
+            # If the tag is a valid git tag
+            if gitIfTag( git_tag): 
+            #TODO: first none in repo is branch, so find a way to separate branch and tag(utils helper function)   
+                repo = gitRepo.gitRepo( git_url, None, packageName, git_tag )
+                #TODO: remove hardcoding path
+                release = Releaser( repo, packagePath, installDir_path, git_tag, verbose=verbose )
+            else:
+                # url, branch, package name, tag
+                repo = gitRepo.gitRepo( git_url, git_tag, packageName, git_tag )
+                release = Releaser( repo, packagePath, installDir_path, git_tag, verbose=verbose )
         if release is None:
             (svn_url, svn_branch, svn_tag) = svnFindPackageRelease( packagePath, packageVersion, debug=False, verbose=verbose )
             if svn_url is not None:
@@ -110,7 +119,8 @@ class Releaser(object):
         self._message	= message
         self._keepTmp	= keepTmp
         self._noTag		= noTag
-        self._installDir= None
+        #TODO: Why set installDir to None after
+        #self._installDir= None
         self._ReleasePath= None
         self._CookieJarPath= None
         # TODO: Derive _EpicsHostArch from the module's RELEASE_SITE file instead of env
