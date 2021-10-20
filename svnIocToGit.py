@@ -92,7 +92,7 @@ def importTrunk( trunk, name, gitUrl, branches=[], tags=[], verbose=False ):
 
     os.chdir(curDir)
 
-    # Create a bare master repo for the new git repository, cloned from our tmp repo
+    # Create a bare upstream repo for the new git repository, cloned from our tmp repo
     subprocess.check_call([ "git", "clone", "--bare",
                             "--template=%s/templates" % DEF_GIT_MODULES_PATH,
                             tmpGitRepoPath, gitUrl ])

@@ -252,20 +252,20 @@ def initBareRepo( gitRepoPath, verbose=False ):
     if not os.path.exists(gitRepoPath):
         raise Exception( "Failed to create git repo at:\n" + gitRepoPath )
 
-def cloneMasterRepo( gitMasterRepo, tpath, packageName, branch=None, depth=None, verbose=False ):
-    '''Create a clone of the master repo given a destination folder'''
+def cloneUpstreamRepo( gitUpstreamRepo, tpath, packageName, branch=None, depth=None, verbose=False ):
+    '''Create a clone of the upstream repo given a destination folder'''
     if packageName:
         clonedFolder = os.path.join(tpath, packageName)
     else:
         clonedFolder = tpath
-    prompt = "Cloning the master repo at %s into %s" % ( gitMasterRepo, clonedFolder )
-    gitCommand = "clone --recursive %s %s" % ( gitMasterRepo, clonedFolder )
+    prompt = "Cloning the upstream repo at %s into %s" % ( gitUpstreamRepo, clonedFolder )
+    gitCommand = "clone --recursive %s %s" % ( gitUpstreamRepo, clonedFolder )
     if branch:
         gitCommand += " --branch %s" % branch
         prompt += " from branch %s" % branch
         if gitGetVersionNumber() > 1.08:
             gitCommand += " --config advice.detachedHead=false"
-    #if depth and gitMasterRepo.find('://') > 0:
+    #if depth and gitUpstreamRepo.find('://') > 0:
     if depth:
         gitCommand += " --no-local --depth %d" % depth
     #May throw RuntimeError or subprocess.CalledProcessError exceptions
@@ -303,8 +303,8 @@ def gitCommitAndPush( message ):
     message = 'Initial commit/import from eco. Added a default .gitignore and other defaults.'
     subprocess.check_call(['git', 'push' ])
 
-def addPackageToEcoModuleList(packageName, gitMasterRepo):
-    '''Add the package with the given master repo to eco's modulelist'''
+def addPackageToEcoModuleList(packageName, gitUpstreamRepo):
+    '''Add the package with the given upstream repo to eco's modulelist'''
     curDir = os.getcwd()
     print "Adding package", packageName, "to eco_modulelist"
     tools_dir = os.environ['TOOLS']
@@ -326,9 +326,9 @@ def addPackageToEcoModuleList(packageName, gitMasterRepo):
 
     subprocess.check_call(['git', 'pull', '--rebase'])
     with open('modulelist.txt', 'a') as f:
-        f.write(packageName + "\t\t\t" + gitMasterRepo+"\n")
+        f.write(packageName + "\t\t\t" + gitUpstreamRepo+"\n")
     subprocess.check_call(['git', 'add', 'modulelist.txt'])
-    subprocess.check_call(['git', 'commit', '-m', 'eco added package ' + packageName + ' located at ' + gitMasterRepo])
+    subprocess.check_call(['git', 'commit', '-m', 'eco added package ' + packageName + ' located at ' + gitUpstreamRepo])
     subprocess.check_call(['git', 'pull', '--rebase'])
     subprocess.check_call(['git', 'push' ])
     os.chdir(curDir)

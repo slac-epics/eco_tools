@@ -3,7 +3,7 @@
 Typically this will happen when combining version histories of the same
 package from different version control systems and/or repositories.
 Merge parents can be provided for specific commits to rewrite the branches
-commit history to show the appropriate merge history vs the master branch.'''
+commit history to show the appropriate merge history vs the trunk branch.'''
 
 import argparse
 import os.path

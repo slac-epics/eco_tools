@@ -86,7 +86,7 @@ class gitRepo( Repo.Repo ):
                     else:
                         depth = None
                 # Clone the repo
-                cloneMasterRepo( self._url, buildDir, '', branch=self._tag, depth=depth )
+                cloneUpstreamRepo( self._url, buildDir, '', branch=self._tag, depth=depth )
                 os.chdir( buildDir )
             except RuntimeError, e:
                 print e

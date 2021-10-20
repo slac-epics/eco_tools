@@ -308,7 +308,7 @@ def checkOutModule(packageSpec, repoPath, tag, destinationPath, options, from_fi
                 branch = tag
                 # Don't do shallow clone for eco as users may want to fix bugs, retag, and push from there.
                 # depth  = DEF_GIT_RELEASE_DEPTH
-            cloneMasterRepo( repoPath, destinationPath, '', branch=branch, depth=depth, verbose=options.verbose )
+            cloneUpstreamRepo( repoPath, destinationPath, '', branch=branch, depth=depth, verbose=options.verbose )
             os.chdir(destinationPath)
             if (tag != ''):
                 # Do a headless checkout to the specified tag
@@ -317,8 +317,8 @@ def checkOutModule(packageSpec, repoPath, tag, destinationPath, options, from_fi
                 subprocess.check_call(cmd)
             #else: TODO Checkout a default branch if one isn't already selected.
             # 1. current release branch
-            # 2. master
-            # 3. github-master
+            # 2. trunk
+            # 3. slac-trunk
             # 4. lcls-trunk
             # 5. pcds-trunk
 
@@ -383,14 +383,14 @@ def initGitBareRepo( options ):
     if options.destination:
         bareRepoParentFolder = options.destination
     else:
-        # Ask the use where the master repo is to be created
+        # Ask the use where the upstream bare repo is to be created
         showStatusZenity = True
         bareRepoParentFolder = subprocess.check_output(["zenity", "--file-selection", "--title", "Please choose the parent folder where you want to create the bare repo", "--directory", "--filename="+gitRoot]).strip()
 
 
     gitRepoPath = os.path.join( bareRepoParentFolder, packageName+".git" )
     try:
-        # Create the master repo as a bare repo
+        # Create the upstream repo as a bare repo
         initBareRepo( gitRepoPath )
     except Exception as e:
         print "initGitBareRepo Error: initBareRepo call failed!\ngitRepoPath = " + gitRepoPath 
@@ -400,7 +400,7 @@ def initGitBareRepo( options ):
     tpath = tempfile.mkdtemp()
     curDir = os.getcwd()
 
-    clonedFolder = cloneMasterRepo(gitRepoPath, tpath, packageName)
+    clonedFolder = cloneUpstreamRepo(gitRepoPath, tpath, packageName)
     os.chdir(clonedFolder)
 
     createGitIgnore()
@@ -454,10 +454,10 @@ def importFromCVS( options ):
     if options.destination:
         bareRepoParentFolder = options.destination
     else:
-        # Ask the use where the master repo is to be created
+        # Ask the use where the upstream repo is to be created
         showStatusZenity = True
         bareRepoParentFolder = subprocess.check_output(	["zenity", "--file-selection", "--title",
-                                                        "Please choose the parent folder where you want to create the master git repo",
+                                                        "Please choose the parent folder where you want to create the upstream bare git repo",
                                                         "--directory", "--filename="+gitRoot] ).strip()
 
     curDir = os.getcwd()
@@ -476,7 +476,7 @@ def importFromCVS( options ):
     print "CVS history for ", packageName, " imported to ", gitRepoPath
 
     # Add .gitignore
-    clonedFolder = cloneMasterRepo(gitRepoPath, tpath, packageName)
+    clonedFolder = cloneUpstreamRepo(gitRepoPath, tpath, packageName)
     os.chdir(clonedFolder)
     createGitIgnore()
     # We expect .cram/packageinfo to be there already
@@ -491,7 +491,7 @@ def importFromCVS( options ):
     os.chdir(curDir)
     shutil.rmtree(tpath)
 
-    print "Done creating bare master repo for package ", packageName, ". Use eco to clone this repo into your working directory."
+    print "Done creating bare repo for package ", packageName, ". Use eco to clone this repo into your working directory."
     if showStatusZenity:
         subprocess.check_call(	["zenity", "--info", "--title", "Repo created for " + packageName,
                                 "--text", "Done creating bare repo for package " + packageName +

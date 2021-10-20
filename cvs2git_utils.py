@@ -102,7 +102,7 @@ def importHistoryFromCVS(tpath, gitRepoPath, CVSpackageLocation ):
     cvsgitdumppath = os.path.abspath(tpath)
 
     try:
-        # Create a bare master repo to load the CVS history into
+        # Create a bare git repo to load the CVS history into
         initBareRepo( gitRepoPath )
     except Exception as e:
         print "importHistoryFromCVS Error: initBareRepo call failed!\ngitRepoPath = " + gitRepoPath 
@@ -116,7 +116,7 @@ def importHistoryFromCVS(tpath, gitRepoPath, CVSpackageLocation ):
     p2 = subprocess.Popen(['git', 'fast-import'], stdin=p1.stdout)
     p1.stdout.close()  # Allow p1 to receive a SIGPIPE if p2 exits.
     p2.communicate()[0]
-    print "Done importing CVS dump into git master repo"
+    print "Done importing CVS dump into git repo"
 
     # If cvs2git created a TAG.FIXUP branch, delete it
     cmdOutput = subprocess.check_output( [ 'git', 'branch', '-l' ] ).splitlines()
@@ -132,7 +132,7 @@ def importHistoryFromCVS(tpath, gitRepoPath, CVSpackageLocation ):
 def checkCVS2GitPresent():
     '''Make sure we have cvs2git present'''
     if not os.path.exists(os.path.join(os.environ['TOOLS'], "cvs2git", "current", "cvs2git")):
-        raise Exception("Cannot find cvs2git in ${TOOLS} " + gitMasterRepo)
+        raise Exception("Cannot find cvs2git in ${TOOLS} " + gitUpstreamRepo)
     
 def removeModuleFromCVS(tpath, packageName, CVSpackageLocation):
     '''Remove the package from the CVS modules file by checking out CVSROOT in the temporary folder tpath'''
