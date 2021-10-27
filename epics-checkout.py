@@ -353,13 +353,19 @@ def checkOutModule(packageSpec, repoPath, tag, destinationPath, options, from_fi
 def initGitBareRepo( options ):
     '''Initialize a bare repo in the user specified folder'''
     showStatusZenity = False
+    zenityVersion = None
+    try:
+        zenityVersion = subprocess.check_output(["zenity", "--version"]).strip()
+    except:
+        print( "zenity not found!" )
+        return
     gitRoot = determineGitRoot()
     if 'CVSROOT' not in os.environ:
         os.environ['CVSROOT'] = DEF_CVS_ROOT
  
     if options.module:
         packageSpec = options.module
-    else:
+    else: # TODO: Handle zenityVersion None
         # Ask the user for the name of the package
         packageSpec = subprocess.check_output(["zenity", "--entry", "--title", "Package Name", "--text", "Please enter the name of the package"]).strip()
         showStatusZenity = True
