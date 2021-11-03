@@ -1,3 +1,8 @@
+R2.31	2021-11-03 Bruce Hill
+	Added a batch file option in svnIocToGit.py
+	Fix issue in determinePathToGitRepo() that didn't match full packageSpec
+	Add check for zenity support in initGitBareRepo
+	Add ADVimba and ADGenICam
 
 R2.30	2021-02-16 Bruce Hill
 	Fix boundary case when determining packageName in epics-release
