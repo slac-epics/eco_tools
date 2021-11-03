@@ -20,7 +20,7 @@ svnRepoRoot         = 'file:///afs/slac/g/pcds/vol2/svn/pcds'
 if svnRepoEnvVar in os.environ:
     svnRepoRoot = os.environ[svnRepoEnvVar]
 
-def importIOC( iocSpec, name=None, trunk=None, branches=[], tags=[], gitUrl=None, verbose=False ):
+def importIOC( iocSpec, name=None, trunk=None, branches=[], tags=[], gitUrl=None, batch=False, verbose=False ):
     if  trunk is None: 
         trunk = os.path.join( svnRepoTrunkPath, iocSpec, "current" )
     print "Importing svn IOC %s from %s" % ( iocSpec, trunk )
@@ -30,10 +30,11 @@ def importIOC( iocSpec, name=None, trunk=None, branches=[], tags=[], gitUrl=None
         name = iocSpec
     if not gitUrl:
         gitUrl = os.path.join( gitEpicsRoot, name + '.git' )
-    importTrunk( trunk, name, gitUrl, branches=branches, tags=svn_tags, verbose=verbose )
+    importTrunk( trunk, name, gitUrl, branches=branches, tags=svn_tags,
+                batch=batch, verbose=verbose )
 
  # TODO: In both svnIocToGit.py and svnModuleToGit.py.  Move to git_utils.py
-def importTrunk( trunk, name, gitUrl, branches=[], tags=[], verbose=False ):
+def importTrunk( trunk, name, gitUrl, branches=[], tags=[], verbose=False, batch=False ):
     # Create a tmp folder to work in
     tpath = tempfile.mkdtemp()
     tmpGitRepoPath = os.path.join( tpath, name )
@@ -70,9 +71,10 @@ def importTrunk( trunk, name, gitUrl, branches=[], tags=[], verbose=False ):
             print arg,
         print
 
-    confirmResp = raw_input( 'Proceed (Y/n)?' )
-    if len(confirmResp) != 0 and confirmResp != "Y" and confirmResp != "y":
-        return
+    if not batch:
+        confirmResp = raw_input( 'Proceed (Y/n)?' )
+        if len(confirmResp) != 0 and confirmResp != "Y" and confirmResp != "y":
+            return
 
     # Run git svn clone
     subprocess.check_call( git_cmd )
@@ -103,6 +105,7 @@ if __name__ == '__main__':
 The trunk and one tags branch are derived from the IOC name.
 Additional paths for both branches and tags may be added if desired either way.
 ''')
+    parser.add_argument( '-f', '--filename', action='store',  help='Filename containing list of iocSpecs')
     parser.add_argument( '-i', '--iocSpec',  action='store',  help='Example: svnIocToGit -i ioc/common/NewportAgilis (trunk imported from SVN_REPO/epics/trunk/IOC_SPEC/current, tags from SVN_REPO/epics/tags/IOC_SPEC)' )
     parser.add_argument( '-T', '--trunk',    action='store',  help='svn trunk path  to import. (relative to env CTRL_REPO)', default=None )
     parser.add_argument( '-b', '--branches', action='append', help='svn branch(es)  to import. (relative to env CTRL_REPO)', default=[] )
@@ -117,7 +120,24 @@ Additional paths for both branches and tags may be added if desired either way.
         print 'Please specify either a IOC specification or a trunk path, not both.'    
         sys.exit()
 
-    if args.iocSpec:
+    if args.filename:
+        try:
+            iocSpecs = []
+            with open( args.filename, "r" ) as f:
+                iocSpecs = f.readlines()
+            for iocSpec in iocSpecs:
+                iocSpec = iocSpec.strip(' 	/\n')
+                # Skip comments
+                if iocSpec.startswith( '#' ):
+                    continue
+                gitUrl = os.path.join( gitEpicsRoot, iocSpec + '.git' )
+                if os.path.isdir( gitUrl ):
+                    print( "%s: Already imported" % iocSpec )
+                    continue
+                importIOC( iocSpec, verbose=args.verbose, batch=True )
+        except Exception as e:
+            print( "Error opening %s: %s" % ( args.filename, e ) )
+    elif args.iocSpec:
         importIOC( args.iocSpec, name=args.name, trunk=args.trunk, branches=args.branches,
                       tags=args.tags, gitUrl=args.URL, verbose=args.verbose )
     elif args.trunk is not None or len(args.branches) > 0:
