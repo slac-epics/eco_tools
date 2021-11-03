@@ -423,10 +423,10 @@ def determinePathToGitRepo( packagePath, verbose = False ):
                 # Remove from list so we don't search these import directories
                 dirs.remove( dir )
                 continue
-            if dir == gitPackageDir:
-                return os.path.join( dirPath, dir )
             if os.path.isdir( os.path.join( dirPath, gitPackagePath ) ):
                 return os.path.join( dirPath, gitPackagePath )
+            if dir == gitPackagePath:
+                return os.path.join( dirPath, dir )
             if dir.endswith( ".git" ):
                 # Remove from list so we don't search recursively
                 dirs.remove( dir )
