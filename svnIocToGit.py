@@ -23,6 +23,11 @@ if svnRepoEnvVar in os.environ:
 def importIOC( iocSpec, name=None, trunk=None, branches=[], tags=[], gitUrl=None, batch=False, verbose=False ):
     if  trunk is None: 
         trunk = os.path.join( svnRepoTrunkPath, iocSpec, "current" )
+        if not svnPathExists( os.path.join(svnRepoRoot, trunk) ):
+            trunk = os.path.join( svnRepoTrunkPath, iocSpec )
+    if not svnPathExists( os.path.join(svnRepoRoot, trunk) ):
+        print( "Error: trunk path does not exist: %s" % os.path.join(svnRepoRoot, trunk) )
+        return
     print "Importing svn IOC %s from %s" % ( iocSpec, trunk )
     svn_tags  = [ os.path.join( svnRepoTagsPath, iocSpec ) ]
     svn_tags += tags
