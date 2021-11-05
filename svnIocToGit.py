@@ -131,6 +131,8 @@ Additional paths for both branches and tags may be added if desired either way.
             with open( args.filename, "r" ) as f:
                 iocSpecs = f.readlines()
             for iocSpec in iocSpecs:
+                sys.stdout.flush()
+                sys.stderr.flush()
                 iocSpec = iocSpec.strip(' 	/\n')
                 # Skip comments
                 if iocSpec.startswith( '#' ):
