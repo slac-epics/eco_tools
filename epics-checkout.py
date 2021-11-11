@@ -104,16 +104,16 @@ def assemble_env_inputs_from_term(options):
         tagName = options.tag
     else:
         tags = []
-        if packageName in cvs_modules2Location and os.path.isdir( DEF_CVS_ROOT ):            
+        if packageSpec in git_package2Location:
+            repoPath = git_package2Location[packageSpec]
+        elif packageName in git_package2Location:
+            repoPath = git_package2Location[packageName]
+        elif packageName in cvs_modules2Location and os.path.isdir( DEF_CVS_ROOT ):            
             # cvs REPO
             if not dirName:
                 dirName = 'MAIN_TRUNK'
             tags = cvsGetRemoteTags( packageName )
             repoPath = cvs_modules2Location[packageName]
-        elif packageSpec in git_package2Location:
-            repoPath = git_package2Location[packageSpec]
-        elif packageName in git_package2Location:
-            repoPath = git_package2Location[packageName]
         else:
             pathToGitRepo = determinePathToGitRepo( packageSpec, verbose=options.verbose )
             if pathToGitRepo:
