@@ -3,6 +3,8 @@ O.*
 *.log
 *.swp
 bin/
+build/
+children/build/
 db/
 dbd/
 html/
