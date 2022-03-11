@@ -68,6 +68,7 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
                     line = string.replace( line, oldVersion, newMacroVersions[macroName] )
                     print "New: %s" %  line,
                     modified = True
+
                 if macroName == "BASE":
                     using_BASE_MODULE_VERSION = True
                 else:
@@ -270,11 +271,24 @@ def update_pkg_dependency( topDir, pkgSpecs, debug=False, verbose=False ):
         print(pkgSpecs)
         return 0
 
+    # Remove macros from newMacroVersions if they're already in oldMacroVersions
+    # This helps avoid trying to fix commented out macros in configure/RELEASE
+    # when they've already been defined in RELEASE.local.
+    for macroName in oldMacroVersions.keys():
+        if macroName not in newMacroVersions:
+            continue
+        if oldMacroVersions[macroName] == newMacroVersions[macroName]:
+            del newMacroVersions[macroName]
+
     count = 0
 
-    for fileName in [	"RELEASE_SITE",
-                        os.path.join( "configure", "RELEASE" ),
-                        os.path.join( "configure", "RELEASE.local" ) ]:
+    for fileName in [	os.path.join( "configure", "RELEASE.local" ),
+                        "RELEASE_SITE",
+                        os.path.join( "configure", "RELEASE" ) ]:
+        # If we already updated package specs in RELEASE.local,
+        # skip RELEASE to avoid duplicate macro defines
+        if count > 0 and fileName == os.path.join( "configure", "RELEASE" ):
+            continue
         filePath = os.path.join( topDir, fileName )
         if os.access( filePath, os.R_OK ):
             count += update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose )
