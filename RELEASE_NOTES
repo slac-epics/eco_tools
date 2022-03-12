@@ -1,3 +1,13 @@
+R2.33	2022-03-11 Bruce Hill
+	Fixed issue where epics-update could define the same macro in RELEASE.local and RELEASE.
+	Add build and children/build to gitignore.template
+	Modify eco to check eco_modulelist/modules.txt before CVSROOT/modules
+	Add flush calls to svnIocToGit for cleaner script output.
+
+R2.32	2021-11-04 Bruce Hill
+	Add entry for ATCACommon in pkgNamesToMacroNames.py
+	Add check for svn ioc trunk path w/o current dir.
+
 R2.31	2021-11-03 Bruce Hill
 	Added a batch file option in svnIocToGit.py
 	Fix issue in determinePathToGitRepo() that didn't match full packageSpec
