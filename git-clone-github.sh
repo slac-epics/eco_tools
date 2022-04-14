@@ -11,11 +11,11 @@ fi
 URL=$1
 GIT_DIR=$2
 if [ -z "$GIT_DIR" ]; then
-	if [ ! -z "$URL" ]; then
+	if [ ! -z "$URL" -a "$URL" != "-h" -a "$URL" != "--help" ]; then
 		GIT_DIR=`basename $URL`
 	fi
 fi
-if [ -z "$URL" -o -z "$GIT_DIR" ]; then
+if [ -z "$URL" -o -z "$GIT_DIR" -o "$URL" = "-h" -o "$URL" = "--help" ]; then
 	echo "Usage: ./git-clone-github.sh https://github.com/git-repo-path/git-repo-name.git"
     echo "Or: ./git-clone-github.sh git-repo-name.git"
 	echo "Or: ./git-clone-github.sh https://github.com/git-repo-path/git-repo-name.git new_name.git"
