@@ -164,8 +164,8 @@ class gitRepo( Repo.Repo ):
             tag = self._tag
         if verbose:
             print "\nRemoving %s release tag %s ..." % ( package, tag )
-        cmdList = [ "git", "tag", "-d", tag ]
-        subprocess.check_call( cmdList )
+        subprocess.check_call( [ "git", "tag", "-d", tag ] )
+        subprocess.check_call( [ 'git', 'push', '--delete', 'origin', tag ] )
         print "Successfully removed %s release tag %s." % ( package, tag )
 
     def PushTag( self, release, verbose=True, dryRun=False ):
