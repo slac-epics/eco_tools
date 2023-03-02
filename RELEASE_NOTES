@@ -1,3 +1,15 @@
+R2.35	2023-03-02 Bruce Hill
+	Add gitRepo:PushBranch() and fix epics-release error that didn't push the branch.
+	Reworked installLinks to setup eco env before running python
+	Remove old soft link for installLinks
+
+R2.34 2022-11-17 Bruce Hill
+	git.RemoveTag now deletes tag in origin as well as local repo.
+	Add pyDevSup to pkgNamesToMacroNames.py
+	Add a script for pushing repos to slac-epics
+	Add cvsToGit package importer
+	Added -h and --help support in git-clone-github.sh
+
 R2.33	2022-03-11 Bruce Hill
 	Fixed issue where epics-update could define the same macro in RELEASE.local and RELEASE.
 	Add build and children/build to gitignore.template
