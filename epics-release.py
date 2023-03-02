@@ -387,7 +387,6 @@ try:
         if remote_tag != opt.release or remote_tag_sha != local_tag_sha:
             if opt.verbose:
                 print "Need to push tag %s\n" % opt.release
-            #repo.PushTag( opt.release, verbose=opt.verbose, dryRun=opt.dryRun )
 
     # Confirm buildDir, installDir, and tag
     if not opt.batch and not opt.dryRun:
@@ -437,9 +436,10 @@ try:
             pkgReleaser.TagRelease( message=opt.message )
 
         if git_url:
-            # Make sure the tag has been pushed
+            # Make sure the tag and branch have been pushed
             (remote_tag_sha, remote_tag ) = gitGetRemoteTag( git_url, opt.release )
             if remote_tag != opt.release or remote_tag_sha != local_tag_sha:
+                repo.PushBranch( )
                 repo.PushTag( opt.release )
 
     # Install package

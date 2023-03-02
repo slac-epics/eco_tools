@@ -9,7 +9,10 @@ class Repo(object):
     def __init__( self, url, branch=None, package=None, tag=None ):
         self._retcode	= 0
         self._url	    = url
-        self._branch    = branch
+        if branch is None:
+            self._branch    = self.GetWorkingBranch()
+        else:
+            self._branch    = branch
         self._package   = None
         if package is str:
             self._package = os.path.split( package )[1]
@@ -18,6 +21,10 @@ class Repo(object):
 
     def __del__( self ):
         self.DoCleanup( 0 )
+
+    # Override in child class
+    def GetWorkingBranch( self ):
+        return None
 
     def DoCleanup( self, errCode = 0 ):
         self._retcode = errCode

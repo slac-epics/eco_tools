@@ -168,6 +168,21 @@ class gitRepo( Repo.Repo ):
         subprocess.check_call( [ 'git', 'push', '--delete', 'origin', tag ] )
         print "Successfully removed %s release tag %s." % ( package, tag )
 
+    def PushBranch( self, branchName=None, verbose=True, dryRun=False ):
+        if branchName is None:
+            branchName = self._branch
+        if branchName is None:
+            if verbose or dryRun:
+                print "No branch to push"
+            return
+
+        if dryRun:
+            print "--dryRun-- Push Branch %s" % ( branchName )
+            return
+        if verbose:
+            print "Pushing branch %s ..." % ( branchName )
+        subprocess.check_call( [ 'git', 'push', 'origin', branchName ] )
+
     def PushTag( self, release, verbose=True, dryRun=False ):
         if dryRun:
             print "--dryRun-- Push tag %s" % ( release )

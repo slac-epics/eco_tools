@@ -347,11 +347,11 @@ def gitGetWorkingBranch( debug = False, verbose = False ):
     repo_branch = None
     repo_tag    = None
     try:
-        repoCmd = [ 'git', 'status' ]
+        repoCmd = [ 'git', 'symbolic-ref', 'HEAD' ]
         statusInfo = subprocess.check_output( repoCmd, stderr=subprocess.STDOUT )
         statusLines = statusInfo.splitlines()
-        if len(statusLines) > 0 and statusLines[0].startswith( '# On branch ' ):
-            repo_branch = statusLines[0].split()[3]
+        if len(statusLines) > 0 and statusLines[0].startswith( 'refs/heads/' ):
+            repo_branch = statusLines[0].split('/')[2]
 
         repoCmd = [ 'git', 'remote', '-v' ]
         statusInfo = subprocess.check_output( repoCmd, stderr=subprocess.STDOUT )
