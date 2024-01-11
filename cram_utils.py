@@ -6,6 +6,7 @@ import subprocess
 import json
 from git_utils     import *
 from repo_defaults import *
+from functools import reduce
 
 def createCramPackageInfo(packageName, apptype):
     '''Create .cram/packageinfo'''
@@ -15,7 +16,7 @@ def createCramPackageInfo(packageName, apptype):
     packageInfo['type'] = apptype
 
     if not os.path.exists('.cram'):
-        os.makedirs('.cram', 0775 )
+        os.makedirs('.cram', 0o775 )
     packageInfofile = os.path.join('.cram', 'packageinfo')
     with open(packageInfofile, 'w') as pkginfof:
         json.dump(packageInfo, pkginfof)
@@ -36,7 +37,7 @@ def determineCramAppType():
                                     '--list',
                                     '--title', "Choose the type of software application",
                                     '--column="Type"', '--column="Description"']
-                                    + list(reduce(lambda x, y: x + y, appTypes.items()))
+                                    + list(reduce(lambda x, y: x + y, list(appTypes.items())))
                                     ).strip()
     return apptype
 
@@ -45,7 +46,7 @@ def getCramReleaseDir( url=None, refName=None ):
     packageInfoFile = '.cram/packageinfo'
     if url:
         if not refName:
-            print "getCramReleaseDir error: No refName for url", url
+            print("getCramReleaseDir error: No refName for url", url)
             return None
         packageInfoContent = gitGetRemoteFile( url, refName, packageInfoFile )
         if packageInfoContent:

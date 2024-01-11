@@ -15,7 +15,7 @@ def cvsPathExists( cvsPath, revision=None, debug=False ):
         else:
             repoCmd = [ 'cvs', 'ls', cvsPath ]
         if debug:
-            print "cvsPathExists check_output: %s" % ' '.join( repoCmd )
+            print("cvsPathExists check_output: %s" % ' '.join( repoCmd ))
         contents = subprocess.check_output( repoCmd, stderr = subprocess.STDOUT )
         # No need to check contents
         # If no exception, the path exists
@@ -40,7 +40,7 @@ def cvsGetRemoteTags( packageName, verbose=False ):
         plaintags.add(parts[0].split(":")[0])
     tags = sorted(plaintags)
     if verbose:
-        print "cvsGetRemoteTags: Found %d tags in %s" % ( len(tags), packageName )
+        print("cvsGetRemoteTags: Found %d tags in %s" % ( len(tags), packageName ))
     return tags
 
 def cvsGetWorkingBranch( debug=False ):
@@ -70,26 +70,26 @@ def cvsGetWorkingBranch( debug=False ):
                         break
                 break
 
-    except OSError, e:
+    except OSError as e:
         if debug:
-            print e
+            print(e)
         pass
-    except subprocess.CalledProcessError, e:
+    except subprocess.CalledProcessError as e:
         if debug:
-            print e
+            print(e)
         pass
     return ( repo_url, repo_branch, repo_tag )
 
 def cvsFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
     (repo_url, repo_path, repo_tag) = (None, None, None)
     if verbose:
-        print "cvsFindPackageRelease: Need to find packageSpec=%s, tag=%s" % (packageSpec, tag)
+        print("cvsFindPackageRelease: Need to find packageSpec=%s, tag=%s" % (packageSpec, tag))
 
     if verbose:
         if repo_url:
-            print "cvsFindPackageRelease found %s/%s: url=%s, repo_path=%s, tag=%s" % (packageSpec, tag, repo_url, repo_path, repo_tag)
+            print("cvsFindPackageRelease found %s/%s: url=%s, repo_path=%s, tag=%s" % (packageSpec, tag, repo_url, repo_path, repo_tag))
         else:
-            print "cvsFindPackageRelease Error: Cannot find %s/%s" % (packageSpec, tag)
+            print("cvsFindPackageRelease Error: Cannot find %s/%s" % (packageSpec, tag))
     return (repo_url, repo_path, repo_tag)
 
 
@@ -106,7 +106,7 @@ def parseCVSModulesTxt( cvsRepoRoot=None, verbose=False ):
     cvsModulesTxtFile = os.path.join( os.environ['CVSROOT'], 'CVSROOT', 'modules')
     if not os.path.exists(cvsModulesTxtFile):
         if verbose:
-            print "CVS modules file not accessible: Unable to load CVS module list."
+            print("CVS modules file not accessible: Unable to load CVS module list.")
         return package2Location
     
     with open(cvsModulesTxtFile, 'r') as f:
@@ -151,7 +151,7 @@ def parseCVSModulesTxt( cvsRepoRoot=None, verbose=False ):
         parts = line.split()
         if(len(parts) < 2):
             if verbose:
-                print "Error parsing ", cvsModulesTxtFile, "Cannot break", line, "into columns with enough fields using spaces/tabs"
+                print("Error parsing ", cvsModulesTxtFile, "Cannot break", line, "into columns with enough fields using spaces/tabs")
             continue
 
         packageName = parts[0]

@@ -45,10 +45,10 @@ from version_utils import *
 
 def make_links( buildTop, installTop, subdir, arch=None, force=False, is_site_packages = False, is_pyinc = False, python='python2.7', verbose=False ):
     if not os.path.exists(buildTop):
-        print "Error: buildTop %s does not exist!" % buildTop
+        print("Error: buildTop %s does not exist!" % buildTop)
         return
     if not os.path.exists(installTop):
-        print "Error: installTop %s does not exist!" % installTop
+        print("Error: installTop %s does not exist!" % installTop)
         return
     if is_site_packages:
         subdir = 'lib/%s/site-packages' % python
@@ -56,7 +56,7 @@ def make_links( buildTop, installTop, subdir, arch=None, force=False, is_site_pa
         subdir = 'include/%s' % python
     for target in glob.glob('%s/%s/*' % ( buildTop, subdir ) ):
         if not os.path.exists(target):
-            print '%s does not exist' % target
+            print('%s does not exist' % target)
             continue
         (target_dir, target_base) = os.path.split( target )
         if subdir == 'lib' and target_base == python:
@@ -66,7 +66,7 @@ def make_links( buildTop, installTop, subdir, arch=None, force=False, is_site_pa
 
         # Make sure the sub-directory path exists
         if not os.path.isdir( os.path.join( installTop, subdir ) ):
-            os.makedirs( os.path.join( installTop, subdir ), 0775 )
+            os.makedirs( os.path.join( installTop, subdir ), 0o775 )
 
         # Create symlink filename
         if ( subdir == 'bin' or subdir == 'lib' ) and arch is not None:
@@ -77,8 +77,8 @@ def make_links( buildTop, installTop, subdir, arch=None, force=False, is_site_pa
         # See if the target is a directory and if so, recurse
         if os.path.isdir( target ):
             if not os.path.isdir( symlink ):
-                print "mkdir %s ..." % symlink
-                os.makedirs( symlink, 0775 )
+                print("mkdir %s ..." % symlink)
+                os.makedirs( symlink, 0o775 )
             [ symlink_path, symlink_subdir ] = os.path.split( symlink )
             [ target_path, target_subdir ] = os.path.split( target )
             make_links( target_path, symlink_path, symlink_subdir, arch=arch, force=force, is_site_packages=is_site_packages, is_pyinc=is_pyinc, python=python, verbose=verbose )
@@ -104,25 +104,25 @@ def make_links( buildTop, installTop, subdir, arch=None, force=False, is_site_pa
             msg += "    %s\n" % existing_target
             msg += "    %s" % target
             if verbose:
-                print msg
+                print(msg)
 
             if force:
                 # Remove the prior value
-                print "Removing prior link %s ..." % symlink
+                print("Removing prior link %s ..." % symlink)
                 os.remove( symlink )
             else:
-                print "Skipping link %s ..." % symlink
+                print("Skipping link %s ..." % symlink)
                 continue
 
         if not force and not os.path.islink(symlink) and os.path.exists(symlink):
-            print "Skipping pre-existing %s ..." % symlink
+            print("Skipping pre-existing %s ..." % symlink)
             continue
 
         # Remove pre-existing link or file
         if os.path.lexists(symlink):
             os.remove( symlink )
 
-        print "Creating link %s ..." % symlink
+        print("Creating link %s ..." % symlink)
         #print "%s -> %s" % ( symlink, target )
         os.symlink( target, symlink )
     return
@@ -136,7 +136,7 @@ def installLinksFromFile( releaseFile, installTop, debug=False, force=False, ver
     macroDict['TOP'] = installTop
     # Get the base and dependent modules from RELEASE files
     if not os.path.isfile( releaseFile ):
-        print "installLinksFromFile Error - Unable to open releaseFile: %s" % releaseFile
+        print("installLinksFromFile Error - Unable to open releaseFile: %s" % releaseFile)
         return
 
     macroDict = getMacrosFromFile( releaseFile, macroDict, debug=debug )
@@ -146,7 +146,7 @@ def installLinksFromFile( releaseFile, installTop, debug=False, force=False, ver
         if not pkgName:
             continue
         if not isReleaseCandidate(buildTop):
-            print "installLinksFromFile Error - Not an EPICS release: %s" % buildTop
+            print("installLinksFromFile Error - Not an EPICS release: %s" % buildTop)
         else:
             make_release_links( buildTop, installTop, force=False )
 
@@ -203,7 +203,7 @@ $EXTENSION_TOP/bin/linux-x86_64/file2 -> $GATEWAY_TOP/bin/linux-x86_64/file2
     elif options.buildTop:
         make_release_links( options.buildTop, options.installTop, arch=options.arch, force=options.force, verbose=options.verbose )
     else:
-        print "No release builds specified.  Try using -f or -b options."
+        print("No release builds specified.  Try using -f or -b options.")
         parser.print_usage()
 
 if __name__ == '__main__':

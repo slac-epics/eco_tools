@@ -36,9 +36,9 @@ class gitRepo( Repo.Repo ):
 
     def CheckoutRelease( self, buildDir, verbose=True, quiet=False, dryRun=False, depth=None ):
         if verbose:
-            print "Checking out: %s\nto build dir: %s ..." % ( self._url, buildDir )
+            print("Checking out: %s\nto build dir: %s ..." % ( self._url, buildDir ))
         if dryRun:
-            print "CheckoutRelease: --dryRun--"
+            print("CheckoutRelease: --dryRun--")
             return
 
         outputPipe = None
@@ -69,12 +69,12 @@ class gitRepo( Repo.Repo ):
                     os.chdir( curDir )
                     return
 
-            except RuntimeError, e:
-                print e
+            except RuntimeError as e:
+                print(e)
                 pass
 
-            except subprocess.CalledProcessError, e:
-                print e
+            except subprocess.CalledProcessError as e:
+                print(e)
                 pass
 
         if not os.path.isdir( os.path.join( buildDir, '.git' ) ):
@@ -88,14 +88,14 @@ class gitRepo( Repo.Repo ):
                 # Clone the repo
                 cloneUpstreamRepo( self._url, buildDir, '', branch=self._tag, depth=depth )
                 os.chdir( buildDir )
-            except RuntimeError, e:
-                print e
+            except RuntimeError as e:
+                print(e)
                 os.chdir(curDir)
-                raise gitError, "CheckoutRelease RuntimeError: Failed to clone %s to %s" % ( self._url, buildDir )
-            except subprocess.CalledProcessError, e:
-                print e
+                raise gitError("CheckoutRelease RuntimeError: Failed to clone %s to %s" % ( self._url, buildDir ))
+            except subprocess.CalledProcessError as e:
+                print(e)
                 os.chdir(curDir)
-                raise gitError, "CheckoutRelease CalledProcessError: Failed to clone %s in %s" % ( self._url, buildDir )
+                raise gitError("CheckoutRelease CalledProcessError: Failed to clone %s in %s" % ( self._url, buildDir ))
 
         # See if we've already created a branch for this tag
         branchSha = None
@@ -104,14 +104,14 @@ class gitRepo( Repo.Repo ):
             gitOutput = subprocess.check_output( cmdList ).splitlines()
             if len(gitOutput) == 1:
                 branchSha = gitOutput[0]
-        except subprocess.CalledProcessError, e:
+        except subprocess.CalledProcessError as e:
             pass
 
         try:
             # Refresh the tags
             # TODO: May fail if git repo is read-only
             if verbose:
-                print "CheckoutRelease running: git fetch origin refs/tags/%s" % self._tag
+                print("CheckoutRelease running: git fetch origin refs/tags/%s" % self._tag)
             cmdList = [ "git", "fetch", "origin", "refs/tags/" + self._tag ]
             subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
 
@@ -148,14 +148,14 @@ class gitRepo( Repo.Repo ):
                     inputs = assemble_release_site_inputs( batch=True )
                     export_release_site_file( inputs )
 
-        except RuntimeError, e:
-            print e
+        except RuntimeError as e:
+            print(e)
             os.chdir(curDir)
-            raise gitError, "CheckoutRelease RuntimeError: Failed to checkout %s in %s" % ( self._tag, buildDir )
-        except subprocess.CalledProcessError, e:
-            print e
+            raise gitError("CheckoutRelease RuntimeError: Failed to checkout %s in %s" % ( self._tag, buildDir ))
+        except subprocess.CalledProcessError as e:
+            print(e)
             os.chdir(curDir)
-            raise gitError, "CheckoutRelease CalledProcessError: Failed to checkout %s in %s" % ( self._tag, buildDir )
+            raise gitError("CheckoutRelease CalledProcessError: Failed to checkout %s in %s" % ( self._tag, buildDir ))
         os.chdir(curDir)
 
     def RemoveTag( self, package=None, tag=None, verbose=True, dryRun=False ):
@@ -163,44 +163,44 @@ class gitRepo( Repo.Repo ):
             package = self._package
             tag = self._tag
         if verbose:
-            print "\nRemoving %s release tag %s ..." % ( package, tag )
+            print("\nRemoving %s release tag %s ..." % ( package, tag ))
         subprocess.check_call( [ "git", "tag", "-d", tag ] )
         subprocess.check_call( [ 'git', 'push', '--delete', 'origin', tag ] )
-        print "Successfully removed %s release tag %s." % ( package, tag )
+        print("Successfully removed %s release tag %s." % ( package, tag ))
 
     def PushBranch( self, branchName=None, verbose=True, dryRun=False ):
         if branchName is None:
             branchName = self._branch
         if branchName is None:
             if verbose or dryRun:
-                print "No branch to push"
+                print("No branch to push")
             return
 
         if dryRun:
-            print "--dryRun-- Push Branch %s" % ( branchName )
+            print("--dryRun-- Push Branch %s" % ( branchName ))
             return
         if verbose:
-            print "Pushing branch %s ..." % ( branchName )
+            print("Pushing branch %s ..." % ( branchName ))
         subprocess.check_call( [ 'git', 'push', 'origin', branchName ] )
 
     def PushTag( self, release, verbose=True, dryRun=False ):
         if dryRun:
-            print "--dryRun-- Push tag %s" % ( release )
+            print("--dryRun-- Push tag %s" % ( release ))
             return
 
         if verbose:
-            print "Pushing tag %s ..." % ( release )
+            print("Pushing tag %s ..." % ( release ))
         subprocess.check_call( [ 'git', 'push', 'origin', release ] )
 
     def TagRelease( self, packagePath=None, release=None, branch=None, message="", verbose=True, dryRun=False ):
         if release is None:
             release = self._tag
         if dryRun:
-            print "--dryRun-- Tag %s release %s" % ( packagePath, release )
+            print("--dryRun-- Tag %s release %s" % ( packagePath, release ))
             return
 
         if verbose:
-            print "Tagging %s release %s ..." % ( packagePath, release )
+            print("Tagging %s release %s ..." % ( packagePath, release ))
         comment = "Release %s/%s: %s" % ( packagePath, release, message )
         cmdList = [ "git", "tag", release, 'HEAD', "-m", comment ]
         subprocess.check_call( cmdList )

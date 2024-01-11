@@ -105,8 +105,8 @@ def importHistoryFromCVS(tpath, gitRepoPath, CVSpackageLocation ):
         # Create a bare git repo to load the CVS history into
         initBareRepo( gitRepoPath )
     except Exception as e:
-        print "importHistoryFromCVS Error: initBareRepo call failed!\ngitRepoPath = " + gitRepoPath 
-        print str(e)
+        print("importHistoryFromCVS Error: initBareRepo call failed!\ngitRepoPath = " + gitRepoPath) 
+        print(str(e))
         raise
 
     os.chdir(gitRepoPath)
@@ -116,7 +116,7 @@ def importHistoryFromCVS(tpath, gitRepoPath, CVSpackageLocation ):
     p2 = subprocess.Popen(['git', 'fast-import'], stdin=p1.stdout)
     p1.stdout.close()  # Allow p1 to receive a SIGPIPE if p2 exits.
     p2.communicate()[0]
-    print "Done importing CVS dump into git repo"
+    print("Done importing CVS dump into git repo")
 
     # If cvs2git created a TAG.FIXUP branch, delete it
     cmdOutput = subprocess.check_output( [ 'git', 'branch', '-l' ] ).splitlines()
@@ -136,7 +136,7 @@ def checkCVS2GitPresent():
     
 def removeModuleFromCVS(tpath, packageName, CVSpackageLocation):
     '''Remove the package from the CVS modules file by checking out CVSROOT in the temporary folder tpath'''
-    print "Removing", packageName, "from CVS's module file."
+    print("Removing", packageName, "from CVS's module file.")
     curDir = os.getcwd()
     os.chdir(tpath)
     subprocess.check_call(['cvs', 'checkout', 'CVSROOT'])
@@ -145,9 +145,9 @@ def removeModuleFromCVS(tpath, packageName, CVSpackageLocation):
     for line in fileinput.input("modules", inplace=True):
         line=line.strip()
         if line.startswith(packageName):
-            print "# Commented out by eco %s" % (line)
+            print("# Commented out by eco %s" % (line))
         else:
-            print line
+            print(line)
 
     subprocess.check_call(['cvs', 'commit', '-m', 'eco commented out ' + packageName + ' as it was imported into git.'])
     
@@ -178,15 +178,15 @@ def importModuleType( cvsRoot, module, typePaths, gitFolder=None, repoPath=None,
         gitRepoPath = os.path.join( gitFolder, module + ".git" )
 
     if os.path.isdir( gitRepoPath ):
-        print "cvs import of repo already exists:", gitRepoPath
+        print("cvs import of repo already exists:", gitRepoPath)
         return
-    print "Importing CVS module %s from %s\n   to %s" % ( module, repoPath, gitRepoPath )
+    print("Importing CVS module %s from %s\n   to %s" % ( module, repoPath, gitRepoPath ))
  
     # Import the CVS history using a tmp folder
     tpath = tempfile.mkdtemp()
     try:
         importHistoryFromCVS( tpath, gitRepoPath, repoPath )
     except Exception as e:
-        print str(e)
+        print(str(e))
     shutil.rmtree(tpath)
-    print "CVS module %s successfully imported from %s\n   to %s" % ( module, repoPath, gitRepoPath )
+    print("CVS module %s successfully imported from %s\n   to %s" % ( module, repoPath, gitRepoPath ))

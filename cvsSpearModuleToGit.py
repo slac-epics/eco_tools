@@ -41,5 +41,5 @@ if __name__ == '__main__':
         typePaths = moduleTypePaths[moduleType]
         cvs2git_utils.importModuleType( cvsRoot, m, typePaths, repoPath=args.repoPath, gitFolder=args.gitFolder, fromDir='from-spear' )
 
-    print "Done."
+    print("Done.")
 

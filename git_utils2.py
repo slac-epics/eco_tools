@@ -14,7 +14,7 @@ def parseGitModulesTxt():
             continue
         parts = line.split()
         if(len(parts) < 2):
-            print "Error parsing ", gitModulesTxtFile, "Cannot break", line, "into columns with enough fields using spaces/tabs"
+            print("Error parsing ", gitModulesTxtFile, "Cannot break", line, "into columns with enough fields using spaces/tabs")
             continue
         packageName = parts[0]
         packageLocation = parts[1]
