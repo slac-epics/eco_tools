@@ -61,11 +61,11 @@ def pkgNameAddMacroName( pkgName, macroName ):
     else:
         if _macroNameToPkgName[macroName] != pkgName:
             if _macroNameToPkgName[macroName] is None:
-                print("pkgNameAddMacroName Error: Pkg %s Macro %s is not a valid pkgName" % \
-                        ( pkgName, macroName ))
+                print(("pkgNameAddMacroName Error: Pkg %s Macro %s is not a valid pkgName" % \
+                        ( pkgName, macroName )))
             else:
-                print("pkgNameAddMacroName Error: Pkg %s Macro %s already mapped to %s" % \
-                        ( pkgName, macroName, _macroNameToPkgName[macroName] ))
+                print(("pkgNameAddMacroName Error: Pkg %s Macro %s already mapped to %s" % \
+                        ( pkgName, macroName, _macroNameToPkgName[macroName] )))
 
 # Populate macro names for packages
 # Most of these are all just simple mappings to uppercase

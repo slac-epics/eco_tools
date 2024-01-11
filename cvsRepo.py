@@ -39,7 +39,7 @@ class cvsRepo( Repo.Repo ):
         (repo_url, repo_tag) = (None, None)
         (packagePath, sep, packageName) = packageSpec.rpartition('/')
 
-        print "FindPackageRelease STUBBED: Need to find packagePath=%s, packageName=%s\n" % (packagePath, packageName)
+        print("FindPackageRelease STUBBED: Need to find packagePath=%s, packageName=%s\n" % (packagePath, packageName))
         return (repo_url, repo_tag)
 
     def GetDefaultPackage( self, package, verbose=False ):
@@ -50,7 +50,7 @@ class cvsRepo( Repo.Repo ):
         defaultPackage	= None
         ( cvs_url, cvs_branch, cvs_tag ) = cvsGetWorkingBranch()
         if not cvs_url:
-            print "Current directory is not an cvs working dir!"
+            print("Current directory is not an cvs working dir!")
             return None
 
         branchHead	= cvs_url
@@ -61,36 +61,36 @@ class cvsRepo( Repo.Repo ):
         else:
             defaultPackage = os.path.join( branchTail, defaultPackage )
         if verbose:
-            print "package:        ", package
-            print "defaultPackage: ", defaultPackage
-            print "self._branch:   ", self._branch
-            print "self._url:      ", self._url
-            print "cvs_url:        ", cvs_url
+            print("package:        ", package)
+            print("defaultPackage: ", defaultPackage)
+            print("self._branch:   ", self._branch)
+            print("self._url:      ", self._url)
+            print("cvs_url:        ", cvs_url)
         return defaultPackage
 
     def CheckoutRelease( self, buildDir, verbose=False, dryRun=False ):
         if verbose or dryRun:
-            print "Checking out: %s\nto build dir: %s ..." % ( self._url, buildDir )
+            print("Checking out: %s\nto build dir: %s ..." % ( self._url, buildDir ))
         outputPipe = None
         if verbose:
             outputPipe = subprocess.PIPE
         if dryRun:
-            print "CheckoutRelease: --dryRun--"
+            print("CheckoutRelease: --dryRun--")
             return
         try:
             cmdList = [ "cvs", "co", self._url, buildDir ]
             subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
         except RuntimeError:
-            raise Releaser.BuildError, "CheckoutRelease: cvs co failed for %s %s" % ( self._url, buildDir )
+            raise Releaser.BuildError("CheckoutRelease: cvs co failed for %s %s" % ( self._url, buildDir ))
 
     def RemoveTag( self, dryRun=True ):
-        print "RemoveTag: Removing %s release tag %s ..." % ( self._package[0], self._tag )
+        print("RemoveTag: Removing %s release tag %s ..." % ( self._package[0], self._tag ))
         if dryRun:
-            print "RemoveTag: --dryRun--"
+            print("RemoveTag: --dryRun--")
             return
         cmdList = [ "cvs", "tag", "-d", self._tag ]
         subprocess.check_call( cmdList )
-        print "Successfully removed release tag %s." % ( self._tag )
+        print("Successfully removed release tag %s." % ( self._tag ))
 
     def TagRelease( self, package=None, release=None, branch=None, message="", verbose=True, dryRun=False ):
         if branch is None:
@@ -98,9 +98,9 @@ class cvsRepo( Repo.Repo ):
         if release is None:
             release = self._repo._tag
         if dryRun:
-            print "--dryRun--",
+            print("--dryRun--", end=' ')
         if verbose:
-            print "Tagging branch %s release %s ..." % ( branch, release )
+            print("Tagging branch %s release %s ..." % ( branch, release ))
         if dryRun:
             return
 

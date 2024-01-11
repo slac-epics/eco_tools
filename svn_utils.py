@@ -14,7 +14,7 @@ def svnPathExists( svnPath, revision=None, debug=False ):
         else:
             repoCmd = [ 'svn', 'ls', svnPath ]
         if debug:
-            print "svnPathExists check_output: %s" % ' '.join( repoCmd )
+            print("svnPathExists check_output: %s" % ' '.join( repoCmd ))
         contents = subprocess.check_output( repoCmd, stderr = subprocess.STDOUT )
         # No need to check contents
         # If no exception, the path exists
@@ -36,7 +36,7 @@ def svnGetRemoteTags( pathToSvnRepo, verbose=False ):
         pass
     tags = sorted(tags)
     if verbose:
-        print "svnGetRemoteTags: Found %d tags in %s" % ( len(tags), pathToSvnRepo )
+        print("svnGetRemoteTags: Found %d tags in %s" % ( len(tags), pathToSvnRepo ))
     return tags
 
 def svnGetWorkingBranch( debug=False ):
@@ -66,13 +66,13 @@ def svnGetWorkingBranch( debug=False ):
                         break
                 break
 
-    except OSError, e:
+    except OSError as e:
         if debug:
-            print e
+            print(e)
         pass
-    except subprocess.CalledProcessError, e:
+    except subprocess.CalledProcessError as e:
         if debug:
-            print e
+            print(e)
         pass
     return ( repo_url, repo_branch, repo_tag )
 
@@ -81,7 +81,7 @@ def svnFindPackageRelease( packagePath, tag, debug = False, verbose = False ):
     Returns a tuple: (repo_url, repo_path, repo_tag)
     Returns (None, None, None) on error'''
     if verbose:
-        print "svnFindPackageRelease: Looking for packagePath=%s, tag=%s" % (packagePath, tag)
+        print("svnFindPackageRelease: Looking for packagePath=%s, tag=%s" % (packagePath, tag))
     (repo_url, repo_path, repo_tag) = (None, None, None)
     svn_paths   = []
     if tag:
@@ -112,8 +112,8 @@ def svnFindPackageRelease( packagePath, tag, debug = False, verbose = False ):
             break
     if verbose:
         if repo_url:
-            print "svnFindPackageRelease found %s/%s: url=%s, repo_path=%s, tag=%s" % (packagePath, tag, repo_url, repo_path, repo_tag)
+            print("svnFindPackageRelease found %s/%s: url=%s, repo_path=%s, tag=%s" % (packagePath, tag, repo_url, repo_path, repo_tag))
         else:
-            print "svnFindPackageRelease Error: Cannot find %s/%s" % (packagePath, tag)
+            print("svnFindPackageRelease Error: Cannot find %s/%s" % (packagePath, tag))
     return (repo_url, repo_path, repo_tag)
 

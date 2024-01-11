@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from __future__ import print_function
+
 import os
 from repo_defaults import *
 from version_utils import *
@@ -177,7 +177,7 @@ def assemble_release_site_inputs( batch=False ):
     input_dict['EPICS_BASE_VER'] = epics_base_ver
     if not batch:
         prompt5 = 'Enter EPICS_BASE_VER or [RETURN] to use "' + epics_base_ver + '">'
-        user_input = raw_input(prompt5).strip()
+        user_input = input(prompt5).strip()
         if user_input:
             input_dict['EPICS_BASE_VER'] = user_input
     print('Using EPICS_BASE_VER: ' + input_dict['EPICS_BASE_VER'])
@@ -191,7 +191,7 @@ def assemble_release_site_inputs( batch=False ):
     input_dict['EPICS_SITE_TOP'] = epics_site_top
     if not batch:
         prompt1 = 'Enter full path for EPICS_SITE_TOP or [RETURN] to use "' + epics_site_top + '">'
-        user_input = raw_input(prompt1).strip()
+        user_input = input(prompt1).strip()
         if user_input:
             input_dict['EPICS_SITE_TOP'] = user_input
     print('Using EPICS_SITE_TOP: ' + input_dict['EPICS_SITE_TOP'])
@@ -213,7 +213,7 @@ def assemble_release_site_inputs( batch=False ):
         input_dict['EPICS_MODULES'] = epics_modules
     if not batch:
         prompt5 = 'Enter full path for EPICS_MODULES or [RETURN] to use "' + input_dict['EPICS_MODULES'] + '">'
-        user_input = raw_input(prompt5).strip()
+        user_input = input(prompt5).strip()
         if user_input:
             input_dict['EPICS_MODULES'] = user_input
     print('Using EPICS_MODULES: ' + input_dict['EPICS_MODULES'])
@@ -235,7 +235,7 @@ def assemble_release_site_inputs( batch=False ):
     input_dict['PACKAGE_SITE_TOP'] = package_site_top
     if not batch:
         prompt6 = 'Enter full path for PACKAGE_SITE_TOP or [RETURN] to use "' + package_site_top + '">'
-        user_input = raw_input(prompt6).strip()
+        user_input = input(prompt6).strip()
         if user_input:
             input_dict['PACKAGE_SITE_TOP'] = user_input
     print('Using PACKAGE_SITE_TOP: ' + input_dict['PACKAGE_SITE_TOP'])
@@ -272,7 +272,7 @@ def assemble_release_site_inputs( batch=False ):
         input_dict['TOOLS_SITE_TOP'] = tools_site_top
         if not batch:
             prompt6 = 'Enter full path for TOOLS_SITE_TOP or [RETURN] to use "' + tools_site_top + '">'
-            user_input = raw_input(prompt6).strip()
+            user_input = input(prompt6).strip()
             if user_input:
                 input_dict['TOOLS_SITE_TOP'] = user_input
         if os.path.isdir( input_dict['TOOLS_SITE_TOP'] ):
@@ -282,7 +282,7 @@ def assemble_release_site_inputs( batch=False ):
             input_dict['ALARM_CONFIGS_TOP'] = alarm_configs_top
             if not batch:
                 prompt6 = 'Enter full path for ALARM_CONFIGS_TOP or [RETURN] to use "' + alarm_configs_top + '">'
-                user_input = raw_input(prompt6).strip()
+                user_input = input(prompt6).strip()
                 if user_input:
                     input_dict['ALARM_CONFIGS_TOP'] = user_input
             if os.path.isdir( input_dict['ALARM_CONFIGS_TOP'] ):

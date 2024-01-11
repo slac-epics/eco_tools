@@ -25,7 +25,7 @@ def parseModulesTextFile(modules_txt_path):
             continue;
         parts = li.split()
         if len(parts) != 2:
-            print "Skipping incorrectly formatted line", li
+            print("Skipping incorrectly formatted line", li)
             continue
         moduleName=parts[0]
         moduleVersion=parts[1]
@@ -82,21 +82,21 @@ def assessImpact(modules_txt_path, module_being_changed):
     '''Determine the modules that depend on the module being changed'''
     moduleName2Version = parseModulesTextFile(modules_txt_path)
     module2Dependencies = {}
-    for (moduleName, moduleVersion) in moduleName2Version.iteritems():
+    for (moduleName, moduleVersion) in moduleName2Version.items():
         path_to_configure_release = os.path.join(moduleName, moduleVersion, 'configure', 'RELEASE')
         dependencies = determineModuleDependenciesFromConfigureRelease(path_to_configure_release)
         module2Dependencies[moduleName] = [x[0] for x in dependencies]
-    impacted_modules = [x[0] for x in module2Dependencies.iteritems() if module_being_changed in x[1]]
+    impacted_modules = [x[0] for x in module2Dependencies.items() if module_being_changed in x[1]]
     if impacted_modules:
-        print "The module", module_being_changed, "directly impacts these modules", ", ".join(sorted(impacted_modules))
+        print("The module", module_being_changed, "directly impacts these modules", ", ".join(sorted(impacted_modules)))
         # Compute the impact recursively
         visited, stack = set(), [module_being_changed]
         while stack:
             moduleName = stack.pop()
             if moduleName not in visited:
                 visited.add(moduleName)
-                stack.extend([x[0] for x in module2Dependencies.iteritems() if moduleName in x[1]])
-        print "The module", module_being_changed, "recursively impacts these modules", ", ".join(sorted(visited))
+                stack.extend([x[0] for x in module2Dependencies.items() if moduleName in x[1]])
+        print("The module", module_being_changed, "recursively impacts these modules", ", ".join(sorted(visited)))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='''For the modules specified in the input moduleslist.txt file, determine their dependencies and use this to assess the impact of changing one module to a newer version''')

@@ -4,15 +4,15 @@ import sys
 
 # Check the python version
 if sys.version_info[0] < 2 or ( sys.version_info[0] == 2 and sys.version_info[1] < 7 ):
-    print >> sys.stderr, "Python version %d.%d not supported." % (sys.version_info[0], sys.version_info[1])
-    print >> sys.stderr, "Please use python 2.7 or newer for epics-release."
+    print("Python version %d.%d not supported." % (sys.version_info[0], sys.version_info[1]), file=sys.stderr)
+    print("Please use python 2.7 or newer for epics-release.", file=sys.stderr)
     sys.exit(1)
 
 import shutil
 import optparse
 import traceback
 import tempfile
-import commands
+import subprocess
 import stat
 import os
 import subprocess
@@ -66,7 +66,7 @@ def ValidateArgs( repo, packageSpec, opt ):
     # release=None, message=None, verbose=False, batch=False )
     # validate the repo
     if not repo:
-        raise ValidateError, "Repo not found for packageSpec %s" % (packageSpec)
+        raise ValidateError("Repo not found for packageSpec %s" % (packageSpec))
     defaultPackage	= None
     ( repo_url, repo_branch, repo_tag ) = repo.GetWorkingBranch()
     if repo_url:
@@ -79,19 +79,19 @@ def ValidateArgs( repo, packageSpec, opt ):
             packageSpec = [ defaultPackage ]
 
     if opt.verbose:
-        print "epics-release ValidateArgs: repo_url       =", repo_url
-        print "epics-release ValidateArgs: repo_branch    =", repo_branch
-        print "epics-release ValidateArgs: repo_tag       =", repo_tag
-        print "epics-release ValidateArgs: packageSpec    =", packageSpec
-        print "epics-release ValidateArgs: defaultPackage =", defaultPackage
-        print "epics-release ValidateArgs: release        =", opt.release
+        print("epics-release ValidateArgs: repo_url       =", repo_url)
+        print("epics-release ValidateArgs: repo_branch    =", repo_branch)
+        print("epics-release ValidateArgs: repo_tag       =", repo_tag)
+        print("epics-release ValidateArgs: packageSpec    =", packageSpec)
+        print("epics-release ValidateArgs: defaultPackage =", defaultPackage)
+        print("epics-release ValidateArgs: release        =", opt.release)
 
     # Determine the release package URL
     if not repo_branch:
         if not packageSpec:
-            raise ValidateError, "No release package specified"
+            raise ValidateError("No release package specified")
         if packageSpec is list and len( packageSpec ) > 1:
-            raise ValidateError, "Multiple release packages specified: %s" % (packageSpec)
+            raise ValidateError("Multiple release packages specified: %s" % (packageSpec))
         if repo_url:
             repo_branch = repo_url
 
@@ -106,63 +106,63 @@ def ValidateArgs( repo, packageSpec, opt ):
         if repo_tag is not None:
             opt.release = repo_tag
     if opt.release is None:
-        raise ValidateError, "Release tag not specified (--release)"
+        raise ValidateError("Release tag not specified (--release)")
 
     if not re.match( r"(\S*R\d+([\-\.]\d+)-\d+\.\d+\.\d+?)|(\S*R\d+[\.\-]\d+([\-\.]\d+)?)", opt.release ):
-        raise ValidateError, "%s is an invalid release tag: Must be R[<orig_release>-]<major>.<minor>.<bugfix>" % opt.release
+        raise ValidateError("%s is an invalid release tag: Must be R[<orig_release>-]<major>.<minor>.<bugfix>" % opt.release)
 
     if not opt.noTag and repo_tag != opt.release:
         # validate release message
         if not opt.message:
-            print "Please enter a release comment (end w/ ctrl-d on blank line):"
+            print("Please enter a release comment (end w/ ctrl-d on blank line):")
             comment = ""
             try:
                 while True:
-                    line = raw_input()
+                    line = input()
                     comment = "\n".join( [ comment, line ] ) 
             except EOFError:
                 opt.message = comment
 
         if opt.message is None:
-            raise ValidateError, "Release message not specified (-m)"
+            raise ValidateError("Release message not specified (-m)")
 
     # if repo_url: This is an svn only test
     if False:
         # Check release branch vs working dir branch
         if repo_branch != repo_url:
-            print "Release branch: %s\nWorking branch: %s" % ( repo_branch, repo_url )
+            print("Release branch: %s\nWorking branch: %s" % ( repo_branch, repo_url ))
             if not opt.batch:
-                confirmResp = raw_input( 'Release branch does not match working dir.  Proceed (Y/n)?' )
+                confirmResp = input( 'Release branch does not match working dir.  Proceed (Y/n)?' )
                 if len(confirmResp) != 0 and confirmResp != "Y" and confirmResp != "y":
                     branchMsg = "Branch mismatch!\n"
-                    raise ValidateError, branchMsg
+                    raise ValidateError(branchMsg)
 
     versionFileName = git_get_versionFileName()
     if versionFileName and os.path.isfile( versionFileName ):
         # TODO: has it changed, show the change, prompt to edit
-        print "Did you remember to update the version file? %s" % versionFileName
+        print("Did you remember to update the version file? %s" % versionFileName)
 
     if os.path.isfile( "RELEASE_NOTES" ):
         # TODO: has it changed, is tag found, show the change
         # TODO: prompt to edit, pre-populate release entry
-        print "Did you remember to update the RELEASE_NOTES file?"
+        print("Did you remember to update the RELEASE_NOTES file?")
 
     # validate repo_grpowner	= DEF_LCLS_GROUP_OWNER
     if opt.verbose:
-        print "ValidateArgs: Success"
-        print "  repo_url:    %s" % repo_url
-        print "  branch:      %s" % repo_branch
-        print "  tag:         %s" % opt.release
+        print("ValidateArgs: Success")
+        print("  repo_url:    %s" % repo_url)
+        print("  branch:      %s" % repo_branch)
+        print("  tag:         %s" % opt.release)
         #print "  releasePath: %s" % repo_ReleasePath
         if opt.message:
-            print "  message: %s" % opt.message
+            print("  message: %s" % opt.message)
 
 # Entry point of the script. This is main()
 try:
     # Make sure we have a valid EPICS_SITE_TOP
     defaultEpicsSiteTop = determine_epics_site_top()
     if not defaultEpicsSiteTop or not os.path.isdir( defaultEpicsSiteTop ):
-        raise ValidateError, ( "Can't find EPICS_SITE_TOP at %s" % defaultEpicsSiteTop )
+        raise ValidateError( "Can't find EPICS_SITE_TOP at %s" % defaultEpicsSiteTop)
 
     parser = optparse.OptionParser(
         usage =	"usage: %prog [options] -r <release> [ <packageSpec> ] [ -m \"My release comments\" ]\n"
@@ -222,10 +222,10 @@ try:
     ( opt, args ) = parser.parse_args()
 
     if not opt.release:
-        raise ValidateError, ( "Release tag not specified!" )
+        raise ValidateError(( "Release tag not specified!" ))
 
     if opt.verbose:
-        print "epics-release main: opt.message=%s, args=%s" % ( opt.message, args )
+        print("epics-release main: opt.message=%s, args=%s" % ( opt.message, args ))
 
     repo         = None
     packageMatch = None
@@ -238,8 +238,8 @@ try:
 
     if git_url:
         if opt.verbose:
-            print "git_url:    %s" % git_url
-            print "git_branch: %s" % git_branch
+            print("git_url:    %s" % git_url)
+            print("git_branch: %s" % git_branch)
         # Create a git release handler
         ( urlPath, packageGitDir ) = os.path.split( git_url )
         if packageGitDir is None:
@@ -284,8 +284,8 @@ try:
             if opt.noTag:
                 svn_url	= "/".join( [ DEF_SVN_TAGS, packagePath, opt.release ] )
             if opt.verbose:
-                print "svn_url:    %s" % svn_url
-                print "svn_branch: %s" % svn_branch
+                print("svn_url:    %s" % svn_url)
+                print("svn_branch: %s" % svn_branch)
             # Create an svn release handler
             repo = svnRepo.svnRepo( svn_url, svn_branch, packagePath, opt.release )
 
@@ -296,22 +296,22 @@ try:
             if os.path.split(packageSpec)[1] != opt.release:
                 packageSpec = os.path.join( packageSpec, opt.release )
         if opt.verbose:
-            print "epics-release main: packageSpec=%s, args=%s" % ( packageSpec, args )
+            print("epics-release main: packageSpec=%s, args=%s" % ( packageSpec, args ))
         release = find_release( packageSpec, repo_url=repo.GetUrl(), verbose=opt.verbose )
         if release:
             if not release._packageName:
-                raise ValidateError, ( "Invalid package specified: %s" % packageSpec )
+                raise ValidateError( "Invalid package specified: %s" % packageSpec)
             repo = release._repo
             packageName = release._packageName
 
     if not packageName:
-        raise ValidateError, ( "No package specified and unable to determine it from current dir" )
+        raise ValidateError(( "No package specified and unable to determine it from current dir" ))
     elif opt.verbose:
-        print "package:    %s" % packageName
+        print("package:    %s" % packageName)
 
     # Have to have a repo to do a release
     if repo is None:
-        raise ValidateError, ( "Can't establish a repo branch" )
+        raise ValidateError(( "Can't establish a repo branch" ))
 
     pkgReleaser = Releaser( repo, packagePath, verbose=opt.verbose )
 
@@ -342,7 +342,7 @@ try:
         if releaseDir:
             opt.installDir = os.path.join(	releaseDir, opt.release	)
         if opt.installDir and opt.verbose:
-            print "CRAM releaseDir: %s" % releaseDir
+            print("CRAM releaseDir: %s" % releaseDir)
 
     if not opt.installDir:
         # See if we can derive the releaseDir from the packagePath
@@ -351,69 +351,69 @@ try:
         if 'base' in topDirDependents:
             epics_base_ver = topDirDependents['base']
             if strContainsMacros( epics_base_ver ):
-                raise ValidateError, "Unable to determine EPICS base version from RELEASE files"
+                raise ValidateError("Unable to determine EPICS base version from RELEASE files")
         if not packageName:
-            raise ValidateError, "No release package specified"
+            raise ValidateError("No release package specified")
         if os.path.split( packagePath )[0] == 'modules':
             if not epics_base_ver:
                 epics_base_ver = determine_epics_base_ver()
             if not epics_base_ver:
-                raise ValidateError, "Unable to determine EPICS base version"
+                raise ValidateError("Unable to determine EPICS base version")
             opt.installDir = os.path.join(	defaultEpicsSiteTop, epics_base_ver,
                                             packagePath, opt.release	)
         else:
             opt.installDir = os.path.join(	defaultEpicsSiteTop, packagePath, opt.release )
     pkgReleaser._installDir = opt.installDir
-    print     "repo_url:    %s" % repo.GetUrl()
+    print("repo_url:    %s" % repo.GetUrl())
     if opt.rmTag:
-        print "rm tag:      %s" % opt.release
+        print("rm tag:      %s" % opt.release)
     else:
-        print "tag:         %s" % opt.release 
+        print("tag:         %s" % opt.release) 
     if opt.rmBuild:
-        print "rm buildDir: %s"	% opt.installDir
+        print("rm buildDir: %s"	% opt.installDir)
     else:
-        print "installDir:  %s"	% opt.installDir
+        print("installDir:  %s"	% opt.installDir)
     if opt.dryRun:
-        print "DryRun:      True"
+        print("DryRun:      True")
     if	opt.noTag:
         opt.noTestBuild	= True
 
     if git_url:
         if opt.verbose and git_tag != opt.release:
-            print "Need to tag %s\n" % opt.release
+            print("Need to tag %s\n" % opt.release)
         # Make sure the tag has been pushed
         (remote_tag_sha, remote_tag ) = gitGetRemoteTag( git_url, opt.release )
         local_tag_sha = gitGetTagSha( opt.release )
         if remote_tag != opt.release or remote_tag_sha != local_tag_sha:
             if opt.verbose:
-                print "Need to push tag %s\n" % opt.release
+                print("Need to push tag %s\n" % opt.release)
 
     # Confirm buildDir, installDir, and tag
     if not opt.batch and not opt.dryRun:
-        confirmResp = raw_input( 'Proceed (Y/n)?' )
+        confirmResp = input( 'Proceed (Y/n)?' )
         if len(confirmResp) != 0 and confirmResp != "Y" and confirmResp != "y":
             sys.exit(0)
 
     # dryRun, just show release info
     if opt.dryRun:
-        print "--dryRun--"
+        print("--dryRun--")
         if opt.rmTag:
-            print "rm tag:      %s" % opt.release
+            print("rm tag:      %s" % opt.release)
         if opt.rmBuild:
-            print "rm buildDir: %s"	% opt.installDir
+            print("rm buildDir: %s"	% opt.installDir)
         if not opt.rmTag and not opt.rmBuild:
-            print "MakeRelease: %s" % opt.release
-            print "branch:      %s" % repo._branch
-            print "installDir:  %s" % opt.installDir
-            print "message:     %s" % opt.message
+            print("MakeRelease: %s" % opt.release)
+            print("branch:      %s" % repo._branch)
+            print("installDir:  %s" % opt.installDir)
+            print("message:     %s" % opt.message)
         sys.exit(0)
 
     if opt.rmBuild or opt.rmTag:
         if opt.rmBuild:
             try:
                 pkgReleaser.RemoveBuild( opt.installDir )
-            except BuildError, e:
-                print e
+            except BuildError as e:
+                print(e)
                 pass
         if opt.rmTag:
             pkgReleaser.RemoveTag( tag=opt.release )
@@ -452,29 +452,29 @@ try:
     sys.exit(0)
 
 except ValidateError:
-    print "Error: %s\n" % sys.exc_value 
+    print("Error: %s\n" % sys.exc_info()[1]) 
     parser.print_usage()
     sys.exit(6)
 
 except BuildError:
-    print "\nError: BUILD FAILURE"
-    print "%s\n" % sys.exc_value 
-    print "Fix build problems and commit any necessary changes"
+    print("\nError: BUILD FAILURE")
+    print("%s\n" % sys.exc_info()[1]) 
+    print("Fix build problems and commit any necessary changes")
     sys.exit(5)
 
 except svnError:
-    print "\nsvn FAILURE"
-    print "%s\n" % sys.exc_value 
-    print "Please copy script output and notify someone appropriate"
+    print("\nsvn FAILURE")
+    print("%s\n" % sys.exc_info()[1]) 
+    print("Please copy script output and notify someone appropriate")
     sys.exit(4)
 
 except InstallError:
-    print "\nERROR: INSTALL FAILURE"
-    print "%s\n" % sys.exc_value 
+    print("\nERROR: INSTALL FAILURE")
+    print("%s\n" % sys.exc_info()[1]) 
     sys.exit(3)
 
 except KeyboardInterrupt:
-    print "\nERROR: interrupted by user."
+    print("\nERROR: interrupted by user.")
     sys.exit(2)
 
 except SystemExit:
@@ -482,6 +482,6 @@ except SystemExit:
 
 except:
     if debugScript:
-        traceback.print_tb(sys.exc_traceback)
-    print "%s exited with ERROR:\n%s\n" % ( sys.argv[0], sys.exc_value )
+        traceback.print_tb(sys.exc_info()[2])
+    print("%s exited with ERROR:\n%s\n" % ( sys.argv[0], sys.exc_info()[1] ))
     sys.exit( 1 )

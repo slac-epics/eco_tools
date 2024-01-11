@@ -37,7 +37,7 @@ def VersionToRelNumber( version, debug=False ):
     try:
         ver = version
         if debug:
-            print("VersionToRelNumber: %s" % ( ver ))
+            print(("VersionToRelNumber: %s" % ( ver )))
         verMatch = releaseRegExp.search( ver )
         if verMatch:
             ver = verMatch.group(2) + '.' + verMatch.group(3) + verMatch.group(4)
@@ -53,7 +53,7 @@ def VersionToRelNumber( version, debug=False ):
     except:
         pass
     if debug:
-        print("VersionToRelNumber: %s = %f" % ( version, relNumber ))
+        print(("VersionToRelNumber: %s = %f" % ( version, relNumber )))
     return relNumber
 
 def isReleaseCandidate(release):
@@ -131,10 +131,10 @@ def getPkgReleaseList( top, pkgName ):
     Returns a sorted list of releases, most recent first.'''
     # Loop through the directories looking for releases
     if not os.path.isdir( top ):
-        print("getPkgReleaseList Error: top is not a directory: %s\n" % top)
+        print(("getPkgReleaseList Error: top is not a directory: %s\n" % top))
     pkgDir = os.path.join( top, pkgName )
     if not os.path.isdir( pkgDir ):
-        print("getPkgReleaseList Error: %s is not a package under %s\n" % ( pkgName, top ))
+        print(("getPkgReleaseList Error: %s is not a package under %s\n" % ( pkgName, top )))
 
     releaseList = [ ]
     for dirPath, dirs, files in os.walk( pkgDir, topdown=True ):
@@ -182,10 +182,10 @@ def getMacrosFromFile( filePath, macroDict, debug = False, required = False ):
     '''
     if not os.path.isfile( filePath ):
         if required:
-            print("getMacrosFromFile Error: unable to open %s" % filePath) 
+            print(("getMacrosFromFile Error: unable to open %s" % filePath)) 
         return macroDict
     if debug:
-        print("getMacrosFromFile %s: %d versions on entry" % ( filePath, len(macroDict) ))
+        print(("getMacrosFromFile %s: %d versions on entry" % ( filePath, len(macroDict) )))
     in_file = open( filePath, "r" )
     for line in in_file:
         line = line.strip()
@@ -215,7 +215,7 @@ def getMacrosFromFile( filePath, macroDict, debug = False, required = False ):
             macroValue = macroMatch.group(2)
             if macroName and macroValue:
                 if debug:
-                    print("getMacrosFromFile: %s = %s" % ( macroName, macroValue ))
+                    print(("getMacrosFromFile: %s = %s" % ( macroName, macroValue )))
                 macroDict[ macroName ] = macroValue
                 break
 
@@ -225,7 +225,7 @@ def getMacrosFromFile( filePath, macroDict, debug = False, required = False ):
         macroDict[macroName] = expandMacros( macroValue, macroDict )
 
     if debug:
-        print("getMacrosFromFile %s: %d versions on exit" % ( filePath, len(macroDict) ))
+        print(("getMacrosFromFile %s: %d versions on exit" % ( filePath, len(macroDict) )))
     return macroDict
 
 def getEpicsPkgDependents( topDir, debug=False ):
@@ -237,7 +237,7 @@ def getEpicsPkgDependents( topDir, debug=False ):
     # Get the base and dependent modules from RELEASE files
     releaseFile = os.path.join( topDir, "configure", "RELEASE" )
     if debug:
-        print("getEpicsPkgDependents: Checking release file: %s" % ( releaseFile ))
+        print(("getEpicsPkgDependents: Checking release file: %s" % ( releaseFile )))
     if os.path.isfile( releaseFile ):
         macroDict = getMacrosFromFile( releaseFile, macroDict, debug=debug )
 
@@ -262,7 +262,7 @@ def getEpicsPkgDependents( topDir, debug=False ):
             pkgVersion = '/'.join( macroValue.split('/')[-3:] )
         if pkgName and pkgVersion:
             if debug:
-                print("getEpicsPkgDependents: %s = %s" % ( pkgName, pkgVersion ))
+                print(("getEpicsPkgDependents: %s = %s" % ( pkgName, pkgVersion )))
             pkgDependents[ pkgName ] = pkgVersion
 
     if "base" in pkgDependents:
@@ -370,7 +370,7 @@ def ExpandPackagePath( topDir, pkgSpec, base=None, debug=False ):
     # See if it exists
     if not os.path.isdir( pkgPath ):
         if debug:
-            print("ExpandPackagePath: %s not found" % ( pkgPath ))
+            print(("ExpandPackagePath: %s not found" % ( pkgPath )))
         return []
 
     # See if this is a screens release
@@ -379,7 +379,7 @@ def ExpandPackagePath( topDir, pkgSpec, base=None, debug=False ):
         screenArg   = True
 
     if debug:
-        print("ExpandPackagePath: Expanding %s ..." % ( pkgPath ))
+        print(("ExpandPackagePath: Expanding %s ..." % ( pkgPath )))
 
     selectedReleases = [ ]
     if isReleaseCandidate( os.path.split( pkgPath )[-1] ):
@@ -413,7 +413,7 @@ def ExpandPackagePath( topDir, pkgSpec, base=None, debug=False ):
                 buildPath = os.path.join( release, "build" )
                 if os.path.isfile( verPath ) or os.path.isdir( buildPath ):
                     if debug:
-                        print("ExpandPackagePath: Found ", release)
+                        print(("ExpandPackagePath: Found ", release))
                     releases += [ release ]
 
             if len( releases ) == 0:
@@ -436,6 +436,6 @@ def ExpandPackagePath( topDir, pkgSpec, base=None, debug=False ):
                 selectedReleases += [ releaseSet[ release ] ]
 
     if debug:
-        print("ExpandPackagePath Selected Releases: %s" % selectedReleases )
+        print(("ExpandPackagePath Selected Releases: %s" % selectedReleases ))
     return selectedReleases
 
