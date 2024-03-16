@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/bin/env python3
 import argparse
 from pprint import *
 from repo_defaults import *

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # installLinks.py
 # Must have --buildTop arg as a src
 # Optional: --installTop to specify destination TOP or defaults to current dir

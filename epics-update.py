@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #  Name: epics-update.py
 #  Abs:  A tool to update EPICS packages
 #

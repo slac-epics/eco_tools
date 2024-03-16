@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #  Name: epics-jenkins.py
 #  Abs:  A tool to handle jenkins SCM polling jobs.
 #

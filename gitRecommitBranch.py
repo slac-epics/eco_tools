@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 '''This script imports a git repository branch from a git branch w/ a different origin.
 Typically this will happen when combining version histories of the same
 package from different version control systems and/or repositories.

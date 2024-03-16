@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #==============================================================
 #
 #  makeModules.py:  A tool to automate the builds of modules. 

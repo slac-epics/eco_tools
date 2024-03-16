@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #==============================================================
 #
 #  Abs:  A tool to checkout an EPICS package
