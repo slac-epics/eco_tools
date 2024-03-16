@@ -169,7 +169,7 @@ def gitGetRemoteTags( url, debug = False, verbose = False ):
         for line in statusInfo.splitlines():
             if line is None:
                 break
-            tagSpecMatch = tagSpecRegExp.search( line )
+            tagSpecMatch = tagSpecRegExp.search( line.decode('utf-8') )
             if not tagSpecMatch:
                 continue
             tags[ tagSpecMatch.group(2) ] = tagSpecMatch.group(1)

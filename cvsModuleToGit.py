@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 '''This script import an LCLS EPICS module from CVS to a git repo.'''
 
 import argparse

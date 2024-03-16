@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 '''This script import a PCDS EPICS IOC from svn to a git repo.'''
 import sys
 import argparse

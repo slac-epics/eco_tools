@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #  Name: epics-build.py
 #  Abs:  A tool to build one or more EPICS releases
 #
