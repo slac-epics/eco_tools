@@ -57,7 +57,6 @@ from git_utils import *
 from svn_utils import *
 from site_utils import *
 from version_utils import *
-import cvs2git_utils
 
 
 from eco_version import eco_tools_version
@@ -430,80 +429,6 @@ def initGitBareRepo( options ):
                                 "--text", "Done creating bare repo for package " + packageSpec +
                                 ". Use eco to clone this repo into your working directory."] )
 
-def importFromCVS( options ):
-    '''Import package from CVS and place into new git repo. Uses ${TOOLS}/cvs2git/current/cvs2git to do the actual importing'''
-    gitRoot = determineGitRoot()
-    cvs2git_utils.checkCVS2GitPresent()
-    showStatusZenity = False
- 
-    if options.module:
-        packageName = options.module
-    else:
-        # Ask the user for the name of the package
-        showStatusZenity = True
-        packageName = subprocess.check_output( ["zenity", "--entry", "--title", "Package Name", "--text",
-                                                "Please enter the name of the package"] ).strip()
-
-    if packageName in git_package2Location:
-        print("eco cvs2git error: %s is already registered and exists here:\n%s" % ( packageName, git_package2Location[packageName] ))
-        return
-    if packageName not in cvs_modules2Location:
-        print("eco cvs2git error: %s does not seem to be a CVS module." % packageName)
-        print("Make sure it exists in %s/CVSROOT/modules" % os.environ['CVSROOT'])
-        return
-
-    if 'CVSROOT' not in os.environ:
-        os.environ['CVSROOT'] = DEF_CVS_ROOT
-    CVSpackageLocation = os.path.join(os.environ['CVSROOT'], cvs_modules2Location[packageName])
-    print("Importing CVS package from ", CVSpackageLocation)
-
-    if options.destination:
-        bareRepoParentFolder = options.destination
-    else:
-        # Ask the use where the upstream repo is to be created
-        showStatusZenity = True
-        bareRepoParentFolder = subprocess.check_output(	["zenity", "--file-selection", "--title",
-                                                        "Please choose the parent folder where you want to create the upstream bare git repo",
-                                                        "--directory", "--filename="+gitRoot] ).strip()
-
-    curDir = os.getcwd()
-    tpath = tempfile.mkdtemp()
-
-    gitRepoPath = bareRepoParentFolder
-    if not gitRepoPath.endswith( packageName+".git" ):
-        gitRepoPath = os.path.join( gitRepoPath, packageName+".git")
-
-    try:
-        cvs2git_utils.importHistoryFromCVS(tpath, gitRepoPath, CVSpackageLocation)
-    except Exception as e:
-        print(str(e))
-        return
-
-    print("CVS history for ", packageName, " imported to ", gitRepoPath)
-
-    # Add .gitignore
-    clonedFolder = cloneUpstreamRepo(gitRepoPath, tpath, packageName)
-    os.chdir(clonedFolder)
-    createGitIgnore()
-    # We expect .cram/packageinfo to be there already
-    
-    gitCommitAndPush( 'Initial commit/import from eco. Added a default .gitignore and other defaults.' )
-
-    os.chdir(curDir)
-
-    addPackageToEcoModuleList(packageName, gitRepoPath)
-    cvs2git_utils.removeModuleFromCVS(tpath, packageName, CVSpackageLocation)
-
-    os.chdir(curDir)
-    shutil.rmtree(tpath)
-
-    print("Done creating bare repo for package ", packageName, ". Use eco to clone this repo into your working directory.")
-    if showStatusZenity:
-        subprocess.check_call(	["zenity", "--info", "--title", "Repo created for " + packageName,
-                                "--text", "Done creating bare repo for package " + packageName +
-                                ". Use eco to clone this repo into your working directory."] )
-
-
 def module_callback(option, opt_str, value, parser):
     print('Processing MODULE option; Setting', option.dest, 'to', value)
     setattr(parser.values, option.dest, value)
@@ -531,11 +456,6 @@ def process_options(argv):
             + 'epics-checkout also supports a command called initrepo "eco initrepo" that creates a bare git repository for your package.\n'\
             + '"epics-checkout initrepo" prompts you for a package name and type and repo location.\n'\
             + 'It then creates a bare git repo in the location specified; it also creates a default .gitignore and cram configuration for your package.\n'\
-            + '\n'\
-            + 'epics-checkout also supports a command called cvs2git "eco cvs2git" that imports a module from CVS into a git bare repo.\n'\
-            + '"eco cvs2git" prompts you for a module name and type and repo location.\n'\
-            + 'It then creates a bare git repo in the location specified; imports the history from CVS and adds a default .gitignore.\n'\
-            + 'It comments out the module location in the CVSROOT/modules file; however, it does NOT do a cvs remove of the software from CVS.\n'\
             + '\n'
     parser = optparse.OptionParser(usage=usage, version=eco_tools_version)
 
@@ -563,7 +483,6 @@ def process_options(argv):
 
 commands = {
     "initrepo": initGitBareRepo,
-    "cvs2git":  importFromCVS
 }
 
 def main(argv=None):
