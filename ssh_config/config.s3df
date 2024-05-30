@@ -1,0 +1,24 @@
+Host s3dflogin
+HostName s3dflogin.slac.stanford.edu
+        PubkeyAuthentication yes
+        PasswordAuthentication yes
+        ForwardAgent yes
+        ControlMaster auto
+        ControlPath ~/.ssh/%r@%h:%p
+        GSSAPITrustDNS yes
+        GSSAPIAuthentication yes
+        GSSAPIDelegateCredentials yes
+        GSSAPIRenewalForcesRekey yes
+
+Host github.com gitlab.com bitbucket.org
+        User git
+        ProxyJump s3dflogin
+        PubkeyAuthentication yes
+        PasswordAuthentication yes
+        ForwardAgent yes
+        ControlMaster auto
+        ControlPath ~/.ssh/%r@%h:%p
+        GSSAPITrustDNS yes
+        GSSAPIAuthentication yes
+        GSSAPIDelegateCredentials yes
+        GSSAPIRenewalForcesRekey yes

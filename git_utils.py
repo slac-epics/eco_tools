@@ -19,9 +19,15 @@ Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).'''
 LCLS_TOOLS			= '/afs/slac/g/lcls/tools'
 if 'TOOLS' in os.environ:
     TOOLS_SITE_TOP	= os.environ['TOOLS']
+elif 'EPICS_TOOLS' in os.environ:
+    TOOLS_SITE_TOP      = os.environ['EPICS_TOOLS']
 else:
     TOOLS_SITE_TOP	= LCLS_TOOLS
     os.environ['TOOLS'] = TOOLS_SITE_TOP
+
+# Configure the SSH proxy if in S3DF. Some of the EPICS development VMs don't have outside internet access
+if os.path.exists('/sdf'):
+    os.environ['GIT_SSH_COMMAND'] = f'ssh -F {os.path.dirname(__file__)}/ssh_config/config.s3df'
 
 gitModulesTxtFile   = os.path.join( TOOLS_SITE_TOP, 'eco_modulelist', 'modulelist.txt' )
 
