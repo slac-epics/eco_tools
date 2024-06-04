@@ -336,6 +336,29 @@ def update_stable( topDir='.', debug=False ):
 
     return count
 
+CONFIG_SITE_TEMPLATE = """
+# Top location of packages. Required for RTEMS, linuxRT, Valgrind
+SLAC_PACKAGE_TOP=${SLAC_PACKAGE_TOP}
+"""
+
+def generate_config_site():
+    if os.path.exists('configure/CONFIG_SITE.local'):
+        print('configure/CONFIG_SITE.local already exists, aborting!')
+        exit(1)
+    if not os.path.exists('configure'):
+        print('configure does not exist, aborting!')
+        exit(1)
+    pkg = os.environ['EPICS_PACKAGE_TOP']
+    if pkg is None:
+        pkg = os.environ['PACKAGE_SITE_TOP']
+    if pkg is None:
+        print('EPICS_PACKAGE_TOP or PACKAGE_SITE_TOP must be set in the environment!')
+        exit(1)
+
+    with open('configure/CONFIG_SITE.local', 'w') as fp:
+        fp.write(CONFIG_SITE_TEMPLATE.replace('${SLAC_PACKAGE_TOP}', pkg))
+
+
 def process_options(argv):
     if argv is None:
         argv = sys.argv[1:]
@@ -352,6 +375,7 @@ def process_options(argv):
     parser.add_argument( '-s', '--stable',   action='store_true', help='Update module dependencies to latest stable versions.' )
     parser.add_argument( '-t', '--top',      action='store',  default='.', help='Top of release area.' )
     parser.add_argument( '-v', '--verbose',  action="store_true", help='show more verbose output.' )
+    parser.add_argument( '-c', '--config-site', action='store_true', help='Generate CONFIG_SITE.local for EPICS base' )
     parser.add_argument( '--version',  		 action="version", version=eco_tools_version )
 
     options = parser.parse_args( )
@@ -386,13 +410,19 @@ def main(argv=None):
         in_file.close()
 
     count = 0
-    if options.RELEASE_SITE:
+    if options.RELEASE_SITE or options.config_site:
         curDir = os.getcwd()
         os.chdir( options.top )
         if options.verbose:
-            print("Updating %s/RELEASE_SITE ..." % options.top)
-        inputs = assemble_release_site_inputs( batch=True )
-        export_release_site_file( inputs, debug=options.verbose )
+            if options.RELEASE_SITE:
+                print("Updating %s/RELEASE_SITE ..." % options.top)
+            if options.config_site:
+                print("Updating %s/configure/CONFIG_SITE.local ..." % options.top)
+        if options.RELEASE_SITE:
+            inputs = assemble_release_site_inputs( batch=True )
+            export_release_site_file( inputs, debug=options.verbose )
+        if options.config_site:
+            generate_config_site()
         os.chdir( curDir )
         count += 1
 
