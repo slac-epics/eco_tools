@@ -18,7 +18,9 @@ eco_tools_dir=`readlink -f $(dirname $this_script)`
 # Use CONFIG_SITE_TOP to locate common_dirs.sh or
 # check known facility paths.
 if [ -z "$PSPKG_ROOT" -o -z "$TOOLS_SITE_TOP" ]; then
-	if [ ! -z "$CONFIG_SITE_TOP" -a -f $CONFIG_SITE_TOP/common_dirs.sh ]; then
+	if [ -f /sdf/group/cds/sw/epics/setup/setupEpics.bash ]; then
+		source /sdf/group/cds/sw/epics/setup/setupEpics.bash
+	elif [ ! -z "$CONFIG_SITE_TOP" -a -f $CONFIG_SITE_TOP/common_dirs.sh ]; then
 		source $CONFIG_SITE_TOP/common_dirs.sh
 	elif [  -f $FACILITY_ROOT/epics/config/common_dirs.sh ]; then
 		source $FACILITY_ROOT/epics/config/common_dirs.sh
