@@ -150,13 +150,13 @@ def export_release_site_file( inputs, debug=False):
     if VersionToRelNumber(inputs['EPICS_BASE_VER'], debug=debug) < 3.141205 \
         or doesPkgNeedMacro( 'EPICS_BASE_VER' ):
         print('EPICS_BASE_VER=%s' %inputs['EPICS_BASE_VER'], file=out_file)
-    print('PACKAGE_SITE_TOP=%s'  % inputs['PACKAGE_SITE_TOP'], file=out_file)
+    print('EPICS_PACKAGE_TOP=%s'  % inputs['EPICS_PACKAGE_TOP'], file=out_file)
     if 'MATLAB_PACKAGE_TOP' in inputs:
         print('MATLAB_PACKAGE_TOP=%s'        % inputs['MATLAB_PACKAGE_TOP'], file=out_file)
     if 'PSPKG_ROOT' in inputs:
         print('PSPKG_ROOT=%s'        % inputs['PSPKG_ROOT'], file=out_file)
-    if 'TOOLS_SITE_TOP' in inputs:
-        print('TOOLS_SITE_TOP=%s'    % inputs['TOOLS_SITE_TOP'], file=out_file)
+    if 'EPICS_TOOLS' in inputs:
+        print('EPICS_TOOLS=%s'    % inputs['EPICS_TOOLS'], file=out_file)
     if 'ALARM_CONFIGS_TOP' in inputs:
         print('ALARM_CONFIGS_TOP=%s' % inputs['ALARM_CONFIGS_TOP'], file=out_file)
     print('#==============================================================================', file=out_file)
@@ -223,22 +223,22 @@ def assemble_release_site_inputs( batch=False ):
         input_dict['IOC_SITE_TOP'] = ioc_site_top
         print('Using IOC_SITE_TOP: ' + input_dict['IOC_SITE_TOP'])
 
-    package_site_top = getEnv('PACKAGE_TOP')
+    package_site_top = getEnv('EPICS_PACKAGE_TOP')
     if not os.path.isdir( package_site_top ):
-        package_site_top = getEnv('PACKAGE_SITE_TOP')
+        package_site_top = getEnv('EPICS_PACKAGE_TOP')
     if not os.path.isdir( package_site_top ):
         package_site_top = '/cds/group/pcds/package'
     if not os.path.isdir( package_site_top ):
         package_site_top = '/afs/slac.stanford.edu/g/lcls/package'
     if not os.path.isdir( package_site_top ):
         package_site_top = '/afs/slac.stanford.edu/g/pcds/package'
-    input_dict['PACKAGE_SITE_TOP'] = package_site_top
+    input_dict['EPICS_PACKAGE_TOP'] = package_site_top
     if not batch:
-        prompt6 = 'Enter full path for PACKAGE_SITE_TOP or [RETURN] to use "' + package_site_top + '">'
+        prompt6 = 'Enter full path for EPICS_PACKAGE_TOP or [RETURN] to use "' + package_site_top + '">'
         user_input = input(prompt6).strip()
         if user_input:
-            input_dict['PACKAGE_SITE_TOP'] = user_input
-    print('Using PACKAGE_SITE_TOP: ' + input_dict['PACKAGE_SITE_TOP'])
+            input_dict['EPICS_PACKAGE_TOP'] = user_input
+    print('Using EPICS_PACKAGE_TOP: ' + input_dict['EPICS_PACKAGE_TOP'])
 
     matlab_package_top = getEnv('MATLAB_PACKAGE_TOP')
     if not os.path.isdir( matlab_package_top ):
@@ -265,20 +265,20 @@ def assemble_release_site_inputs( batch=False ):
         print('Using PSPKG_ROOT:', pspkg_root)
         input_dict['PSPKG_ROOT'] = pspkg_root
 
-    input_dict['TOOLS_SITE_TOP'] = ''
+    input_dict['EPICS_TOOLS'] = ''
     input_dict['ALARM_CONFIGS_TOP'] = ''
-    tools_site_top = getEnv('TOOLS')
+    tools_site_top = getEnv('EPICS_TOOLS')
     if os.path.isdir(tools_site_top):
-        input_dict['TOOLS_SITE_TOP'] = tools_site_top
+        input_dict['EPICS_TOOLS'] = tools_site_top
         if not batch:
-            prompt6 = 'Enter full path for TOOLS_SITE_TOP or [RETURN] to use "' + tools_site_top + '">'
+            prompt6 = 'Enter full path for EPICS_TOOLS or [RETURN] to use "' + tools_site_top + '">'
             user_input = input(prompt6).strip()
             if user_input:
-                input_dict['TOOLS_SITE_TOP'] = user_input
-        if os.path.isdir( input_dict['TOOLS_SITE_TOP'] ):
-            print('Using TOOLS_SITE_TOP: ' + input_dict['TOOLS_SITE_TOP'])
+                input_dict['EPICS_TOOLS'] = user_input
+        if os.path.isdir( input_dict['EPICS_TOOLS'] ):
+            print('Using EPICS_TOOLS: ' + input_dict['EPICS_TOOLS'])
 
-            alarm_configs_top = os.path.join( input_dict['TOOLS_SITE_TOP'], 'AlarmConfigsTop' )
+            alarm_configs_top = os.path.join( input_dict['EPICS_TOOLS'], 'AlarmConfigsTop' )
             input_dict['ALARM_CONFIGS_TOP'] = alarm_configs_top
             if not batch:
                 prompt6 = 'Enter full path for ALARM_CONFIGS_TOP or [RETURN] to use "' + alarm_configs_top + '">'
