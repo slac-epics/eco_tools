@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #  Name: epics-build.py
 #  Abs:  A tool to build one or more EPICS releases
 #
@@ -40,7 +40,7 @@ def build_modules( options ):
     status = 0
     if options.top:
         if not os.path.isdir( options.top ):
-            print "Invalid --top %s" % options.top
+            print("Invalid --top %s" % options.top)
     try:
         releases = find_releases( options )
         if len(releases) == 0:
@@ -51,8 +51,8 @@ def build_modules( options ):
                 if status == 0:
                     status = result
     except:
-        print sys.exc_value
-        print 'build_modules: Not all packages were installed!'
+        print(sys.exc_info()[1])
+        print('build_modules: Not all packages were installed!')
         return 1
     return status
  
@@ -61,7 +61,7 @@ def find_releases( options ):
     for package in options.packages:
         release = Releaser.find_release( package, verbose=options.verbose )
         if release is None:
-            print "Error: Could not find packageSpec: %s" % package
+            print("Error: Could not find packageSpec: %s" % package)
         else:
             releases += [ release ]
     return releases
@@ -69,7 +69,7 @@ def find_releases( options ):
 def buildDependencies( pkgTop, verbose=False ):
     status = 0
     # Check Dependendents
-    print "Checking dependents for %s" % ( pkgTop )
+    print("Checking dependents for %s" % ( pkgTop ))
     buildDep = getEpicsPkgDependents( pkgTop )
     for dep in buildDep:
         if dep == 'base':
@@ -77,7 +77,7 @@ def buildDependencies( pkgTop, verbose=False ):
         package = "%s/%s" % ( dep, buildDep[dep] )
         release = Releaser.find_release( package, verbose=verbose )
         if release is None:
-            print "Error: Could not find package %s" % package
+            print("Error: Could not find package %s" % package)
             continue
         result = release.InstallPackage( )
         if result != 0:
@@ -123,7 +123,7 @@ def main(argv=None):
     if (options.input_file_path):
         try:
             in_file = open(options.input_file_path, 'r')
-        except IOError, e:
+        except IOError as e:
             sys.stderr.write('Could not open "%s": %s\n' % (options.input_file_path, e.strerror))
             return None
 
@@ -138,7 +138,7 @@ def main(argv=None):
             if module and release:
                 options.packages += [ modulePath ]
                 if options.verbose:
-                    print 'Adding: %s' % modulePath
+                    print('Adding: %s' % modulePath)
 
             # repeat above for all lines in file
 
@@ -149,7 +149,7 @@ def main(argv=None):
         if result != 0:
             return  
     elif len( options.packages ) == 0:
-        print 'Error: No module/release packages specified!'
+        print('Error: No module/release packages specified!')
         return  
 
     return build_modules( options )

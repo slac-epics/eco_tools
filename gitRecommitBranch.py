@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 '''This script imports a git repository branch from a git branch w/ a different origin.
 Typically this will happen when combining version histories of the same
 package from different version control systems and/or repositories.
@@ -25,9 +25,9 @@ def importBranchTo( repo, parentBranch, srcBranch, srcBranchEnd=None, mergePoint
 
     if dstBranch is None:
         dstBranch = 'new-branch'
-    print "Importing branch %s w merge points on %s to branch %s" % ( srcBranch, parentBranch, dstBranch )
+    print("Importing branch %s w merge points on %s to branch %s" % ( srcBranch, parentBranch, dstBranch ))
 
-    if mergePoints is None or len(mergePoints.keys()) == 0:
+    if mergePoints is None or len(list(mergePoints.keys())) == 0:
         raise Exception( 'Must provide at least one merge point!' )
  
     srcCommits	= list( repo.iter_commits(srcBranch) )
@@ -37,7 +37,7 @@ def importBranchTo( repo, parentBranch, srcBranch, srcBranchEnd=None, mergePoint
     else:
         initial = srcCommits[-1].hexsha
         if not initial in mergePoints:
-            print "Warning: The first commit on branch %s, %.7s, does not have a merge point!\n" % ( srcBranch, initial )
+            print("Warning: The first commit on branch %s, %.7s, does not have a merge point!\n" % ( srcBranch, initial ))
 
     # Grab the tags so we can remap them as well
     tags = gitRepo.tags
@@ -59,17 +59,17 @@ def importBranchTo( repo, parentBranch, srcBranch, srcBranchEnd=None, mergePoint
             parents = tuple( [ newCommit ] + list(parents)[1:] )
         if lastCommit is not None and commit == lastCommit:
             if verbose:
-                print "Ending  branch at: %.7s" % commit.hexsha
+                print("Ending  branch at: %.7s" % commit.hexsha)
             lastCommit	= None
             parents		= []
         if mergePoint is not None:
             parents	= tuple( list(parents) + [ mergePoint ] )
             if verbose:
-                print "Found merge point: %.7s" % commit.hexsha
-                print "Parents are : (",
+                print("Found merge point: %.7s" % commit.hexsha)
+                print("Parents are : (", end=' ')
                 for p in parents:
-                    print " %.7s" % p.hexsha,
-                print ")"
+                    print(" %.7s" % p.hexsha, end=' ')
+                print(")")
 
         if commit.author_tz_offset < 0:
             author_date	= "%d -%04d" % ( commit.authored_date,  -commit.author_tz_offset/3600	  )
@@ -84,7 +84,7 @@ def importBranchTo( repo, parentBranch, srcBranch, srcBranchEnd=None, mergePoint
                         author=commit.author,		author_date=author_date,
                         committer=commit.committer,	commit_date=commit_date )
         if verbose or mergePoint is not None:
-            print "Created new commit: %.7s from %.7s" % ( newCommit.hexsha, commit.hexsha )
+            print("Created new commit: %.7s from %.7s" % ( newCommit.hexsha, commit.hexsha ))
 
         # Remap any tags from the old commit to the new one
         for tagRef in tags:
@@ -109,12 +109,12 @@ def importBranchTo( repo, parentBranch, srcBranch, srcBranchEnd=None, mergePoint
             else:
                 TagReference.create( gitRepo, tagRef.name, ref=newCommit, force=True )
             if verbose:
-                print "Remapped tag %s to %.7s from %.7s" % ( tagRef.name, newCommit.hexsha, commit.hexsha )
+                print("Remapped tag %s to %.7s from %.7s" % ( tagRef.name, newCommit.hexsha, commit.hexsha ))
 
     new_branch = repo.create_head( dstBranch )
     new_branch.set_commit( newCommit.hexsha )
     if verbose:
-        print "Done importing branch %s.\n" % ( srcBranch )
+        print("Done importing branch %s.\n" % ( srcBranch ))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser( description='''This script recreates the git commit history for a branch w/
@@ -140,16 +140,16 @@ if __name__ == '__main__':
     try:
         branchCommit = gitRepo.commit( args.srcBranch )
     except BadName:
-        print "srcBranch %s is not a valid commit" % args.srcBranch
+        print("srcBranch %s is not a valid commit" % args.srcBranch)
         sys.exit(1)
     try:
         branchCommit = gitRepo.commit( args.parentBranch )
     except BadName:
-        print "parentBranch %s is not a valid commit" % args.parentBranch
+        print("parentBranch %s is not a valid commit" % args.parentBranch)
         sys.exit(1)
     try:
         branchCommit = gitRepo.commit( args.dstBranch )
-        print "dstBranch %s already exists!" % args.dstBranch
+        print("dstBranch %s already exists!" % args.dstBranch)
         sys.exit(1)
     except BadName:
         pass
@@ -158,34 +158,34 @@ if __name__ == '__main__':
     for m in args.mergePoint:
         mergePoint = m.split(':')
         if len(mergePoint) != 2:
-            print "Invalid mergePoint: %s\nShould be 2 colon separated commit identifiers." % m
+            print("Invalid mergePoint: %s\nShould be 2 colon separated commit identifiers." % m)
             sys.exit(1)
 
         # Validate the merge commit
         try:
             mergeCommit	= gitRepo.commit( mergePoint[0] )
         except BadName:
-            print "MergePoint %s is not a valid commit" % mergePoint[0]
+            print("MergePoint %s is not a valid commit" % mergePoint[0])
             sys.exit(1)
         if not gitRepo.is_ancestor( mergeCommit.hexsha, args.srcBranch ):
-            print 'Merge point %.7s is not on branch %s!' % ( mergeCommit.hexsha, args.srcBranch )
+            print('Merge point %.7s is not on branch %s!' % ( mergeCommit.hexsha, args.srcBranch ))
             sys.exit(1)
 
         # Validate the merge parent
         try:
             mergeParent	= gitRepo.commit( mergePoint[1] )
         except BadName:
-            print "MergePoint parent %s is not a valid commit" % mergePoint[1]
+            print("MergePoint parent %s is not a valid commit" % mergePoint[1])
             sys.exit(1)
         if not gitRepo.is_ancestor( mergeParent.hexsha, args.parentBranch ):
             if mergeParent.type == 'tag':
                 if not gitRepo.is_ancestor( mergeParent.object.hexsha, args.parentBranch ):
-                    print 'Warning, parent tag %.7s is not on parent branch %s!' % ( mergeParent.hexsha, args.parentBranch )
+                    print('Warning, parent tag %.7s is not on parent branch %s!' % ( mergeParent.hexsha, args.parentBranch ))
             elif mergeParent.type == 'commit' and mergeParent.parents is not None:
                 if not gitRepo.is_ancestor( mergeParent.parents[0].hexsha, args.parentBranch ):
-                    print 'Warning, parent commit %.7s is not on parent branch %s!' % ( mergeParent.hexsha, args.parentBranch )
+                    print('Warning, parent commit %.7s is not on parent branch %s!' % ( mergeParent.hexsha, args.parentBranch ))
             else:
-                print 'Warning, commit %.7s is not on parent branch %s!' % ( mergeParent.hexsha, args.parentBranch )
+                print('Warning, commit %.7s is not on parent branch %s!' % ( mergeParent.hexsha, args.parentBranch ))
 
         # Register the mergePoint
         mergePoints[ mergeCommit.hexsha ] = mergeParent
@@ -193,5 +193,5 @@ if __name__ == '__main__':
     # Import the branch
     importBranchTo( gitRepo, args.parentBranch, args.srcBranch, args.srcBranchEnd, dstBranch=args.dstBranch, mergePoints=mergePoints, verbose=args.verbose )
 
-    print "Done."
+    print("Done.")
 

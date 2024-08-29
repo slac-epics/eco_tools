@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #==============================================================
 #
 #  makeModules.py:  A tool to automate the builds of modules. 
@@ -48,7 +48,7 @@ for path, dirnames, filenames in os.walk('.'):
 #    print 'ls %r' % path
 # We look for folders named configure that have a file named RELEASE
     if ('configure' in dirnames and 'RELEASE' in os.listdir(os.path.join(path, 'configure'))):
-        print 'Module: ' + repr(moduleName(path)) + ' Version: ' + repr(versionName(path))
+        print('Module: ' + repr(moduleName(path)) + ' Version: ' + repr(versionName(path)))
         thismoduleversion = moduleName(path) + '/' + versionName(path)
         paths.add(thismoduleversion)
         dependencies[thismoduleversion] = set([])
@@ -82,12 +82,12 @@ for path, dirnames, filenames in os.walk('.'):
                     if(moduleversionvar not in versionpathswithinmodule):
                         raise Exception('Cannot determine value of version variable ' + moduleversionvar + ' when processing RELEASE file for ' + path)
                     moduleversionpath = modulename + '/' + versionpathswithinmodule[moduleversionvar]
-                    print '\t\tDepends on: ' + moduleversionpath
+                    print('\t\tDepends on: ' + moduleversionpath)
                     dependencies[thismoduleversion].add(moduleversionpath)
                 else:
 # Here we had an absolute path like asyn/asyn-R4-17-RC1-lcls1; so no lookup or processing is needed
                     moduleversionpath = modulepartialpath
-                    print '\t\tDepends on: ' + moduleversionpath
+                    print('\t\tDepends on: ' + moduleversionpath)
                     dependencies[thismoduleversion].add(moduleversionpath)
 
 
@@ -134,10 +134,10 @@ for path in paths:
 for path in buildorder:
     cmd = 'make'
     arguments = sys.argv[1:]
-    print
-    print '\033[95mCalling ' + cmd +  ' ' + str(arguments) +' in folder ' + path + '\033[0m'
-    print
+    print()
+    print('\033[95mCalling ' + cmd +  ' ' + str(arguments) +' in folder ' + path + '\033[0m')
+    print()
     args = [cmd] + arguments
-    print args
+    print(args)
     subprocess.check_call(args, shell=False, cwd=path);
 

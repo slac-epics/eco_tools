@@ -37,7 +37,7 @@ class svnRepo( Repo.Repo ):
         (repo_url, repo_tag) = (None, None)
         (packagePath, sep, packageName) = packageSpec.rpartition('/')
 
-        print "FindPackageRelease STUBBED: Need to find packagePath=%s, packageName=%s\n" % (packagePath, packageName)
+        print("FindPackageRelease STUBBED: Need to find packagePath=%s, packageName=%s\n" % (packagePath, packageName))
         return (repo_url, repo_tag)
 
     def GetDefaultPackage( self, package, verbose=False ):
@@ -48,7 +48,7 @@ class svnRepo( Repo.Repo ):
         defaultPackage	= None
         ( svn_url, svn_branch, svn_tag ) = svnGetWorkingBranch()
         if not svn_url:
-            print "Current directory is not an svn working dir!"
+            print("Current directory is not an svn working dir!")
             return None
 
         branchHead	= svn_url
@@ -76,11 +76,11 @@ class svnRepo( Repo.Repo ):
             if branchHead == "":
                 defaultPackage = ""
         if verbose:
-            print "package:        ", package
-            print "defaultPackage: ", defaultPackage
-            print "self._branch:   ", self._branch
-            print "self._url:      ", self._url
-            print "svn_url:        ", svn_url
+            print("package:        ", package)
+            print("defaultPackage: ", defaultPackage)
+            print("self._branch:   ", self._branch)
+            print("self._url:      ", self._url)
+            print("svn_url:        ", svn_url)
         return defaultPackage
 
     def CheckoutRelease( self, buildDir, verbose=False, dryRun=False ):
@@ -88,12 +88,12 @@ class svnRepo( Repo.Repo ):
         if self._tagUrl:
             targetUrl = self._tagUrl
         if verbose or dryRun:
-            print "Checking out: %s\nto build dir: %s ..." % ( targetUrl, buildDir )
+            print("Checking out: %s\nto build dir: %s ..." % ( targetUrl, buildDir ))
         outputPipe = None
         if verbose:
             outputPipe = subprocess.PIPE
         if dryRun:
-            print "CheckoutRelease: --dryRun--"
+            print("CheckoutRelease: --dryRun--")
             return
 
         curDir = os.getcwd()
@@ -135,7 +135,7 @@ class svnRepo( Repo.Repo ):
                 cmdList = [ "svn", "co", targetUrl, buildDir ]
                 subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
             except RuntimeError:
-                raise Releaser.BuildError, "CheckoutRelease: svn co failed for %s %s" % ( targetUrl, buildDir )
+                raise Releaser.BuildError("CheckoutRelease: svn co failed for %s %s" % ( targetUrl, buildDir ))
 
     def svnMakeDir( self, svnDir, dryRun=True ):
         try:
@@ -143,22 +143,22 @@ class svnRepo( Repo.Repo ):
                 return
             if svnPathExists( svnDir ):
                 return
-            print "Creating SVN dir:", svnDir
+            print("Creating SVN dir:", svnDir)
             if dryRun:
-                print "svnMakeDir: --dryRun--"
+                print("svnMakeDir: --dryRun--")
                 return
             svnComment = "Creating release directory"
             cmdList = [ "svn", "mkdir", "--parents", svnDir, "-m", svnComment ]
             subprocess.check_call( cmdList )
         except:
-            raise svnError, "Error: svnMakeDir %s\n%s" % ( svnDir, sys.exc_value )
+            raise svnError("Error: svnMakeDir %s\n%s" % ( svnDir, sys.exc_info()[1] ))
 
     def RemoveTag( self, package=None, tag=None ):
         if not package:
             package = self._package
         if not tag:
             tag = self._tag
-        print "RemoveTag: Removing %s release tag %s ..." % ( package, tag )
+        print("RemoveTag: Removing %s release tag %s ..." % ( package, tag ))
 
         tagPath	= "/".join( [ DEF_SVN_TAGS, package, tag ]  )
         svnComment = "Removing unwanted tag %s for %s" % ( tag, package ) 
@@ -166,12 +166,12 @@ class svnRepo( Repo.Repo ):
             cmdList = [ "svn", "ls", tagPath ]
             cmdOutput = subprocess.check_output( cmdList, stderr=subprocess.STDOUT )
         except:
-            print "tagPath %s not found." % ( tagPath )
+            print("tagPath %s not found." % ( tagPath ))
             return
 
         cmdList = [ "svn", "rm", tagPath, "-m", svnComment ]
         subprocess.check_call( cmdList )
-        print "Successfully removed %s release tag %s." % ( package, tag )
+        print("Successfully removed %s release tag %s." % ( package, tag ))
 
     def TagRelease( self, packagePath=None, release=None, branch=None, message=None, verbose=True, dryRun=False ):
         if branch is None:
@@ -185,15 +185,15 @@ class svnRepo( Repo.Repo ):
         try: # See if tag already exists
             cmdList = [ "svn", "ls", self._tagUrl ]
             cmdOutput = subprocess.check_output( cmdList, stderr=subprocess.STDOUT )
-            print "%s/%s already tagged." % ( packagePath, release )
+            print("%s/%s already tagged." % ( packagePath, release ))
             return
         except:
             pass
 
         if dryRun:
-            print "--dryRun--",
+            print("--dryRun--", end=' ')
         if verbose:
-            print "Tagging %s ..." % ( self._tagUrl )
+            print("Tagging %s ..." % ( self._tagUrl ))
         if dryRun:
             return
         releaseComment	= "Release %s: " % release

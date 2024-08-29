@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #  Name: epics-update.py
 #  Abs:  A tool to update EPICS packages
 #
@@ -64,9 +64,9 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
             if macroName in newMacroVersions:
                 newVersion = newMacroVersions[macroName]
                 if newVersion != oldVersion:
-                    print "Old: %s" %  line,
+                    print("Old: %s" %  line, end=' ')
                     line = string.replace( line, oldVersion, newMacroVersions[macroName] )
-                    print "New: %s" %  line,
+                    print("New: %s" %  line, end=' ')
                     modified = True
 
                 if macroName == "BASE":
@@ -114,22 +114,22 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
                 # We've already defined this macroName
                 if not commentedOut:
                     # Comment out subsequent definitions
-                    print "Old: %s" %  line,
+                    print("Old: %s" %  line, end=' ')
                     line = string.replace( line, originalLine, '#' + originalLine )
-                    print "New: %s" %  line,
+                    print("New: %s" %  line, end=' ')
                     modified = True
             else:
                 definedModules[macroName] = newVersionPath
                 if commentedOut:
                     # Uncomment the line
-                    print "Old: %s" %  line,
+                    print("Old: %s" %  line, end=' ')
                     line = string.strip( line, '# ' )
-                    print "New: %s" %  line,
+                    print("New: %s" %  line, end=' ')
                     modified = True
                 if oldVersionPath != newVersionPath:
-                    print "Old: %s" %  line,
+                    print("Old: %s" %  line, end=' ')
                     line = string.replace( line, oldVersionPath, newVersionPath )
-                    print "New: %s" %  line,
+                    print("New: %s" %  line, end=' ')
                     modified = True
 
         if not "BASE" in newMacroVersions:
@@ -158,8 +158,8 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
             oldLine = line
             line = string.replace( line, oldBaseVersion, newBaseVersion )
             if newBaseVersion in line:
-                print "Old: %s" %  oldLine,
-                print "New: %s" %  line,
+                print("Old: %s" %  oldLine, end=' ')
+                print("New: %s" %  line, end=' ')
                 modified = True
                 lineCache += line
                 continue
@@ -175,8 +175,8 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
             #line = string.replace( line, oldBaseVersion, newBaseVersion )
             #line = string.replace( line, oldVersionPath, baseDirName )
             if True or newBaseVersion in line:
-                print "Old: %s" %  oldLine,
-                print "New: %s" %  line,
+                print("Old: %s" %  oldLine, end=' ')
+                print("New: %s" %  line, end=' ')
             modified = True
 
         if macroName == "EPICS_BASE":
@@ -187,9 +187,9 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
             else:
                 newVersionPath = "$(EPICS_SITE_TOP)/base/%s" % baseDirName 
             if oldVersionPath != newVersionPath:
-                print "Old: %s" %  line,
+                print("Old: %s" %  line, end=' ')
                 line = string.replace( line, oldVersionPath, newVersionPath )
-                print "New: %s" %  line,
+                print("New: %s" %  line, end=' ')
                 modified = True
 
         if macroName == "EPICS_MODULES" or macroName == "MODULES_SITE_TOP":
@@ -198,9 +198,9 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
             else:
                 newVersionPath = "$(EPICS_SITE_TOP)/%s/modules" % newBaseVersion
             if oldVersionPath != newVersionPath:
-                print "Old: %s" %  line,
+                print("Old: %s" %  line, end=' ')
                 line = string.replace( line, oldVersionPath, newVersionPath )
-                print "New: %s" %  line,
+                print("New: %s" %  line, end=' ')
                 modified = True
 
         lineCache += line
@@ -209,7 +209,7 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
     in_file.close()
     if not modified:
         if verbose:
-            print("%s, No change" %  filePath)
+            print(("%s, No change" %  filePath))
         return 0
 
     # Replace prior version w/ updates
@@ -224,7 +224,7 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
     except IOError as e:
         sys.stderr.write( 'Could not replace "%s": %s\n' % ( filePath, e.strerror ) )
         return 0
-    print("%s, UPDATED" %  filePath)
+    print(("%s, UPDATED" %  filePath))
     return 1
 
 def update_pkg_dependency( topDir, pkgSpecs, debug=False, verbose=False ):
@@ -242,10 +242,10 @@ def update_pkg_dependency( topDir, pkgSpecs, debug=False, verbose=False ):
     """
     # Check for a valid top directory
     if not os.path.isdir( topDir ):
-        print("update_pkg_dependency: Invalid topDir: %s" % topDir)
+        print(("update_pkg_dependency: Invalid topDir: %s" % topDir))
         return 0
     if verbose:
-        print("update_pkg_dependency: %s" % topDir)
+        print(("update_pkg_dependency: %s" % topDir))
 
     # Get current pkgSpecs
     oldPkgDependents = getEpicsPkgDependents( topDir, debug=debug )
@@ -253,10 +253,10 @@ def update_pkg_dependency( topDir, pkgSpecs, debug=False, verbose=False ):
     for pkgName in oldPkgDependents:
         pkgSpec = pkgName + "/" + oldPkgDependents[pkgName]
         if verbose:
-            print("OLD: %s" % pkgSpec)
+            print(("OLD: %s" % pkgSpec))
         oldMacroVersions.update( pkgSpecToMacroVersions( pkgSpec ) )
     if len(oldMacroVersions) == 0:
-        print("update_pkg_dependency error: No pkgSpecs found under topDir:\n%s" % topDir)
+        print(("update_pkg_dependency error: No pkgSpecs found under topDir:\n%s" % topDir))
         return 0
 
     # Convert the list of pkgSpecs into a list of macroVersions
@@ -264,7 +264,7 @@ def update_pkg_dependency( topDir, pkgSpecs, debug=False, verbose=False ):
     newMacroVersions = {}
     for pkgSpec in pkgSpecs:
         if verbose:
-            print("NEW: %s" % pkgSpec)
+            print(("NEW: %s" % pkgSpec))
         newMacroVersions.update( pkgSpecToMacroVersions( pkgSpec ) )
     if len(newMacroVersions) == 0:
         print("update_pkg_dependency error: No valid converions for pkgSpecs:")
@@ -274,7 +274,7 @@ def update_pkg_dependency( topDir, pkgSpecs, debug=False, verbose=False ):
     # Remove macros from newMacroVersions if they're already in oldMacroVersions
     # This helps avoid trying to fix commented out macros in configure/RELEASE
     # when they've already been defined in RELEASE.local.
-    for macroName in oldMacroVersions.keys():
+    for macroName in list(oldMacroVersions.keys()):
         if macroName not in newMacroVersions:
             continue
         if oldMacroVersions[macroName] == newMacroVersions[macroName]:
@@ -297,12 +297,12 @@ def update_pkg_dependency( topDir, pkgSpecs, debug=False, verbose=False ):
 def update_stable( topDir='.', debug=False ):
     curDep = getEpicsPkgDependents( topDir, debug=debug )
     if 'base' not in curDep:
-        print "Error: unable to determine base version"
+        print("Error: unable to determine base version")
         return 0
     epicsSiteTop = determine_epics_site_top()
     modulesStableVersionPath = os.path.join( epicsSiteTop, curDep['base'], 'modules', 'MODULES_STABLE_VERSION' )
     if not os.path.isfile( modulesStableVersionPath ):
-        print "Error: unable to find %s" % modulesStableVersionPath 
+        print("Error: unable to find %s" % modulesStableVersionPath) 
         return 0
 
     macroDict = {}
@@ -364,7 +364,7 @@ def main(argv=None):
     if (options.input_file_path):
         try:
             in_file = open(options.input_file_path, 'r')
-        except IOError, e:
+        except IOError as e:
             sys.stderr.write('Could not open "%s": %s\n' % (options.input_file_path, e.strerror))
             return None
 
@@ -379,7 +379,7 @@ def main(argv=None):
             if module and release:
                 options.packages += [ modulePath ]
                 if options.verbose:
-                    print 'Adding: %s' % modulePath
+                    print('Adding: %s' % modulePath)
 
             # repeat above for all lines in file
 
@@ -390,7 +390,7 @@ def main(argv=None):
         curDir = os.getcwd()
         os.chdir( options.top )
         if options.verbose:
-            print "Updating %s/RELEASE_SITE ..." % options.top
+            print("Updating %s/RELEASE_SITE ..." % options.top)
         inputs = assemble_release_site_inputs( batch=True )
         export_release_site_file( inputs, debug=options.verbose )
         os.chdir( curDir )
@@ -402,7 +402,7 @@ def main(argv=None):
     if len( options.packages ) > 0:
         count += update_pkg_dependency( options.top, options.packages, verbose=options.verbose )
 
-    print "Done: Updated %d RELEASE file%s." % ( count, "" if count == 1 else "s" )
+    print("Done: Updated %d RELEASE file%s." % ( count, "" if count == 1 else "s" ))
     return 0
 
 if __name__ == '__main__':

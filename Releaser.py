@@ -25,15 +25,15 @@ def makeDirsWritable( dirPathTop ):
             continue
         # See if user owns the directory
         if userId != pathStatus.st_uid:
-            print "Error: %s does not own %s and cannot make it writable!"
+            print("Error: %s does not own %s and cannot make it writable!")
             return 1
         
         # Make it writable.
         try:
             os.chmod( dirPath, pathStatus.st_mode | (stat.S_IWUSR | stat.S_IWGRP) )
-        except OSError, e:
-            print "Error: Unable to make %s writable!" % buildDir
-            print e.strerror
+        except OSError as e:
+            print("Error: Unable to make %s writable!" % buildDir)
+            print(e.strerror)
             raise
     return 0
 
@@ -54,7 +54,7 @@ def find_release( packageSpec, repo_url=None, verbose=False ):
     release = None
     repo = None
     if verbose:
-        print "find_release packageSpec=%s" % ( packageSpec )
+        print("find_release packageSpec=%s" % ( packageSpec ))
     ( packagePath, packageVersion ) = os.path.split( packageSpec )
     packageName = os.path.split(packagePath)[1]
     if repo_url is not None:
@@ -73,14 +73,14 @@ def find_release( packageSpec, repo_url=None, verbose=False ):
             (svn_url, svn_branch, svn_tag) = svnFindPackageRelease( packagePath, packageVersion, debug=False, verbose=verbose )
             if svn_url is not None:
                 if verbose:
-                    print "find_release: Found svn_url=%s, svn_path=%s, svn_tag=%s" % ( svn_url, svn_branch, svn_tag )
+                    print("find_release: Found svn_url=%s, svn_path=%s, svn_tag=%s" % ( svn_url, svn_branch, svn_tag ))
                 repo = svnRepo.svnRepo( svn_url, svn_branch, packageName, svn_tag )
                 release = Releaser( repo, packagePath, verbose=verbose )
     if verbose:
         if repo is not None:
             repo.ShowRepo( titleLine="find_release found: " + packageSpec, prefix=" " )
         else:
-            print "find_release: Could not find packageSpec: %s" % packageSpec
+            print("find_release: Could not find packageSpec: %s" % packageSpec)
     return release
 
 class Releaser(object):
@@ -147,26 +147,26 @@ class Releaser(object):
     def DoCleanup( self, errCode=0 ):
         self._retcode = errCode
         if self._debug and self._retcode != 0:
-            traceback.print_tb(sys.exc_traceback)
-            print "%s exited with return code %d." % (sys.argv[0], retcode)
+            traceback.print_tb(sys.exc_info()[2])
+            print("%s exited with return code %d." % (sys.argv[0], retcode))
 
         if self._keepTmp:
             if os.path.exists(self._tmpDir):
-                print "\n--keepTmp flag set. Remove the tmp build directory manually:"
-                print "\t%s" % (self._tmpDir)
+                print("\n--keepTmp flag set. Remove the tmp build directory manually:")
+                print("\t%s" % (self._tmpDir))
         else:
             try:
                 sys.stdout.flush()
                 sys.stderr.flush()
                 if os.path.exists(self._tmpDir):
                     if self._verbose:
-                        print "Removing temporary dir %s ..." % self._tmpDir
+                        print("Removing temporary dir %s ..." % self._tmpDir)
                     shutil.rmtree( self._tmpDir )
             except:
-                print "failed:\n%s." % (sys.exc_value)
-                print "\nCould not remove the following directories, remove them manually:"
+                print("failed:\n%s." % (sys.exc_info()[1]))
+                print("\nCould not remove the following directories, remove them manually:")
                 if os.path.exists(self._tmpDir):
-                    print "\t%s" % (self._tmpDir)
+                    print("\t%s" % (self._tmpDir))
 
     def RemoveTag( self, tag=None ):
         if tag is not None:
@@ -178,14 +178,14 @@ class Releaser(object):
 
     def execute( self, cmd, outputPipe = subprocess.PIPE ):
         if self._verbose or self._dryRun:
-            print "%s: %s" % ( ("--dryRun--" if self._dryRun else "EXEC"), cmd )
+            print("%s: %s" % ( ("--dryRun--" if self._dryRun else "EXEC"), cmd ))
         if self._dryRun:
             return "--dryRun--"
         proc = subprocess.Popen( cmd, shell = True, executable = "/bin/bash",
                                 stdout = outputPipe, stderr = outputPipe )
         (proc_stdout, proc_stderr) = proc.communicate( )
         if self._debug:
-            print "process returned", proc.returncode
+            print("process returned", proc.returncode)
         if proc.returncode != 0:
             errMsg = "Command Failed: %s\n" % ( cmd )
             if proc_stdout:
@@ -193,11 +193,11 @@ class Releaser(object):
             if proc_stderr:
                 errMsg += proc_stderr
             errMsg += "Return Code: %d\n" % ( proc.returncode )
-            raise RuntimeError, errMsg
+            raise RuntimeError(errMsg)
         return proc_stdout
 
     def RemoveBuild( self, buildDir ):
-        print "\nRemoving build dir: %s ..." % ( buildDir )
+        print("\nRemoving build dir: %s ..." % ( buildDir ))
         buildRemoved = False
         try:
             shutil.rmtree( buildDir )
@@ -210,14 +210,14 @@ class Releaser(object):
                 shutil.rmtree( buildDir )
                 buildRemoved = True
         if buildRemoved:
-            print "Successfully removed build dir: %s ..." % ( buildDir )
+            print("Successfully removed build dir: %s ..." % ( buildDir ))
 
     # TODO: Move this to a standalone function usable
     # by any class
     # def fixPermissions( self, dir, makeFilesWritable=False ):
     def fixPermissions( self, dir ):
         if self._verbose:
-            print "Fixing permissions for %s ..." % dir
+            print("Fixing permissions for %s ..." % dir)
         sys.stdout.flush()
         userId  = os.geteuid()
         groupId = -1
@@ -270,7 +270,7 @@ class Releaser(object):
     def update_built_cookie( self ):
         cookieJarPath = self.getCookieJarPath()
         if not os.path.isdir( cookieJarPath ):
-            os.makedirs( cookieJarPath, 0775 )
+            os.makedirs( cookieJarPath, 0o775 )
         self.execute( "touch %s" % self.built_cookie_path() )
         self._CookieJarPath = cookieJarPath
 
@@ -301,47 +301,47 @@ class Releaser(object):
     def BuildRelease( self, buildDir, force=False, rmFailed=False, verbose=False, outputPipe = subprocess.PIPE ):
         status = 0
         if not buildDir:
-            raise BuildError, "Build dir not defined!"
+            raise BuildError("Build dir not defined!")
         if self._verbose:
-            print "BuildRelease: Checking for buildDir %s" % buildDir
+            print("BuildRelease: Checking for buildDir %s" % buildDir)
         if os.path.exists( buildDir ):
             buildDirExists = True
         else:
             buildDirExists = False
             try:
                 if self._dryRun:
-                    print "os.makedirs %s drwxrwxr-x" % buildDir
+                    print("os.makedirs %s drwxrwxr-x" % buildDir)
                 else:
-                    os.makedirs( buildDir, 0775 )
+                    os.makedirs( buildDir, 0o775 )
             except OSError:
-                raise BuildError, "Cannot create build dir: %s" % ( buildDir )
+                raise BuildError("Cannot create build dir: %s" % ( buildDir ))
 
         if	self._ReleasePath != buildDir:
             self._ReleasePath =  buildDir
 
         if self._verbose:
-            print "BuildRelease: Checking built cookie %s" % ( self.built_cookie_path() )
+            print("BuildRelease: Checking built cookie %s" % ( self.built_cookie_path() ))
         if os.path.isfile( self.built_cookie_path() ):
             if force:
                 self.remove_built_cookie()
             else:
                 #if self._verbose:
-                print "BuildRelease %s: Already built!" % ( buildDir )
+                print("BuildRelease %s: Already built!" % ( buildDir ))
                 return status
 
         # TODO: Add a --minimizeRepoAccess option that suppresses all but one git request if possible
-        print "\nBuildRelease: %s ..." % ( buildDir )
+        print("\nBuildRelease: %s ..." % ( buildDir ))
         sys.stdout.flush()
         sys.stderr.flush()
         try:
             # Checkout release to build dir
             self._repo.CheckoutRelease( buildDir, verbose=self._verbose, dryRun=self._dryRun )
-        except RuntimeError, e:
-            print e
-            raise BuildError, "BuildRelease %s: Checkout FAILED" % buildDir
-        except gitRepo.gitError, e:
-            print e
-            raise BuildError, "BuildRelease %s: Checkout FAILED" % buildDir
+        except RuntimeError as e:
+            print(e)
+            raise BuildError("BuildRelease %s: Checkout FAILED" % buildDir)
+        except gitRepo.gitError as e:
+            print(e)
+            raise BuildError("BuildRelease %s: Checkout FAILED" % buildDir)
 
         # See if it's built for any architecture
         hasBuilt = self.hasBuilt()
@@ -352,7 +352,7 @@ class Releaser(object):
             outputPipe = subprocess.PIPE
         try:
             # Check Dependendents
-            print "\nChecking dependents for %s ..." % ( buildDir )
+            print("\nChecking dependents for %s ..." % ( buildDir ))
             buildDep = getEpicsPkgDependents( buildDir )
             if 'base' in buildDep:
                 # Find the EPICS base version for this release
@@ -374,14 +374,14 @@ class Releaser(object):
                         continue	# Just check module dependents
                     package = "%s/%s" % ( dep, buildDep[dep] )
                     if verbose:
-                        print "BuildRelease: Checking dep: package=%s" % ( package )
+                        print("BuildRelease: Checking dep: package=%s" % ( package ))
                     release = find_release( package, verbose=self._verbose )
                     if release is not None:
                         result = release.InstallPackage( epics_modules_top )
                         if result != 0:
                             status = result
 
-            print "\nBuilding Release in %s ..." % ( buildDir )
+            print("\nBuilding Release in %s ..." % ( buildDir ))
             sys.stdout.flush()
             sys.stderr.flush()
             if		os.path.isfile( os.path.join( buildDir, 'makefile' )) \
@@ -392,9 +392,9 @@ class Releaser(object):
             # Build succeeded!   Update the built_cookie
             self.update_built_cookie()
             if self._verbose:
-                print "BuildRelease %s: SUCCESS" % ( buildDir )
-        except RuntimeError, e:
-            print e
+                print("BuildRelease %s: SUCCESS" % ( buildDir ))
+        except RuntimeError as e:
+            print(e)
             if hasBuilt == False and not buildDirExists:
                 cmdList = [ "rm", "-rf",    buildDir + "-FAILED" ]
                 subprocess.call( cmdList )
@@ -404,7 +404,7 @@ class Releaser(object):
                     cmdList = [ "mv", buildDir, buildDir + "-FAILED" ]
                     buildDir += "-FAILED"
                 subprocess.call( cmdList )
-            raise BuildError, "BuildRelease FAILED in %s" % ( buildDir )
+            raise BuildError("BuildRelease FAILED in %s" % ( buildDir ))
 
         sys.stdout.flush()
         sys.stderr.flush()
@@ -415,8 +415,8 @@ class Releaser(object):
                 # rm any stale -FAILED on success
                 cmdList = [ "rm", "-rf",    buildDir + "-FAILED" ]
                 subprocess.call( cmdList )
-        except RuntimeError, e:
-            print e
+        except RuntimeError as e:
+            print(e)
             pass
         return status
 
@@ -425,13 +425,13 @@ class Releaser(object):
             status = self.BuildRelease( self._tmpDir, rmFailed=True )
             self.DoCleanup()
         except BuildError:
-            print "DoTestBuild: %s Build error from BuildRelease in %s" % ( self._packageName, self._tmpDir )
+            print("DoTestBuild: %s Build error from BuildRelease in %s" % ( self._packageName, self._tmpDir ))
             self.DoCleanup()
             status = -1
             raise
-        except subprocess.CalledProcessError, e:
-            print "DoTestBuild: %s CalledProcessError from BuildRelease in %s" % ( self._packageName, self._tmpDir )
-            print e
+        except subprocess.CalledProcessError as e:
+            print("DoTestBuild: %s CalledProcessError from BuildRelease in %s" % ( self._packageName, self._tmpDir ))
+            print(e)
             status = -1
             pass
         return status
@@ -441,7 +441,7 @@ class Releaser(object):
         If you already know where to build you can just call BuildRelease() directly.'''
         if self._verbose:
             self._repo.ShowRepo( titleLine="InstallPackage: " + self._packageName, prefix="	" )
-            print self
+            print(self)
 
         status = 0
         if not self._installDir:
@@ -450,12 +450,12 @@ class Releaser(object):
             if releaseDir:
                 self._installDir = os.path.join( releaseDir, self._repo.GetTag() )
             if self._installDir and self._verbose:
-                print "CRAM releaseDir: %s" % releaseDir
+                print("CRAM releaseDir: %s" % releaseDir)
 
         if not self._installDir:
             epics_site_top	= determine_epics_site_top()
             if not installTop and not epics_site_top:
-                print "InstallPackage Error: Need valid installTop to determine installDir!"
+                print("InstallPackage Error: Need valid installTop to determine installDir!")
                 return status
 
             # Is Package a module?
@@ -467,12 +467,12 @@ class Releaser(object):
                         if not installTop.endswith( '/modules' ):
                             installTop += '/modules'
                     if not os.path.isdir( installTop ):
-                        print "Invalid top %s" % installTop
+                        print("Invalid top %s" % installTop)
                         installTop = None
                 if installTop is None:
                     epics_modules_top = determine_epics_modules_top()
                     if not epics_modules_top:
-                        print "InstallPackage Error: Unable to determine EPICS modules installTop!"
+                        print("InstallPackage Error: Unable to determine EPICS modules installTop!")
                         return status
                     installTop = epics_modules_top
 
@@ -495,13 +495,13 @@ class Releaser(object):
                     if os.path.isdir( epics_ioc_top ):
                         installTop = os.path.join( topVariant, self._packagePath )
                         if not os.path.isdir( installTop ):
-                            os.makedirs( installTop, 0775 )
+                            os.makedirs( installTop, 0o775 )
  
             if not installTop:
-                print "InstallPackage Error: Unable to determine installTop!"
+                print("InstallPackage Error: Unable to determine installTop!")
                 return -1
             if not os.path.isdir( installTop ):
-                print "InstallPackage Error: Invalid installTop:", installTop
+                print("InstallPackage Error: Invalid installTop:", installTop)
                 return -1
             # Canonicalize installTop
             cmdList = [ "readlink", "-e", installTop ]
@@ -524,15 +524,15 @@ class Releaser(object):
             if result != 0:
                 status = result
             if self._verbose:
-                print "InstallPackage: %s installed to:\n%s" % ( self._packageName, os.path.realpath(self._installDir) )
-        except BuildError, e:
-            print "InstallPackage: %s Build error from BuildRelease in %s" % ( self._packageName, os.path.realpath(self._installDir) )
-            print e
+                print("InstallPackage: %s installed to:\n%s" % ( self._packageName, os.path.realpath(self._installDir) ))
+        except BuildError as e:
+            print("InstallPackage: %s Build error from BuildRelease in %s" % ( self._packageName, os.path.realpath(self._installDir) ))
+            print(e)
             status = -1
             pass
-        except subprocess.CalledProcessError, e:
-            print "InstallPackage: %s CalledProcessError from BuildRelease in %s" % ( self._packageName, os.path.realpath(self._installDir) )
-            print e
+        except subprocess.CalledProcessError as e:
+            print("InstallPackage: %s CalledProcessError from BuildRelease in %s" % ( self._packageName, os.path.realpath(self._installDir) ))
+            print(e)
             status = -1
             pass
         return status

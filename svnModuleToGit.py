@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 '''This script import a PCDS EPICS module from svn to a git repo.'''
 import sys
 import argparse
@@ -23,7 +23,7 @@ if svnRepoEnvVar in os.environ:
 def importModule( module, name=None, trunk=None, branches=[], tags=[], verbose=False ):
     if  trunk is None: 
         trunk = os.path.join( svnRepoTrunkPath, module, "current" )
-    print "Importing svn module %s from %s" % ( module, trunk )
+    print("Importing svn module %s from %s" % ( module, trunk ))
     svn_tags  = [ os.path.join( svnRepoTagsPath, module ) ]
     svn_tags += tags
     if name is None:
@@ -37,11 +37,11 @@ def importTrunk( trunk, name, gitRoot, branches=[], tags=[], verbose=False ):
     tmpGitRepoPath = os.path.join( tpath, name )
     svnGitRepoPath = os.path.join( gitRoot, name + '.git' )
     if os.path.isdir( svnGitRepoPath ):
-        print "svn import of repo already exists:", svnGitRepoPath
+        print("svn import of repo already exists:", svnGitRepoPath)
         return
 
     if trunk.startswith( svnRepoRoot ):
-        print "Error: trunk path should not include base svn repo path: %s" % trunk
+        print("Error: trunk path should not include base svn repo path: %s" % trunk)
         return
 
     # Create the git svn clone command
@@ -50,26 +50,26 @@ def importTrunk( trunk, name, gitRoot, branches=[], tags=[], verbose=False ):
                     "--trunk", trunk ]
     for b in branches:
         if b.startswith( svnRepoRoot ):
-            print "Error: branch path should not include base svn repo path: %s" % b
+            print("Error: branch path should not include base svn repo path: %s" % b)
             return
         git_cmd.extend( [ "--branches", b ] )
 
     for t in tags:
         if t.startswith( svnRepoRoot ):
-            print "Error: tags path should not include base svn repo path: %s" % t
+            print("Error: tags path should not include base svn repo path: %s" % t)
             return
         git_cmd.extend( [ "--tags", t ] )
 
-    print "Import svn trunk %s\n   to %s:" % ( trunk, svnGitRepoPath )
+    print("Import svn trunk %s\n   to %s:" % ( trunk, svnGitRepoPath ))
     git_cmd.extend( [ svnRepoRoot, tmpGitRepoPath ] )
 
     if verbose:
-        print "git cmd:",
+        print("git cmd:", end=' ')
         for arg in git_cmd:
-            print arg,
-        print
+            print(arg, end=' ')
+        print()
 
-    confirmResp = raw_input( 'Proceed (Y/n)?' )
+    confirmResp = input( 'Proceed (Y/n)?' )
     if len(confirmResp) != 0 and confirmResp != "Y" and confirmResp != "y":
         return
 
@@ -111,7 +111,7 @@ Additional paths for both branches and tags may be added if desired either way.
     args = parser.parse_args( )
 
     if args.module and args.trunk:
-        print 'Please specify either a module name or a trunk path, not both.'    
+        print('Please specify either a module name or a trunk path, not both.')    
         sys.exit()
 
     if args.module:
@@ -119,15 +119,15 @@ Additional paths for both branches and tags may be added if desired either way.
                       tags=args.tags, verbose=args.verbose )
     elif args.trunk is not None or len(args.branches) > 0:
         if not args.name:
-            print 'Please provide a name for git repo'
+            print('Please provide a name for git repo')
             sys.exit()
         if  args.trunk is None:
             args.trunk = args.branches[0]
         importTrunk( args.trunk, args.name, args.branches[1:], args.tags, args.verbose )
     else:
         parser.print_help()
-        print 'Please provide a module name, or one or more branches to import'
+        print('Please provide a module name, or one or more branches to import')
         sys.exit() 
 
-    print "Done."
+    print("Done.")
 

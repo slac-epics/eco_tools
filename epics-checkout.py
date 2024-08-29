@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #==============================================================
 #
 #  Abs:  A tool to checkout an EPICS package
@@ -57,7 +57,6 @@ from git_utils import *
 from svn_utils import *
 from site_utils import *
 from version_utils import *
-import cvs2git_utils
 
 
 from eco_version import eco_tools_version
@@ -76,7 +75,7 @@ def assemble_env_inputs_from_term(options):
         packageSpec = options.module
         packageName = os.path.split(packageSpec)[1]
 
-    packageNames = set().union(git_package2Location.keys(), cvs_modules2Location.keys())
+    packageNames = set().union(list(git_package2Location.keys()), list(cvs_modules2Location.keys()))
 
     def packageNameCompleter(text, state):
         options = [x for x in packageNames if x.startswith(text)]
@@ -89,7 +88,7 @@ def assemble_env_inputs_from_term(options):
     readline.parse_and_bind("tab: complete")
 
     while not packageName:
-        packageSpec = raw_input('Enter name of module/package to checkout: ').strip()
+        packageSpec = input('Enter name of module/package to checkout: ').strip()
         packageName = os.path.split(packageSpec)[1]
 
     # Remove completer after we are done...
@@ -141,7 +140,7 @@ def assemble_env_inputs_from_term(options):
 
         if not options.batch:
             prompt1 = 'Enter name of tag or [RETURN] to create a sandbox named %s>' % dirName
-            tagName = raw_input(prompt1).strip()
+            tagName = input(prompt1).strip()
 
         readline.set_completer()
         readline.parse_and_bind('tab: self-insert')
@@ -224,25 +223,25 @@ def checkOutModule(packageSpec, repoPath, tag, destinationPath, options, from_fi
 
     packageName = os.path.split(packageSpec)[1]
     if tag == '':
-        print "Checkout %s to sandbox directory %s" % ( packageName, destinationPath )
+        print("Checkout %s to sandbox directory %s" % ( packageName, destinationPath ))
     else:
-        print "Checkout %s, tag %s, to directory %s" % ( packageName, tag, destinationPath )
+        print("Checkout %s, tag %s, to directory %s" % ( packageName, tag, destinationPath ))
     if not options.batch:
-        confirmResp = raw_input( 'Proceed (Y/n)?' )
+        confirmResp = input( 'Proceed (Y/n)?' )
         if len(confirmResp) != 0 and confirmResp != "Y" and confirmResp != "y":
-            print "Aborting....."
+            print("Aborting.....")
             sys.exit(0)
 
     # TODO: Can we update existing dir using repo?
     if os.path.exists(destinationPath):
-        print 'Directory already exists!  Aborting.....'
+        print('Directory already exists!  Aborting.....')
         sys.exit(1)
 
     parent_dir = os.path.dirname( destinationPath )
     if len(parent_dir) > 0 and parent_dir != '.' and not os.path.exists(parent_dir):
         try:
-            os.makedirs(parent_dir, 0775)
-        except OSError, e:
+            os.makedirs(parent_dir, 0o775)
+        except OSError as e:
             sys.stderr.write( 'Unable to create directory: %s\n' % parent_dir )
             sys.exit(1)
 
@@ -258,17 +257,17 @@ def checkOutModule(packageSpec, repoPath, tag, destinationPath, options, from_fi
         # See if we can find it in with the git repos
         repoPath = determinePathToGitRepo(packageSpec)
     if not repoPath:
-        print "Unable to determine repo path for %s" % packageSpec
+        print("Unable to determine repo path for %s" % packageSpec)
         return
 
     if "git" not in repoPath and "svn" not in repoPath and cvs_modules2Location is not None:
         # Do CVS checkout
         if (tag == 'MAIN_TRUNK'):
             cmd='cvs checkout -P -d ' + destinationPath + ' ' + packageSpec    
-            print cmd
+            print(cmd)
         else:
             cmd='cvs checkout -P -r '+ tag +' -d '+ destinationPath +' ' + packageSpec    
-            print cmd
+            print(cmd)
         os.system(cmd)
         if not os.path.isdir(destinationPath):
             sys.stderr.write( "Error: unable to do cvs checkout of %s\n" % packageSpec )
@@ -289,17 +288,17 @@ def checkOutModule(packageSpec, repoPath, tag, destinationPath, options, from_fi
                 pathToSvnRepo = pathToSvnRepo.replace( "trunk","tags" )
                 pathToSvnRepo = pathToSvnRepo.replace( "current",tag )
             cmd=[ 'svn', 'checkout', pathToSvnRepo, destinationPath ]
-            print cmd
+            print(cmd)
             subprocess.check_call(cmd)
             if not os.path.isdir(destinationPath):
                 sys.stderr.write( "Error: unable to do svn checkout of %s\n" % packageName )
                 sys.exit(1)
             os.chdir(destinationPath)
         else:
-            print packageName, "is a git package.\nCloning the repository at", repoPath
+            print(packageName, "is a git package.\nCloning the repository at", repoPath)
             if os.path.exists(destinationPath):
-                print "The folder", os.path.abspath(destinationPath), "already exists. If you intended to update the checkout, please do a git pull to pull in the latest changes."
-                print "Aborting....."
+                print("The folder", os.path.abspath(destinationPath), "already exists. If you intended to update the checkout, please do a git pull to pull in the latest changes.")
+                print("Aborting.....")
                 sys.exit(1)
             # TODO: Verify the tag exists before we clone the repo for better user error msg and to avoid broken release dirs
             branch = None
@@ -313,7 +312,7 @@ def checkOutModule(packageSpec, repoPath, tag, destinationPath, options, from_fi
             if (tag != ''):
                 # Do a headless checkout to the specified tag
                 cmd=['git', 'checkout', tag]
-                print cmd
+                print(cmd)
                 subprocess.check_call(cmd)
             #else: TODO Checkout a default branch if one isn't already selected.
             # 1. current release branch
@@ -381,7 +380,7 @@ def initGitBareRepo( options ):
     elif packageName in cvs_modules2Location:
         packageLocation = os.path.join(os.environ['CVSROOT'], cvs_modules2Location[packageName])
     if packageLocation:
-        print "Error: The package " + packageSpec + " is already registered and exists in:\n" + packageLocation
+        print("Error: The package " + packageSpec + " is already registered and exists in:\n" + packageLocation)
         if showStatusZenity:
             subprocess.check_call(["zenity", "--error", "--title", "Error", "--text", "The package " + packageName + " is already registered and exists in " + packageLocation])
         return
@@ -399,8 +398,8 @@ def initGitBareRepo( options ):
         # Create the upstream repo as a bare repo
         initBareRepo( gitRepoPath )
     except Exception as e:
-        print "initGitBareRepo Error: initBareRepo call failed!\ngitRepoPath = " + gitRepoPath 
-        print str(e)
+        print("initGitBareRepo Error: initBareRepo call failed!\ngitRepoPath = " + gitRepoPath) 
+        print(str(e))
         return
 
     tpath = tempfile.mkdtemp()
@@ -424,91 +423,17 @@ def initGitBareRepo( options ):
     
     addPackageToEcoModuleList(packageSpec, gitRepoPath)
     
-    print "Done creating bare repo for package ", packageSpec, ". Use eco to clone this repo into your working directory."
+    print("Done creating bare repo for package ", packageSpec, ". Use eco to clone this repo into your working directory.")
     if showStatusZenity:
         subprocess.check_call(	["zenity", "--info", "--title", "Repo created for " + packageSpec,
                                 "--text", "Done creating bare repo for package " + packageSpec +
                                 ". Use eco to clone this repo into your working directory."] )
 
-def importFromCVS( options ):
-    '''Import package from CVS and place into new git repo. Uses ${TOOLS}/cvs2git/current/cvs2git to do the actual importing'''
-    gitRoot = determineGitRoot()
-    cvs2git_utils.checkCVS2GitPresent()
-    showStatusZenity = False
- 
-    if options.module:
-        packageName = options.module
-    else:
-        # Ask the user for the name of the package
-        showStatusZenity = True
-        packageName = subprocess.check_output( ["zenity", "--entry", "--title", "Package Name", "--text",
-                                                "Please enter the name of the package"] ).strip()
-
-    if packageName in git_package2Location:
-        print "eco cvs2git error: %s is already registered and exists here:\n%s" % ( packageName, git_package2Location[packageName] )
-        return
-    if packageName not in cvs_modules2Location:
-        print "eco cvs2git error: %s does not seem to be a CVS module." % packageName
-        print "Make sure it exists in %s/CVSROOT/modules" % os.environ['CVSROOT']
-        return
-
-    if 'CVSROOT' not in os.environ:
-        os.environ['CVSROOT'] = DEF_CVS_ROOT
-    CVSpackageLocation = os.path.join(os.environ['CVSROOT'], cvs_modules2Location[packageName])
-    print "Importing CVS package from ", CVSpackageLocation
-
-    if options.destination:
-        bareRepoParentFolder = options.destination
-    else:
-        # Ask the use where the upstream repo is to be created
-        showStatusZenity = True
-        bareRepoParentFolder = subprocess.check_output(	["zenity", "--file-selection", "--title",
-                                                        "Please choose the parent folder where you want to create the upstream bare git repo",
-                                                        "--directory", "--filename="+gitRoot] ).strip()
-
-    curDir = os.getcwd()
-    tpath = tempfile.mkdtemp()
-
-    gitRepoPath = bareRepoParentFolder
-    if not gitRepoPath.endswith( packageName+".git" ):
-        gitRepoPath = os.path.join( gitRepoPath, packageName+".git")
-
-    try:
-        cvs2git_utils.importHistoryFromCVS(tpath, gitRepoPath, CVSpackageLocation)
-    except Exception as e:
-        print str(e)
-        return
-
-    print "CVS history for ", packageName, " imported to ", gitRepoPath
-
-    # Add .gitignore
-    clonedFolder = cloneUpstreamRepo(gitRepoPath, tpath, packageName)
-    os.chdir(clonedFolder)
-    createGitIgnore()
-    # We expect .cram/packageinfo to be there already
-    
-    gitCommitAndPush( 'Initial commit/import from eco. Added a default .gitignore and other defaults.' )
-
-    os.chdir(curDir)
-
-    addPackageToEcoModuleList(packageName, gitRepoPath)
-    cvs2git_utils.removeModuleFromCVS(tpath, packageName, CVSpackageLocation)
-
-    os.chdir(curDir)
-    shutil.rmtree(tpath)
-
-    print "Done creating bare repo for package ", packageName, ". Use eco to clone this repo into your working directory."
-    if showStatusZenity:
-        subprocess.check_call(	["zenity", "--info", "--title", "Repo created for " + packageName,
-                                "--text", "Done creating bare repo for package " + packageName +
-                                ". Use eco to clone this repo into your working directory."] )
-
-
 def module_callback(option, opt_str, value, parser):
-    print 'Processing MODULE option; Setting', option.dest, 'to', value
+    print('Processing MODULE option; Setting', option.dest, 'to', value)
     setattr(parser.values, option.dest, value)
     if len(parser.rargs) > 0 and not parser.rargs[0].startswith("-"):
-        print 'Setting tag to ' + parser.rargs[0]
+        print('Setting tag to ' + parser.rargs[0])
         setattr(parser.values, 'tag', parser.rargs[0])
         parser.rargs.pop(0)
 
@@ -531,11 +456,6 @@ def process_options(argv):
             + 'epics-checkout also supports a command called initrepo "eco initrepo" that creates a bare git repository for your package.\n'\
             + '"epics-checkout initrepo" prompts you for a package name and type and repo location.\n'\
             + 'It then creates a bare git repo in the location specified; it also creates a default .gitignore and cram configuration for your package.\n'\
-            + '\n'\
-            + 'epics-checkout also supports a command called cvs2git "eco cvs2git" that imports a module from CVS into a git bare repo.\n'\
-            + '"eco cvs2git" prompts you for a module name and type and repo location.\n'\
-            + 'It then creates a bare git repo in the location specified; imports the history from CVS and adds a default .gitignore.\n'\
-            + 'It comments out the module location in the CVSROOT/modules file; however, it does NOT do a cvs remove of the software from CVS.\n'\
             + '\n'
     parser = optparse.OptionParser(usage=usage, version=eco_tools_version)
 
@@ -563,7 +483,6 @@ def process_options(argv):
 
 commands = {
     "initrepo": initGitBareRepo,
-    "cvs2git":  importFromCVS
 }
 
 def main(argv=None):
@@ -575,7 +494,7 @@ def main(argv=None):
             return
         try:
             in_file = open(options.input_file_path, 'r')
-        except IOError, e:
+        except IOError as e:
             sys.stderr.write('Could not open module specification file "%s": %s\n' % (options.input_file_path, e.strerror))
             return None
 
@@ -589,12 +508,12 @@ def main(argv=None):
             key = key.strip()
             value = value.strip()
 
-            print 'key is: ' + key
-            print 'value is: ' + value
+            print('key is: ' + key)
+            print('value is: ' + value)
 
             assemble_env_inputs_from_file(key,value,options)
            
-            print 'done with ' + line
+            print('done with ' + line)
             # repeat above for all lines in file
 
         in_file.close()

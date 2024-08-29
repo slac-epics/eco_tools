@@ -40,7 +40,7 @@ def parseGitModulesTxt():
             continue
         parts = line.split()
         if(len(parts) < 2):
-            print "Error parsing ", gitModulesTxtFile, "Cannot break", line, "into columns with enough fields using spaces/tabs"
+            print("Error parsing ", gitModulesTxtFile, "Cannot break", line, "into columns with enough fields using spaces/tabs")
             continue
         packageName = parts[0]
         packageLocation = expandMacros( parts[1], os.environ )
@@ -78,10 +78,10 @@ def git_call( gitCommand, gitDir=None, debug=False, *args, ** kwargs ):
     if gitDir is not None:
         cmdList.insert( 1, [ '--git-dir', gitDir ] )
     if debug:
-        print "git_call running: %s" % ' '.join( cmdList )
+        print("git_call running: %s" % ' '.join( cmdList ))
     callStatus = subprocess.call( cmdList, *args, **kwargs )
     if debug:
-        print "git_call  status:", callStatus
+        print("git_call  status:", callStatus)
     return callStatus
 
 def git_check_call( gitCommand, gitDir=None, debug=False, *args, ** kwargs ):
@@ -93,7 +93,7 @@ def git_check_call( gitCommand, gitDir=None, debug=False, *args, ** kwargs ):
     May throw RuntimeError or subprocess.CalledProcessError exceptions
     '''
     cmdList = []
-    if isinstance( gitCommand, basestring ):
+    if isinstance( gitCommand, str ):
         if not gitCommand.startswith( 'git ' ):
             cmdList = [ 'git' ]
         cmdList += gitCommand.split()
@@ -104,10 +104,10 @@ def git_check_call( gitCommand, gitDir=None, debug=False, *args, ** kwargs ):
     if gitDir is not None:
         cmdList.insert( 1, [ '--git-dir', gitDir ] )
     if debug:
-        print "git_check_call running: %s" % ' '.join( cmdList )
+        print("git_check_call running: %s" % ' '.join( cmdList ))
     callStatus = subprocess.check_call( cmdList, *args, **kwargs )
     if debug:
-        print "git_check_call  status:", callStatus
+        print("git_check_call  status:", callStatus)
     return callStatus
 
 def git_check_output( gitCommand, gitDir=None, debug=False, *args, ** kwargs ):
@@ -132,12 +132,12 @@ def git_check_output( gitCommand, gitDir=None, debug=False, *args, ** kwargs ):
         cmdList.insert( 1, [ '--git-dir', gitDir ] )
 
     if debug:
-        print "git_check_output running: %s" % ' '.join( cmdList )
+        print("git_check_output running: %s" % ' '.join( cmdList ))
 
     git_output = subprocess.check_output( cmdList, *args, **kwargs )
 
     if debug:
-        print git_output
+        print(git_output)
     return git_output
 
 def gitGetRemoteFile( url, refName, filePath, debug = False ):
@@ -147,13 +147,13 @@ def gitGetRemoteFile( url, refName, filePath, debug = False ):
     try:
         commitSpec = refName + ':' + filePath
         fileContents = subprocess.check_output( [ 'git', '--git-dir=%s' % url, 'show', commitSpec ], stderr=subprocess.STDOUT )
-    except OSError, e:
+    except OSError as e:
         if debug:
-            print e
+            print(e)
         pass
-    except subprocess.CalledProcessError, e:
+    except subprocess.CalledProcessError as e:
         if debug:
-            print e
+            print(e)
         pass
     return fileContents
 
@@ -164,8 +164,8 @@ def gitGetRemoteTags( url, debug = False, verbose = False ):
     tags = {}
     try:
         if verbose:
-            print "gitGetRemoteTags running: git ls-remote %s" % url
-        statusInfo = subprocess.check_output( [ 'git', 'ls-remote', url ], stderr=subprocess.STDOUT )
+            print("gitGetRemoteTags running: git ls-remote %s" % url)
+        statusInfo = subprocess.check_output( [ 'git', 'ls-remote', url ], stderr=subprocess.STDOUT, universal_newlines=True )
         for line in statusInfo.splitlines():
             if line is None:
                 break
@@ -174,16 +174,16 @@ def gitGetRemoteTags( url, debug = False, verbose = False ):
                 continue
             tags[ tagSpecMatch.group(2) ] = tagSpecMatch.group(1)
 
-    except OSError, e:
+    except OSError as e:
         if debug:
-            print e
+            print(e)
         pass
-    except subprocess.CalledProcessError, e:
+    except subprocess.CalledProcessError as e:
         if debug:
-            print e
+            print(e)
         pass
     if verbose:
-        print "gitGetRemoteTags: Found %d tags in %s" % ( len(tags), url )
+        print("gitGetRemoteTags: Found %d tags in %s" % ( len(tags), url ))
     return tags
 
 def gitGetRemoteTag( url, tag, debug = False, verbose = False ):
@@ -206,21 +206,21 @@ def gitGetRemoteTag( url, tag, debug = False, verbose = False ):
             git_tag = tag
             tag_sha = tags[tag]
 
-    except OSError, e:
+    except OSError as e:
         if debug:
-            print e
+            print(e)
         pass
-    except subprocess.CalledProcessError, e:
+    except subprocess.CalledProcessError as e:
         if debug:
-            print e
+            print(e)
         pass
     if verbose:
         if git_url:
-            print "gitGetRemoteTag: Found git_tag %s %7.7s in git_url %s" % ( git_tag, tag_sha, git_url )
+            print("gitGetRemoteTag: Found git_tag %s %7.7s in git_url %s" % ( git_tag, tag_sha, git_url ))
         elif url_valid:
-            print "gitGetRemoteTag: Unable to find tag %s in git url %s" % ( tag, url )
+            print("gitGetRemoteTag: Unable to find tag %s in git url %s" % ( tag, url ))
         else:
-            print "gitGetRemoteTag: Invalid git url %s" % ( url )
+            print("gitGetRemoteTag: Invalid git url %s" % ( url ))
     return ( tag_sha, git_tag )
 
 def gitGetTagSha( tag ):
@@ -244,10 +244,10 @@ def initBareRepo( gitRepoPath, verbose=False ):
     # Make sure parent folder exists
     ( parentFolder, module )  = os.path.split( gitRepoPath )
     if not os.path.isdir( parentFolder ):
-        if verbose: print "Pre-creating parent folder for " + gitRepoPath
-        os.makedirs( parentFolder, 0775 )
+        if verbose: print("Pre-creating parent folder for " + gitRepoPath)
+        os.makedirs( parentFolder, 0o775 )
 
-    if verbose: print "Creating a new bare repo in " + gitRepoPath
+    if verbose: print("Creating a new bare repo in " + gitRepoPath)
     subprocess.check_call(["git", "init", "--bare", "--template=%s/templates" % DEF_GIT_MODULES_PATH, gitRepoPath])
     if not os.path.exists(gitRepoPath):
         raise Exception( "Failed to create git repo at:\n" + gitRepoPath )
@@ -269,7 +269,7 @@ def cloneUpstreamRepo( gitUpstreamRepo, tpath, packageName, branch=None, depth=N
     if depth:
         gitCommand += " --no-local --depth %d" % depth
     #May throw RuntimeError or subprocess.CalledProcessError exceptions
-    print prompt
+    print(prompt)
     #print "%s" % prompt
     git_check_call( gitCommand, debug=verbose )
     return clonedFolder
@@ -306,10 +306,10 @@ def gitCommitAndPush( message ):
 def addPackageToEcoModuleList(packageName, gitUpstreamRepo):
     '''Add the package with the given upstream repo to eco's modulelist'''
     curDir = os.getcwd()
-    print "Adding package", packageName, "to eco_modulelist"
+    print("Adding package", packageName, "to eco_modulelist")
     tools_dir = os.environ['TOOLS']
     if not tools_dir:
-        print 'addPackageToEcoModuleList Error: TOOLS env not defined.'
+        print('addPackageToEcoModuleList Error: TOOLS env not defined.')
         return
     gitModulesTxtFolder = os.path.join(os.environ['TOOLS'], 'eco_modulelist')
     os.chdir(gitModulesTxtFolder)
@@ -381,13 +381,13 @@ def gitGetWorkingBranch( debug = False, verbose = False ):
             # Just grab the first tag that matches
             repo_tag = statusLines[0].split('^')[0]
 
-    except OSError, e:
+    except OSError as e:
         if debug:
-            print e
+            print(e)
         pass
-    except subprocess.CalledProcessError, e:
+    except subprocess.CalledProcessError as e:
         if debug:
-            print e
+            print(e)
         pass
     return ( repo_url, repo_branch, repo_tag )
 
@@ -440,7 +440,7 @@ def determinePathToGitRepo( packagePath, verbose = False ):
 def gitFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
     (repo_url, repo_tag) = (None, None)
     if verbose:
-        print "gitFindPackageRelease( packageSpec=%s, tag=%s )" % ( packageSpec, tag )
+        print("gitFindPackageRelease( packageSpec=%s, tag=%s )" % ( packageSpec, tag ))
     if tag:
         packagePath = packageSpec
     else:
@@ -450,7 +450,7 @@ def gitFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
     else:
         packageName = packagePath
     if verbose:
-        print "gitFindPackageRelease: packageName=%s, packagePath=%s" % ( packageName, packagePath )
+        print("gitFindPackageRelease: packageName=%s, packagePath=%s" % ( packageName, packagePath ))
 
     # See if the package was listed in $TOOLS/eco_modulelist/modulelist.txt
     if packageName in git_package2Location:
@@ -473,9 +473,9 @@ def gitFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
 
     if verbose:
         if repo_url:
-            print "gitFindPackageRelease found %s/%s: url=%s, tag=%s" % ( packagePath, tag, repo_url, repo_tag )
+            print("gitFindPackageRelease found %s/%s: url=%s, tag=%s" % ( packagePath, tag, repo_url, repo_tag ))
         else:
-            print "gitFindPackageRelease Error: Cannot find %s/%s" % (packagePath, tag)
+            print("gitFindPackageRelease Error: Cannot find %s/%s" % (packagePath, tag))
     return (repo_url, repo_tag)
 
 def git_get_versionFileName():

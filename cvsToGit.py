@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 '''This script import a PCDS EPICS IOC from svn to a git repo.'''
 import sys
 import argparse
@@ -22,7 +22,7 @@ def importCVS( gitRepoPath, packageName ):
         packageLocation = os.path.join(os.environ['CVSROOT'], cvs_modules2Location[packageName])
     else:
         packageLocation = os.path.join(os.environ['CVSROOT'], packageName)
-    print "Importing CVS package from ", packageLocation
+    print("Importing CVS package from ", packageLocation)
     gitRepoPath = importHistoryFromCVS( tmpPath, gitRepoPath, packageLocation )
     return gitRepoPath
 
@@ -43,7 +43,7 @@ Additional paths for both branches and tags may be added if desired either way.
     args = parser.parse_args( )
 
     if args.cvsPkg and args.trunk:
-        print 'Please specify either a CVS package specification or a trunk path, not both.'    
+        print('Please specify either a CVS package specification or a trunk path, not both.')    
         sys.exit()
 
     if args.filename:
@@ -60,11 +60,11 @@ Additional paths for both branches and tags may be added if desired either way.
                     continue
                 gitUrl = os.path.join( gitEpicsRoot, cvsPkg + '.git' )
                 if os.path.isdir( gitUrl ):
-                    print( "%s: Already imported" % cvsPkg )
+                    print(( "%s: Already imported" % cvsPkg ))
                     continue
                 importCVS( gitUrl, cvsPkg )
         except Exception as e:
-            print( "Error opening %s: %s" % ( args.filename, e ) )
+            print(( "Error opening %s: %s" % ( args.filename, e ) ))
     elif args.cvsPkg:
         gitUrl = args.URL
         # name=args.name, trunk=args.trunk, branches=args.branches, tags=args.tags, gitUrl=args.URL, verbose=args.verbose 
@@ -78,8 +78,8 @@ Additional paths for both branches and tags may be added if desired either way.
 #		importTrunk( args.trunk, args.name, args.URL, args.branches[1:], args.tags, args.verbose )
     else:
         parser.print_help()
-        print 'Please provide a cvsPkg name, or one or more branches to import'
+        print('Please provide a cvsPkg name, or one or more branches to import')
         sys.exit() 
 
-    print "Done."
+    print("Done.")
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 '''This script import a PCDS EPICS IOC from svn to a git repo.'''
 import sys
 import argparse
@@ -26,9 +26,9 @@ def importIOC( iocSpec, name=None, trunk=None, branches=[], tags=[], gitUrl=None
         if not svnPathExists( os.path.join(svnRepoRoot, trunk) ):
             trunk = os.path.join( svnRepoTrunkPath, iocSpec )
     if not svnPathExists( os.path.join(svnRepoRoot, trunk) ):
-        print( "Error: trunk path does not exist: %s" % os.path.join(svnRepoRoot, trunk) )
+        print(( "Error: trunk path does not exist: %s" % os.path.join(svnRepoRoot, trunk) ))
         return
-    print "Importing svn IOC %s from %s" % ( iocSpec, trunk )
+    print("Importing svn IOC %s from %s" % ( iocSpec, trunk ))
     svn_tags  = [ os.path.join( svnRepoTagsPath, iocSpec ) ]
     svn_tags += tags
     if name is None:
@@ -44,11 +44,11 @@ def importTrunk( trunk, name, gitUrl, branches=[], tags=[], verbose=False, batch
     tpath = tempfile.mkdtemp()
     tmpGitRepoPath = os.path.join( tpath, name )
     if os.path.isdir( gitUrl ):
-        print "svn import of repo already exists:", gitUrl
+        print("svn import of repo already exists:", gitUrl)
         return
 
     if trunk.startswith( svnRepoRoot ):
-        print "Error: trunk path should not include base svn repo path: %s" % trunk
+        print("Error: trunk path should not include base svn repo path: %s" % trunk)
         return
 
     # Create the git svn clone command
@@ -57,27 +57,27 @@ def importTrunk( trunk, name, gitUrl, branches=[], tags=[], verbose=False, batch
                     "--trunk", trunk ]
     for b in branches:
         if b.startswith( svnRepoRoot ):
-            print "Error: branch path should not include base svn repo path: %s" % b
+            print("Error: branch path should not include base svn repo path: %s" % b)
             return
         git_cmd.extend( [ "--branches", b ] )
 
     for t in tags:
         if t.startswith( svnRepoRoot ):
-            print "Error: tags path should not include base svn repo path: %s" % t
+            print("Error: tags path should not include base svn repo path: %s" % t)
             return
         git_cmd.extend( [ "--tags", t ] )
 
-    print "Import svn trunk %s\n   to %s:" % ( trunk, gitUrl )
+    print("Import svn trunk %s\n   to %s:" % ( trunk, gitUrl ))
     git_cmd.extend( [ svnRepoRoot, tmpGitRepoPath ] )
 
     if verbose:
-        print "git cmd:",
+        print("git cmd:", end=' ')
         for arg in git_cmd:
-            print arg,
-        print
+            print(arg, end=' ')
+        print()
 
     if not batch:
-        confirmResp = raw_input( 'Proceed (Y/n)?' )
+        confirmResp = input( 'Proceed (Y/n)?' )
         if len(confirmResp) != 0 and confirmResp != "Y" and confirmResp != "y":
             return
 
@@ -122,7 +122,7 @@ Additional paths for both branches and tags may be added if desired either way.
     args = parser.parse_args( )
 
     if args.iocSpec and args.trunk:
-        print 'Please specify either a IOC specification or a trunk path, not both.'    
+        print('Please specify either a IOC specification or a trunk path, not both.')    
         sys.exit()
 
     if args.filename:
@@ -139,25 +139,25 @@ Additional paths for both branches and tags may be added if desired either way.
                     continue
                 gitUrl = os.path.join( gitEpicsRoot, iocSpec + '.git' )
                 if os.path.isdir( gitUrl ):
-                    print( "%s: Already imported" % iocSpec )
+                    print(( "%s: Already imported" % iocSpec ))
                     continue
                 importIOC( iocSpec, verbose=args.verbose, batch=True )
         except Exception as e:
-            print( "Error opening %s: %s" % ( args.filename, e ) )
+            print(( "Error opening %s: %s" % ( args.filename, e ) ))
     elif args.iocSpec:
         importIOC( args.iocSpec, name=args.name, trunk=args.trunk, branches=args.branches,
                       tags=args.tags, gitUrl=args.URL, verbose=args.verbose )
     elif args.trunk is not None or len(args.branches) > 0:
         if not args.name:
-            print 'Please provide a name for git repo'
+            print('Please provide a name for git repo')
             sys.exit()
         if  args.trunk is None:
             args.trunk = args.branches[0]
         importTrunk( args.trunk, args.name, args.URL, args.branches[1:], args.tags, args.verbose )
     else:
         parser.print_help()
-        print 'Please provide a iocSpec name, or one or more branches to import'
+        print('Please provide a iocSpec name, or one or more branches to import')
         sys.exit() 
 
-    print "Done."
+    print("Done.")
 

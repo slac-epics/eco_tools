@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/bin/env python3
 import argparse
 from pprint import *
 from repo_defaults import *
@@ -9,7 +9,7 @@ from version_utils import *
 def update_latest( top='.' ):
     pkgDep = getEpicsPkgDependents( top )
     if 'base' not in pkgDep:
-        print "Error: unable to determine base version"
+        print("Error: unable to determine base version")
         return -1
     epicsSiteTop = determine_epics_site_top()
     epicsModules = os.path.join( epicsSiteTop, pkgDep['base'], 'modules' )
@@ -20,11 +20,11 @@ def update_latest( top='.' ):
         l1 = getPkgReleaseList( epicsModules, pkg )
         l2 = ExpandPackagePath( epicsModules, pkg )
         if len(l1) != len(l2):
-            print "getPkgReleaseList: %s %d releases: " % ( pkg, len(l1) )
-            print "ExpandPackageList: %s %d releases: " % ( pkg, len(l2) )
+            print("getPkgReleaseList: %s %d releases: " % ( pkg, len(l1) ))
+            print("ExpandPackageList: %s %d releases: " % ( pkg, len(l2) ))
         elif l1 != l2:
-            print "getPkgReleaseList: %s releases: %s" % ( pkg, l1 )
-            print "ExpandPackageList: %s releases: %s" % ( pkg, l2 )
+            print("getPkgReleaseList: %s releases: %s" % ( pkg, l1 ))
+            print("ExpandPackageList: %s releases: %s" % ( pkg, l2 ))
         pkgReleases[pkg] = l1
         #print "%s %d releases: " % ( pkg, len(pkgReleases) )
     pprint( pkgReleases )
@@ -37,7 +37,7 @@ def update_latest( top='.' ):
         #if dep in stableVersions:
         #	updateVersions[dep] = stableVersions[dep]
     for dep in updateVersions:
-        print "Need to update %s to %s\n" % ( dep, updateVersions[dep] )
+        print("Need to update %s to %s\n" % ( dep, updateVersions[dep] ))
 
 def main(argv=None):
     parser = argparse.ArgumentParser()
