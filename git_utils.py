@@ -165,11 +165,11 @@ def gitGetRemoteTags( url, debug = False, verbose = False ):
     try:
         if verbose:
             print("gitGetRemoteTags running: git ls-remote %s" % url)
-        statusInfo = subprocess.check_output( [ 'git', 'ls-remote', url ], stderr=subprocess.STDOUT )
+        statusInfo = subprocess.check_output( [ 'git', 'ls-remote', url ], stderr=subprocess.STDOUT, universal_newlines=True )
         for line in statusInfo.splitlines():
             if line is None:
                 break
-            tagSpecMatch = tagSpecRegExp.search( line.decode('utf-8') )
+            tagSpecMatch = tagSpecRegExp.search( line )
             if not tagSpecMatch:
                 continue
             tags[ tagSpecMatch.group(2) ] = tagSpecMatch.group(1)

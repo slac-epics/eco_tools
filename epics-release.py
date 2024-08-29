@@ -222,7 +222,7 @@ try:
     ( opt, args ) = parser.parse_args()
 
     if not opt.release:
-        raise ValidateError(( "Release tag not specified!" ))
+        raise ValidateError( "Release tag not specified!" )
 
     if opt.verbose:
         print("epics-release main: opt.message=%s, args=%s" % ( opt.message, args ))
@@ -305,13 +305,13 @@ try:
             packageName = release._packageName
 
     if not packageName:
-        raise ValidateError(( "No package specified and unable to determine it from current dir" ))
+        raise ValidateError( "No package specified and unable to determine it from current dir" )
     elif opt.verbose:
         print("package:    %s" % packageName)
 
     # Have to have a repo to do a release
     if repo is None:
-        raise ValidateError(( "Can't establish a repo branch" ))
+        raise ValidateError( "Can't establish a repo branch" )
 
     pkgReleaser = Releaser( repo, packagePath, verbose=opt.verbose )
 
