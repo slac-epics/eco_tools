@@ -1,3 +1,7 @@
+R3.0	2024-08-30 Jeremy Lorelli
+	Converted all scripts to Python 3
+	Removed cvs2git functionality due to incompatibility with Python3
+
 R2.35	2023-03-02 Bruce Hill
 	Add gitRepo:PushBranch() and fix epics-release error that didn't push the branch.
 	Reworked installLinks to setup eco env before running python
