@@ -61,7 +61,7 @@ from version_utils import *
 
 from eco_version import eco_tools_version
 
-git_package2Location = parseGitModulesTxt()
+git_package2Location, git_packageTypes = parseGitModulesTxt()
 cvs_modules2Location = parseCVSModulesTxt()
 
 # TODO: 1. Breakout packageName completer code into it's own function

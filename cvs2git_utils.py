@@ -42,6 +42,7 @@ if cvs2git_dir:
 
 cvs_modules2Location = None
 git_modules2Location = None
+git_packageTypes = None
 
 def importHistoryFromCVS(tpath, gitRepoPath, CVSpackageLocation ):
     '''Import history into a git repo using cvs2git. tpath is a precreated temporary folder.''' 
@@ -159,11 +160,11 @@ def importModuleType( cvsRoot, module, typePaths, gitFolder=None, repoPath=None,
         typePath['cvs'] is the CVS repo path relative to $CVSROOT for module type
         typePath['git'] is the git repo path relative to $GIT_TOP for module type
     '''
-    global cvs_modules2Location, git_modules2Location
+    global cvs_modules2Location, git_modules2Location, git_packageTypes
     if	cvs_modules2Location is None:
         cvs_modules2Location = parseCVSModulesTxt( cvsRoot )
-    if	git_modules2Location is None:
-        git_modules2Location = parseGitModulesTxt()
+    if	git_modules2Location is None or git_packageTypes is None:
+        git_modules2Location, git_packageTypes = parseGitModulesTxt()
     if repoPath is None:
         if module in cvs_modules2Location:
             repoPath = os.path.join( cvsRoot, cvs_modules2Location[module] )

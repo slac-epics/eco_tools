@@ -57,25 +57,26 @@ def find_release( packageSpec, repo_url=None, verbose=False ):
         print("find_release packageSpec=%s" % ( packageSpec ))
     ( packagePath, packageVersion ) = os.path.split( packageSpec )
     packageName = os.path.split(packagePath)[1]
+    pkgType = getGitPackageType(packageName)
     if repo_url is not None:
         if repo_url.endswith( '.git' ):
             repo = gitRepo.gitRepo( repo_url, None, packageName, packageVersion )
-            release = Releaser( repo, packagePath, None, packageVersion, verbose=verbose )
+            release = Releaser( repo, packagePath, None, packageVersion, verbose=verbose, repoType=pkgType )
         elif repo_url.find( 'svn' ) >= 0:
             repo = svnRepo.svnRepo( repo_url, repo_url, packageName, packageVersion )
-            release = Releaser( repo, packagePath, None, packageVersion, verbose=verbose )
+            release = Releaser( repo, packagePath, None, packageVersion, verbose=verbose, repoType=pkgType )
     else:
         (git_url, git_tag) = gitFindPackageRelease( packagePath, packageVersion, debug=False, verbose=verbose )
         if git_url is not None:
             repo = gitRepo.gitRepo( git_url, None, packageName, git_tag )
-            release = Releaser( repo, packagePath, None, git_tag, verbose=verbose )
+            release = Releaser( repo, packagePath, None, git_tag, verbose=verbose, repoType=pkgType )
         if release is None:
             (svn_url, svn_branch, svn_tag) = svnFindPackageRelease( packagePath, packageVersion, debug=False, verbose=verbose )
             if svn_url is not None:
                 if verbose:
                     print("find_release: Found svn_url=%s, svn_path=%s, svn_tag=%s" % ( svn_url, svn_branch, svn_tag ))
                 repo = svnRepo.svnRepo( svn_url, svn_branch, packageName, svn_tag )
-                release = Releaser( repo, packagePath, verbose=verbose )
+                release = Releaser( repo, packagePath, verbose=verbose, repoType=pkgType )
     if verbose:
         if repo is not None:
             repo.ShowRepo( titleLine="find_release found: " + packageSpec, prefix=" " )
@@ -92,10 +93,11 @@ class Releaser(object):
     These were grandfathered in as part of refactoring a prior version and may be
     more appropriately made into function parameters or in some cases may not be needed at all.
     '''
-    def __init__( self, repo, packagePath, installDir=None, branch=None, noTag=False, debug=False, verbose=False, keepTmp=False, message=None, dryRun=False, quiet=False, batch=False ):
+    def __init__( self, repo, packagePath, installDir=None, branch=None, noTag=False, debug=False, verbose=False, keepTmp=False, message=None, dryRun=False, quiet=False, batch=False, repoType='' ):
         self._installDir= installDir
         self._repo		= repo
         self._branch	= branch
+        self._type      = repoType
         self._packagePath= packagePath
         if self._packagePath:
             self._packageName = os.path.split( self._packagePath )[1]
@@ -126,6 +128,7 @@ class Releaser(object):
         strRep =  "Releaser:\n"
         # TODO: Cleanup this classroom!  Throw out class variables we don't need
         strRep += "%s Repo:         \n%s" % ( self.__class__.__name__, self._repo )
+        strRep += "%s repoType:     %s\n" % ( self.__class__.__name__, self._type 	if self._type else 'None' )
         strRep += "%s branch:       %s\n" % ( self.__class__.__name__, self._branch 	if self._branch else 'None' )
         strRep += "%s packageName:  %s\n" % ( self.__class__.__name__, self._packageName if self._packageName else 'None' )
         strRep += "%s packagePath:  %s\n" % ( self.__class__.__name__, self._packagePath if self._packagePath else 'None' )
@@ -459,8 +462,8 @@ class Releaser(object):
                 return status
 
             # Is Package a module?
-            if	os.path.split( self._packagePath )[0] == 'modules' \
-            or  self._repo.GetUrl().find('modules') >= 0:
+            if	(os.path.split( self._packagePath )[0] == 'modules' \
+            or  self._repo.GetUrl().find('modules') >= 0) and self._type == '' or self._type == 'module':
                 # Package is a module
                 if installTop is not None:
                     if not installTop.endswith( '/' + self._packageName ):
@@ -478,14 +481,14 @@ class Releaser(object):
 
             # Is Package an extension?
             if not installTop:
-                if		self._packagePath.find('extensions') >= 0 \
-                     or	self._repo.GetUrl().find('extensions') >= 0:
+                if		(self._packagePath.find('extensions') >= 0 \
+                     or	self._repo.GetUrl().find('extensions') >= 0) and self._type == '' or self._type == 'extension':
                     installTop = os.path.join( epics_site_top, 'extensions' ) 
 
             # Is Package an IOC?
             if		installTop is None \
-                and	(	os.path.split( self._packagePath )[0].startswith('ioc') \
-                    or  self._repo.GetUrl().find('ioc') >= 0 ):
+                and	(	(os.path.split( self._packagePath )[0].startswith('ioc') \
+                    or  self._repo.GetUrl().find('ioc') >= 0) and self._type == '' or self._type == 'ioc'):
                 # Package is an IOC
                 topVariants = [ epics_site_top ]
                 for topVariant in defEpicsTopVariants:

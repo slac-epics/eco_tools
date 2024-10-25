@@ -32,12 +32,14 @@ if os.path.exists('/sdf'):
 gitModulesTxtFile   = os.path.join( TOOLS_SITE_TOP, 'eco_modulelist', 'modulelist.txt' )
 
 def parseGitModulesTxt():
-    '''Parse the GIT modules txt file and return a dict of packageName -> location'''
+    '''Parse the GIT modules txt file and return a tuple of package URL and package type'''
     if not os.path.isfile( gitModulesTxtFile ):
-        return {}
-    package2Location = {}
+        return ({}, {})
     with open(gitModulesTxtFile, 'r') as f:
         lines = f.readlines()
+
+    packageTypes = {}
+    package2Location = {}
     for line in lines:
         line = line.strip()
         if not line:
@@ -51,9 +53,22 @@ def parseGitModulesTxt():
         packageName = parts[0]
         packageLocation = expandMacros( parts[1], os.environ )
         package2Location[packageName] = packageLocation
-    return package2Location
+        if len(parts) > 2 and not parts[2].startswith('#'):
+            if parts[2] != 'module' and parts[2] != 'extension' and parts[2] != 'ioc':
+                print("Error parsing ", gitModulesTxtFile, "Invalid package type ", parts[2], ". Expected: module, ioc, extension or empty string")
+                continue
+            packageTypes[packageName] = parts[2]
+        else:
+            packageTypes[packageName] = ''
+    return (package2Location, packageTypes)
 
-git_package2Location = parseGitModulesTxt()
+git_package2Location, git_packageTypes = parseGitModulesTxt()
+
+def getGitPackageType(package):
+    '''Returns the package type of the specific package. If not found, returns empty string'''
+    if package in git_packageTypes:
+        return git_packageTypes[package]
+    return ''
 
 def determineGitRoot( ):
     '''Get the root folder for GIT repos at SLAC'''
