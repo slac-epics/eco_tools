@@ -151,6 +151,7 @@ def export_release_site_file( inputs, debug=False):
         or doesPkgNeedMacro( 'EPICS_BASE_VER' ):
         print('EPICS_BASE_VER=%s' %inputs['EPICS_BASE_VER'], file=out_file)
     print('EPICS_PACKAGE_TOP=%s'  % inputs['EPICS_PACKAGE_TOP'], file=out_file)
+    print('PACKAGE_SITE_TOP=%s'  % inputs['EPICS_PACKAGE_TOP'], file=out_file)
     if 'MATLAB_PACKAGE_TOP' in inputs:
         print('MATLAB_PACKAGE_TOP=%s'        % inputs['MATLAB_PACKAGE_TOP'], file=out_file)
     if 'PSPKG_ROOT' in inputs:
