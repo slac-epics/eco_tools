@@ -119,14 +119,14 @@ def ReportDependents( module, pkgDependents, wide=False, recurse=True ):
 def ReportRelease( pkgPath, release, priorModule, opt ):
     ''' Get the module and version from the release string. '''
     cmdList = [ "readlink", "-e", release ]
-    cmdOutput = subprocess.check_output( cmdList ).splitlines()
+    cmdOutput = subprocess.check_output( cmdList, text=True ).splitlines()
     if len(cmdOutput) == 1:
         release = str(cmdOutput[0])
     ( relPath, moduleVersion ) = os.path.split( release )
     # Simplify the module path by removing the default module release
     # portion of the path
     cmdList = [ "readlink", "-e", pkgPath ]
-    cmdOutput = subprocess.check_output( cmdList ).splitlines()
+    cmdOutput = subprocess.check_output( cmdList, text=True ).splitlines()
     if len(cmdOutput) == 1:
         pkgPath = str(cmdOutput[0])
     #relPath = relPath.replace( "slac.stanford.edu", "slac" )

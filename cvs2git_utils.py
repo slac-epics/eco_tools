@@ -119,7 +119,7 @@ def importHistoryFromCVS(tpath, gitRepoPath, CVSpackageLocation ):
     print("Done importing CVS dump into git repo")
 
     # If cvs2git created a TAG.FIXUP branch, delete it
-    cmdOutput = subprocess.check_output( [ 'git', 'branch', '-l' ] ).splitlines()
+    cmdOutput = subprocess.check_output( [ 'git', 'branch', '-l' ], text=True).splitlines()
     for line in cmdOutput:
         if 'TAG.FIXUP' in line:
             subprocess.call(['git', 'branch', '-D', 'TAG.FIXUP'])
