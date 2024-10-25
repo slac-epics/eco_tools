@@ -90,7 +90,7 @@ def importTrunk( trunk, name, gitUrl, branches=[], tags=[], verbose=False, batch
     # a comment, the tagger, and the tag timestamp.
     curDir = os.getcwd()
     os.chdir(tmpGitRepoPath)
-    output = subprocess.check_output([ "git", "branch", "-a" ])
+    output = subprocess.check_output([ "git", "branch", "-a" ], text=True)
     lines  = output.splitlines()
     for line in lines:
         remoteTag = re.search( r"remotes/tags/([^@]*)$", line )

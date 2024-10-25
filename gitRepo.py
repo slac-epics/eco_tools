@@ -53,14 +53,14 @@ class gitRepo( Repo.Repo ):
                 os.chdir( buildDir )
                 curSha = None
                 cmdList = [ "git", "rev-parse", "HEAD" ]
-                gitOutput = subprocess.check_output( cmdList ).splitlines()
+                gitOutput = subprocess.check_output( cmdList, text=True ).splitlines()
                 if len(gitOutput) == 1:
                     curSha = gitOutput[0]
 
                 # Get the tag SHA
                 tagSha = None
                 cmdList = [ "git", "rev-parse", self._tag ]
-                gitOutput = subprocess.check_output( cmdList ).splitlines()
+                gitOutput = subprocess.check_output( cmdList, text=True ).splitlines()
                 if len(gitOutput) == 1:
                     tagSha = gitOutput[0]
 
@@ -101,7 +101,7 @@ class gitRepo( Repo.Repo ):
         branchSha = None
         try:
             cmdList = [ "git", "show-ref", '-s', 'refs/heads/%s' % self._tag ]
-            gitOutput = subprocess.check_output( cmdList ).splitlines()
+            gitOutput = subprocess.check_output( cmdList, text=True ).splitlines()
             if len(gitOutput) == 1:
                 branchSha = gitOutput[0]
         except subprocess.CalledProcessError as e:
