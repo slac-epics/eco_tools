@@ -37,9 +37,3 @@ if [ -z "$PSPKG_ROOT" -o -z "$TOOLS_SITE_TOP" ]; then
 	fi
 fi
 
-# Add the git-utils-0.2.0 pkg_mgr release for python/2.7.5
-export PSPKG_RELEASE=git-utils-0.2.0
-if [  -d  "$PSPKG_ROOT/release/$PSPKG_RELEASE" ]; then
-	source $PSPKG_ROOT/etc/set_env.sh
-fi
-
