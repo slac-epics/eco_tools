@@ -221,7 +221,7 @@ class Releaser(object):
         sys.stdout.flush()
         userId  = os.geteuid()
         groupId = -1
-        groups  = subprocess.check_output( [ "id" ], text=True )
+        groups  = subprocess.check_output( [ "id" ], universal_newlines=True )
         if self._grpOwner is not None:
             if re.search( groups, self._grpOwner ):
                 groupId = grp.getgrname(self._grpOwner).gr_gid 
@@ -291,7 +291,7 @@ class Releaser(object):
         '''Returns True if module has built for any architecture.'''
         hasBuilt = False
         try:
-            findOutput = subprocess.check_output( [ "find", self._ReleasePath, "-name", ".is_built" ], text=True ).splitlines()
+            findOutput = subprocess.check_output( [ "find", self._ReleasePath, "-name", ".is_built" ], universal_newlines=True ).splitlines()
             if len(findOutput) > 0:
                 hasBuilt = True
         except:
@@ -505,7 +505,7 @@ class Releaser(object):
                 return -1
             # Canonicalize installTop
             cmdList = [ "readlink", "-e", installTop ]
-            cmdOutput = subprocess.check_output( cmdList, text=True ).splitlines()
+            cmdOutput = subprocess.check_output( cmdList, universal_newlines=True ).splitlines()
             if len(cmdOutput) == 1:
                 installTop = cmdOutput[0]
 

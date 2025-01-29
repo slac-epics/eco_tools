@@ -134,7 +134,7 @@ def git_check_output( gitCommand, gitDir=None, debug=False, *args, ** kwargs ):
     if debug:
         print("git_check_output running: %s" % ' '.join( cmdList ))
 
-    git_output = subprocess.check_output( cmdList, *args, **kwargs, text=True )
+    git_output = subprocess.check_output( cmdList, *args, **kwargs, universal_newlines=True )
 
     if debug:
         print(git_output)
@@ -146,7 +146,7 @@ def gitGetRemoteFile( url, refName, filePath, debug = False ):
     fileContents = None
     try:
         commitSpec = refName + ':' + filePath
-        fileContents = subprocess.check_output( [ 'git', '--git-dir=%s' % url, 'show', commitSpec ], stderr=subprocess.STDOUT, text=True )
+        fileContents = subprocess.check_output( [ 'git', '--git-dir=%s' % url, 'show', commitSpec ], stderr=subprocess.STDOUT, universal_newlines=True )
     except OSError as e:
         if debug:
             print(e)
@@ -165,7 +165,7 @@ def gitGetRemoteTags( url, debug = False, verbose = False ):
     try:
         if verbose:
             print("gitGetRemoteTags running: git ls-remote %s" % url)
-        statusInfo = subprocess.check_output( [ 'git', 'ls-remote', url ], stderr=subprocess.STDOUT, text=True )
+        statusInfo = subprocess.check_output( [ 'git', 'ls-remote', url ], stderr=subprocess.STDOUT, universal_newlines=True )
         for line in statusInfo.splitlines():
             if line is None:
                 break
@@ -228,7 +228,7 @@ def gitGetTagSha( tag ):
     try:
         # Get the tagSha
         cmdList = [ "git", "show-ref", tag ]
-        gitOutput = subprocess.check_output( cmdList, text=True ).splitlines()
+        gitOutput = subprocess.check_output( cmdList, universal_newlines=True ).splitlines()
         if len(gitOutput) == 1:
             tagSha = gitOutput[0].split()[0]
     except:
@@ -348,13 +348,13 @@ def gitGetWorkingBranch( debug = False, verbose = False ):
     repo_tag    = None
     try:
         repoCmd = [ 'git', 'symbolic-ref', 'HEAD' ]
-        statusInfo = subprocess.check_output( repoCmd, stderr=subprocess.STDOUT, text=True )
+        statusInfo = subprocess.check_output( repoCmd, stderr=subprocess.STDOUT, universal_newlines=True )
         statusLines = statusInfo.splitlines()
         if len(statusLines) > 0 and statusLines[0].startswith( 'refs/heads/' ):
             repo_branch = statusLines[0].split('/')[2]
 
         repoCmd = [ 'git', 'remote', '-v' ]
-        statusInfo = subprocess.check_output( repoCmd, stderr=subprocess.STDOUT, text=True )
+        statusInfo = subprocess.check_output( repoCmd, stderr=subprocess.STDOUT, universal_newlines=True )
         statusLines = statusInfo.splitlines()
         for line in statusLines:
             if line is None:
@@ -375,7 +375,7 @@ def gitGetWorkingBranch( debug = False, verbose = False ):
                 repo_url = repoPath
 
         # See if HEAD corresponds to any tags
-        statusInfo = subprocess.check_output( [ 'git', 'name-rev', '--name-only', '--tags', 'HEAD' ], stderr=subprocess.STDOUT, text=True )
+        statusInfo = subprocess.check_output( [ 'git', 'name-rev', '--name-only', '--tags', 'HEAD' ], stderr=subprocess.STDOUT, universal_newlines=True )
         statusLines = statusInfo.splitlines()
         if len(statusLines) > 0:
             # Just grab the first tag that matches

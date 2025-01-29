@@ -15,7 +15,7 @@ def svnPathExists( svnPath, revision=None, debug=False ):
             repoCmd = [ 'svn', 'ls', svnPath ]
         if debug:
             print("svnPathExists check_output: %s" % ' '.join( repoCmd ))
-        contents = subprocess.check_output( repoCmd, stderr = subprocess.STDOUT, text=True )
+        contents = subprocess.check_output( repoCmd, stderr = subprocess.STDOUT, universal_newlines=True )
         # No need to check contents
         # If no exception, the path exists
         return True
@@ -30,7 +30,7 @@ def svnGetRemoteTags( pathToSvnRepo, verbose=False ):
     tagsPath = tagsPath.replace( "trunk", "tags" )
     tagsPath = tagsPath.replace( "/current", "" )
     try:
-        tags = subprocess.check_output(["svn", "ls", tagsPath ], text=True ).splitlines()
+        tags = subprocess.check_output(["svn", "ls", tagsPath ], universal_newlines=True ).splitlines()
         tags = [ tag.replace("/", "") for tag in tags ]
     except:
         pass
@@ -50,7 +50,7 @@ def svnGetWorkingBranch( debug=False ):
     repo_tag    = None
     try:
         repoCmd = [ 'svn', 'info', '.' ]
-        statusInfo = subprocess.check_output( repoCmd, stderr=subprocess.STDOUT, text=True )
+        statusInfo = subprocess.check_output( repoCmd, stderr=subprocess.STDOUT, universal_newlines=True )
         statusLines = statusInfo.splitlines()
         for line in statusLines:
             if line is None:

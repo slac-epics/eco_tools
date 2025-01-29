@@ -96,7 +96,7 @@ def determine_epics_host_arch():
             epicsHostArchPath	= os.path.join(	epics_site_top, 'base',
                                                 epics_base_ver, 'startup', 'EpicsHostArch' )
             if os.path.isfile( epicsHostArchPath ):
-                cmdOutput = subprocess.check_output( [ epicsHostArchPath ], text=True ).splitlines()
+                cmdOutput = subprocess.check_output( [ epicsHostArchPath ], universal_newlines=True ).splitlines()
                 if len(cmdOutput) == 1:
                     epics_host_arch = cmdOutput[0].decode()
 

@@ -16,7 +16,7 @@ def cvsPathExists( cvsPath, revision=None, debug=False ):
             repoCmd = [ 'cvs', 'ls', cvsPath ]
         if debug:
             print("cvsPathExists check_output: %s" % ' '.join( repoCmd ))
-        contents = subprocess.check_output( repoCmd, stderr = subprocess.STDOUT, text=True )
+        contents = subprocess.check_output( repoCmd, stderr = subprocess.STDOUT, universal_newlines=True )
         # No need to check contents
         # If no exception, the path exists
         return True
@@ -54,7 +54,7 @@ def cvsGetWorkingBranch( debug=False ):
     repo_tag    = None
     try:
         repoCmd = [ 'cvs', 'info', '.' ]
-        statusInfo = subprocess.check_output( repoCmd, stderr=subprocess.STDOUT, text=True )
+        statusInfo = subprocess.check_output( repoCmd, stderr=subprocess.STDOUT, universal_newlines=True )
         statusLines = statusInfo.splitlines()
         for line in statusLines:
             if line is None:

@@ -103,7 +103,7 @@ class svnRepo( Repo.Repo ):
             # See if the tag is already checked out
             curTag = None
             cmdList = [ "svn", "info", "." ]
-            cmdOutput = subprocess.check_output( cmdList, text=True ).splitlines()
+            cmdOutput = subprocess.check_output( cmdList, universal_newlines=True ).splitlines()
             if len(cmdOutput) == 1:
                 curUrl = cmdOutput[0]
                 if curUrl == targetUrl:
@@ -121,7 +121,7 @@ class svnRepo( Repo.Repo ):
                         raise
 
                     cmdList = [ "svn", "update", "." ]
-                    cmdOutput = subprocess.check_output( cmdList, text=True ).splitlines()
+                    cmdOutput = subprocess.check_output( cmdList, universal_newlines=True ).splitlines()
                     self.execute("/bin/rm -f %s" % ( self.built_cookie_path() ))
                     os.chdir( curDir )
                     return
@@ -164,7 +164,7 @@ class svnRepo( Repo.Repo ):
         svnComment = "Removing unwanted tag %s for %s" % ( tag, package ) 
         try:
             cmdList = [ "svn", "ls", tagPath ]
-            cmdOutput = subprocess.check_output( cmdList, stderr=subprocess.STDOUT, text=True )
+            cmdOutput = subprocess.check_output( cmdList, stderr=subprocess.STDOUT, universal_newlines=True )
         except:
             print("tagPath %s not found." % ( tagPath ))
             return
@@ -184,7 +184,7 @@ class svnRepo( Repo.Repo ):
 
         try: # See if tag already exists
             cmdList = [ "svn", "ls", self._tagUrl ]
-            cmdOutput = subprocess.check_output( cmdList, stderr=subprocess.STDOUT, text=True )
+            cmdOutput = subprocess.check_output( cmdList, stderr=subprocess.STDOUT, universal_newlines=True )
             print("%s/%s already tagged." % ( packagePath, release ))
             return
         except:

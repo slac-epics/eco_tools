@@ -354,7 +354,7 @@ def initGitBareRepo( options ):
     showStatusZenity = False
     zenityVersion = None
     try:
-        zenityVersion = subprocess.check_output(["zenity", "--version"], text=True).strip()
+        zenityVersion = subprocess.check_output(["zenity", "--version"], universal_newlines=True).strip()
     except:
         print( "zenity not found!" )
         return
@@ -366,7 +366,7 @@ def initGitBareRepo( options ):
         packageSpec = options.module
     else: # TODO: Handle zenityVersion None
         # Ask the user for the name of the package
-        packageSpec = subprocess.check_output(["zenity", "--entry", "--title", "Package Name", "--text", "Please enter the name of the package"], text=True).strip()
+        packageSpec = subprocess.check_output(["zenity", "--entry", "--title", "Package Name", "--text", "Please enter the name of the package"], universal_newlines=True).strip()
         showStatusZenity = True
     packageName = os.path.split(packageSpec)[1]
 
@@ -390,7 +390,7 @@ def initGitBareRepo( options ):
     else:
         # Ask the use where the upstream bare repo is to be created
         showStatusZenity = True
-        bareRepoParentFolder = subprocess.check_output(["zenity", "--file-selection", "--title", "Please choose the parent folder where you want to create the bare repo", "--directory", "--filename="+gitRoot], text=True).strip()
+        bareRepoParentFolder = subprocess.check_output(["zenity", "--file-selection", "--title", "Please choose the parent folder where you want to create the bare repo", "--directory", "--filename="+gitRoot], universal_newlines=True).strip()
 
 
     gitRepoPath = os.path.join( bareRepoParentFolder, packageName+".git" )

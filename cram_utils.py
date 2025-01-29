@@ -38,7 +38,7 @@ def determineCramAppType():
                                     '--title', "Choose the type of software application",
                                     '--column="Type"', '--column="Description"']
                                     + list(reduce(lambda x, y: x + y, list(appTypes.items()))),
-                                    text=True,
+                                    universal_newlines=True,
                                     ).strip()
     return apptype
 
