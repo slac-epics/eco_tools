@@ -364,6 +364,7 @@ try:
         else:
             opt.installDir = os.path.join(	defaultEpicsSiteTop, packagePath, opt.release )
     pkgReleaser._installDir = opt.installDir
+    print("installDir:  %s" % repo.GetUrl())
     print("repo_url:    %s" % repo.GetUrl())
     if opt.rmTag:
         print("rm tag:      %s" % opt.release)

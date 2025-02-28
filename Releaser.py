@@ -121,6 +121,8 @@ class Releaser(object):
         # Create a directory where files will be checked-out (mktemp() is deprecated)
         self._tmpDir	= tempfile.mkdtemp( suffix="-epics-release" )
         self._grpOwner	= None
+        if verbose:
+            print( "Created %s" % self )
 
     def __str__( self ):
         strRep =  "Releaser:\n"
@@ -503,6 +505,8 @@ class Releaser(object):
             if not os.path.isdir( installTop ):
                 print("InstallPackage Error: Invalid installTop:", installTop)
                 return -1
+            if self._verbose:
+                print("InstallPackage: installTop=", installTop)
             # Canonicalize installTop
             cmdList = [ "readlink", "-e", installTop ]
             cmdOutput = subprocess.check_output( cmdList, universal_newlines=True ).splitlines()
