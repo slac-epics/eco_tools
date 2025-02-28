@@ -62,12 +62,14 @@ class gitRepo( Repo.Repo ):
                 if len(gitOutput) == 1:
                     curSha = gitOutput[0]
 
-                # Get the tag SHA
+                # Get the commit for the tag
                 tagSha = None
-                cmdList = [ "git", "rev-parse", self._tag ]
+                cmdList = [ "git", "show-ref", "-d", self._tag ]
                 gitOutput = subprocess.check_output( cmdList, universal_newlines=True ).splitlines()
-                if len(gitOutput) == 1:
-                    tagSha = gitOutput[0]
+                if len(gitOutput) == 2:
+                    tag_commit_info = gitOutput[1].split()
+                    if len(tag_commit_info) == 2:
+                        tagSha = tag_commit_info[0]
 
                 # If they match, it's already checked out!
                 if curSha == tagSha:
@@ -116,8 +118,8 @@ class gitRepo( Repo.Repo ):
             # Refresh the tags
             # TODO: May fail if git repo is read-only
             if verbose:
-                print("CheckoutRelease running: git fetch origin refs/tags/%s" % self._tag)
-            cmdList = [ "git", "fetch", "origin", "refs/tags/" + self._tag ]
+                print("CheckoutRelease running: git fetch %s refs/tags/%s" % (self._url, self._tag))
+            cmdList = [ "git", "fetch", self._url, "refs/tags/" + self._tag ]
             subprocess.check_call( cmdList, stdout=outputPipe, stderr=outputPipe )
 
             tagSha = gitGetTagSha( self._tag )
@@ -170,7 +172,7 @@ class gitRepo( Repo.Repo ):
         if verbose:
             print("\nRemoving %s release tag %s ..." % ( package, tag ))
         subprocess.check_call( [ "git", "tag", "-d", tag ] )
-        subprocess.check_call( [ 'git', 'push', '--delete', 'origin', tag ] )
+        subprocess.check_call( [ 'git', 'push', '--delete', self._url, tag ] )
         print("Successfully removed %s release tag %s." % ( package, tag ))
 
     def PushBranch( self, branchName=None, verbose=True, dryRun=False ):
@@ -186,7 +188,7 @@ class gitRepo( Repo.Repo ):
             return
         if verbose:
             print("Pushing branch %s ..." % ( branchName ))
-        subprocess.check_call( [ 'git', 'push', 'origin', branchName ] )
+        subprocess.check_call( [ 'git', 'push', self._url, branchName ] )
 
     def PushTag( self, release, verbose=True, dryRun=False ):
         if dryRun:
@@ -195,7 +197,7 @@ class gitRepo( Repo.Repo ):
 
         if verbose:
             print("Pushing tag %s ..." % ( release ))
-        subprocess.check_call( [ 'git', 'push', 'origin', release ] )
+        subprocess.check_call( [ 'git', 'push', self._url, release ] )
 
     def TagRelease( self, packagePath=None, release=None, branch=None, message="", verbose=True, dryRun=False ):
         if release is None:
@@ -209,8 +211,8 @@ class gitRepo( Repo.Repo ):
         comment = "Release %s/%s: %s" % ( packagePath, release, message )
         cmdList = [ "git", "tag", release, 'HEAD', "-m", comment ]
         subprocess.check_call( cmdList )
-        subprocess.check_call( [ 'git', 'push', '-u', 'origin' ] )
-        subprocess.check_call( [ 'git', 'push', 'origin', release ] )
+        subprocess.check_call( [ 'git', 'push', '-u', self._url, ] )
+        subprocess.check_call( [ 'git', 'push', self._url, release ] )
 
     def isDirty( self ):
         try:
