@@ -52,6 +52,8 @@ git_package2Location = parseGitModulesTxt()
 def determineGitRoot( ):
     '''Get the root folder for GIT repos at SLAC'''
     gitRoot = DEF_AFS_GIT_REPOS
+    if not os.path.exists( gitRoot ):
+        gitRoot = DEF_GITHUB_REPOS
     # The GIT_REPO_ROOT variable is mainly used when testing eco and is not something that we really expect from the environment.
     if "GIT_REPO_ROOT" in os.environ:
         gitRoot = os.environ["GIT_REPO_ROOT"]
@@ -394,6 +396,8 @@ def gitGetWorkingBranch( debug = False, verbose = False ):
         if debug:
             print(e)
         pass
+    if verbose:
+        print( "gitGetWorkingBranch: url=%s, branch=%s, tag=%s" % ( repo_url, repo_branch if repo_branch else 'None', repo_tag if repo_tag else 'None' ) )
     return ( repo_url, repo_branch, repo_tag )
 
 def determinePathToGitRepo( packagePath, verbose = False ):
@@ -420,6 +424,11 @@ def determinePathToGitRepo( packagePath, verbose = False ):
     # Check under the root of the git repo area for a bare repo w/ the right name
     gitRoot = determineGitRoot()
     gitPackageDir  = packageName + ".git"
+
+    # If we're using github.com for our root, just add the package name
+    if 'github.com' in gitRoot:
+        return gitRoot + '/' + gitPackageDir
+
     gitPackagePath = packagePath + ".git"
     if not os.path.isdir( DEF_CVS_ROOT ) and gitRoot:
         # Must be offsite, assume gitRoot and an EPICS module path
@@ -475,7 +484,7 @@ def gitFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
         print("gitFindPackageRelease: packageName=%s, packagePath=%s" % ( packageName, packagePath ))
 
     # See if the package was listed in $TOOLS/eco_modulelist/modulelist.txt
-    if not packageName in git_package2Location and not 'github.com' in DEF_GIT_REPO_PATH: 
+    if not packageName in git_package2Location:
         for url_root in [ DEF_GIT_MODULES_PATH, DEF_GIT_EXTENSIONS_PATH, DEF_GIT_EPICS_PATH, DEF_GIT_REPO_PATH ]:
             if repo_url is not None:
                 break
@@ -487,6 +496,12 @@ def gitFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
                     break
                 if packageName == packagePath:
                     break
+
+    if not repo_url:
+        url_path = determinePathToGitRepo( packageName, verbose=verbose )
+        (repo_sha, repo_tag) = gitGetRemoteTag( url_path, tag, verbose=verbose )
+        if repo_sha:
+            repo_url = url_path
 
     if verbose:
         if repo_url:
