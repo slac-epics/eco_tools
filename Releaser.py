@@ -16,6 +16,8 @@ from svn_utils import *
 from site_utils import *
 from version_utils import *
 
+defaultPackageTypeToModule  = True
+
 def makeDirsWritable( dirPathTop ):
     userId  = os.geteuid()
     for dirPath, dirs, files in os.walk(dirPathTop):
@@ -465,8 +467,32 @@ class Releaser(object):
                 print("InstallPackage Error: Need valid installTop to determine installDir!")
                 return status
 
+            # Is Package an extension?
+            if not installTop:
+                if		self._packagePath.find('extensions') >= 0 \
+                     or	self._repo.GetUrl().find('extensions') >= 0:
+                    installTop = os.path.join( epics_site_top, 'extensions' ) 
+
+            # Is Package an IOC?
+            if		installTop is None \
+                and	(	os.path.split( self._packagePath )[0].startswith('ioc') \
+                    or  self._repo.GetUrl().find('ioc-') >= 0 ):
+                # Package is an IOC
+                # TODO: If github repo uses ioc-foo-bar, we need to use installDir ioc/foo/bar
+                topVariants = [ epics_site_top ]
+                for topVariant in defEpicsTopVariants:
+                    topVariants.append( os.path.join( epics_site_top, topVariant ) )
+                for topVariant in topVariants:
+                    epics_ioc_top = os.path.join( topVariant, os.path.split(self._packagePath)[0] )
+                    if os.path.isdir( epics_ioc_top ):
+                        installTop = os.path.join( topVariant, self._packagePath )
+                        if not os.path.isdir( installTop ):
+                            os.makedirs( installTop, 0o775 )
+                        break
+
             # Is Package a module?
             if	os.path.split( self._packagePath )[0] == 'modules' \
+            or  defaultPackageTypeToModule \
             or  self._repo.GetUrl().find('modules') >= 0:
                 # Package is a module
                 if installTop is not None:
@@ -482,27 +508,6 @@ class Releaser(object):
                         print("InstallPackage Error: Unable to determine EPICS modules installTop!")
                         return status
                     installTop = epics_modules_top
-
-            # Is Package an extension?
-            if not installTop:
-                if		self._packagePath.find('extensions') >= 0 \
-                     or	self._repo.GetUrl().find('extensions') >= 0:
-                    installTop = os.path.join( epics_site_top, 'extensions' ) 
-
-            # Is Package an IOC?
-            if		installTop is None \
-                and	(	os.path.split( self._packagePath )[0].startswith('ioc') \
-                    or  self._repo.GetUrl().find('ioc') >= 0 ):
-                # Package is an IOC
-                topVariants = [ epics_site_top ]
-                for topVariant in defEpicsTopVariants:
-                    topVariants.append( os.path.join( epics_site_top, topVariant ) )
-                for topVariant in topVariants:
-                    epics_ioc_top = os.path.join( topVariant, os.path.split(self._packagePath)[0] )
-                    if os.path.isdir( epics_ioc_top ):
-                        installTop = os.path.join( topVariant, self._packagePath )
-                        if not os.path.isdir( installTop ):
-                            os.makedirs( installTop, 0o775 )
  
             if not installTop:
                 print("InstallPackage Error: Unable to determine installTop!")
