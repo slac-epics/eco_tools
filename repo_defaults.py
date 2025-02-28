@@ -28,6 +28,9 @@ DEF_PCDS_GROUP_OWNER= "ps-pcds"
 DEF_AFS_GIT_REPOS		= "/afs/slac.stanford.edu/g/cd/swe/git/repos"
 DEF_AFS_GIT_REPOS2		= "/afs/slac/g/cd/swe/git/repos"
 
+# Github Organitions
+DEF_GITHUB_REPOS		= "git@github.com:slac-epics"
+
 DEF_GIT_EXT_TOP_TAG		= "slac-trunk"
 DEF_GIT_RELEASE_DEPTH = 10
 
