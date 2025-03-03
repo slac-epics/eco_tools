@@ -146,7 +146,10 @@ def gitGetRemoteFile( url, refName, filePath, debug = False ):
     fileContents = None
     try:
         commitSpec = refName + ':' + filePath
-        fileContents = subprocess.check_output( [ 'git', '--git-dir=%s' % url, 'show', commitSpec ], stderr=subprocess.STDOUT, universal_newlines=True )
+        cmdList = [ 'git', '--git-dir=%s' % url, 'show', commitSpec ]
+        if debug:
+            print( "gitGetRemoteFile: Running %s" % cmdList.join() )
+        fileContents = subprocess.check_output( cmdList, stderr=subprocess.STDOUT, universal_newlines=True )
     except OSError as e:
         if debug:
             print(e)
@@ -183,7 +186,7 @@ def gitGetRemoteTags( url, debug = False, verbose = False ):
             print(e)
         pass
     if verbose:
-        print("gitGetRemoteTags: Found %d tags in %s" % ( len(tags), url ))
+        print("gitGetRemoteTags: Found %d tags in repo %s" % ( len(tags), url if url else None ))
     return tags
 
 def gitGetRemoteTag( url, tag, debug = False, verbose = False ):
@@ -194,13 +197,15 @@ def gitGetRemoteTag( url, tag, debug = False, verbose = False ):
     git_url     = None
     git_tag     = None
     url_valid   = False
+    tags        = {}
     if tag is None:
         tag         = 'HEAD'
         tag_spec    = tag
     else:
         tag_spec    = 'refs/tags/%s' % tag
     try:
-        tags = gitGetRemoteTags( url, debug = debug, verbose = verbose )
+        if url:
+            tags = gitGetRemoteTags( url, debug = debug, verbose = verbose )
         if tag in tags:
             git_url = url
             git_tag = tag
@@ -220,7 +225,7 @@ def gitGetRemoteTag( url, tag, debug = False, verbose = False ):
         elif url_valid:
             print("gitGetRemoteTag: Unable to find tag %s in git url %s" % ( tag, url ))
         else:
-            print("gitGetRemoteTag: Invalid git url %s" % ( url ))
+            print("gitGetRemoteTag: Invalid git url %s" % ( url if url else None ))
     return ( tag_sha, git_tag )
 
 def gitGetTagSha( tag ):
@@ -398,6 +403,8 @@ def determinePathToGitRepo( packagePath, verbose = False ):
     if packageName in git_package2Location:
         defRepoPath = git_package2Location[packageName]
         if os.path.isdir( defRepoPath ):
+            if verbose:
+                print( "determinePathToGitRepo: Found %s in modulelist.txt. repo is %s" % (packagePath, defRepoPath) )
             return defRepoPath
         gitRoot = determineGitRoot()
         if gitRoot != DEF_AFS_GIT_REPOS and gitRoot != DEF_AFS_GIT_REPOS2:
@@ -406,6 +413,8 @@ def determinePathToGitRepo( packagePath, verbose = False ):
                 defRepoPath = defRepoPath.replace(    DEF_AFS_GIT_REPOS, gitRoot )
             if  defRepoPath.startswith( DEF_AFS_GIT_REPOS2 ):
                 defRepoPath = defRepoPath.replace(    DEF_AFS_GIT_REPOS2, gitRoot )
+        if verbose:
+            print( "determinePathToGitRepo: %s repo is %s" % (packagePath, defRepoPath) )
         return defRepoPath
 
     # Check under the root of the git repo area for a bare repo w/ the right name
@@ -414,7 +423,10 @@ def determinePathToGitRepo( packagePath, verbose = False ):
     gitPackagePath = packagePath + ".git"
     if not os.path.isdir( DEF_CVS_ROOT ) and gitRoot:
         # Must be offsite, assume gitRoot and an EPICS module path
-        return os.path.join( gitRoot, 'package/epics/modules', gitPackageDir )
+        defRepoPath = os.path.join( gitRoot, 'package/epics/modules', gitPackageDir )
+        if verbose:
+            print( "determinePathToGitRepo: Offsite %s repo is %s" % (packagePath, defRepoPath) )
+        return defRepoPath
     for dirPath, dirs, files in os.walk( gitRoot, topdown=True ):
         if len( dirs ) == 0:
             continue
@@ -424,9 +436,15 @@ def determinePathToGitRepo( packagePath, verbose = False ):
                 dirs.remove( dir )
                 continue
             if os.path.isdir( os.path.join( dirPath, gitPackagePath ) ):
-                return os.path.join( dirPath, gitPackagePath )
+                defRepoPath = os.path.join( dirPath, gitPackagePath )
+                if verbose:
+                    print( "determinePathToGitRepo: os walk %s repo is %s" % (packagePath, defRepoPath) )
+                return defRepoPath
             if dir == gitPackagePath:
-                return os.path.join( dirPath, dir )
+                defRepoPath = os.path.join( dirPath, dir )
+                if verbose:
+                    print( "determinePathToGitRepo: oswalk %s repo is %s" % (packagePath, defRepoPath) )
+                return defRepoPath
             if dir.endswith( ".git" ):
                 # Remove from list so we don't search recursively
                 dirs.remove( dir )
@@ -434,7 +452,11 @@ def determinePathToGitRepo( packagePath, verbose = False ):
     # Check for an svn package
     (svn_url, svn_path, svn_tag) = svnFindPackageRelease( packagePath, tag = None, verbose=verbose )
     if svn_url:
+        if verbose:
+            print( "determinePathToGitRepo: svn %s repo is %s" % (packagePath, svn_url) )
         return svn_url
+    if verbose:
+        print( "determinePathToGitRepo: Unable to determine %s repo" % packagePath )
     return None
 
 def gitFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
@@ -453,12 +475,7 @@ def gitFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
         print("gitFindPackageRelease: packageName=%s, packagePath=%s" % ( packageName, packagePath ))
 
     # See if the package was listed in $TOOLS/eco_modulelist/modulelist.txt
-    if packageName in git_package2Location:
-        url_path = determinePathToGitRepo( packageName, verbose=verbose )
-        (repo_sha, repo_tag) = gitGetRemoteTag( url_path, tag, verbose=verbose )
-        if repo_sha:
-            repo_url = url_path
-    else:
+    if not packageName in git_package2Location and not 'github.com' in DEF_GIT_REPO_PATH: 
         for url_root in [ DEF_GIT_MODULES_PATH, DEF_GIT_EXTENSIONS_PATH, DEF_GIT_EPICS_PATH, DEF_GIT_REPO_PATH ]:
             if repo_url is not None:
                 break
