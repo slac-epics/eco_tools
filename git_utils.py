@@ -484,7 +484,7 @@ def gitFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
         print("gitFindPackageRelease: packageName=%s, packagePath=%s" % ( packageName, packagePath ))
 
     # See if the package was listed in $TOOLS/eco_modulelist/modulelist.txt
-    if not packageName in git_package2Location:
+    if not packageName in git_package2Location and not 'github.com' in DEF_GIT_REPO_PATH:
         for url_root in [ DEF_GIT_MODULES_PATH, DEF_GIT_EXTENSIONS_PATH, DEF_GIT_EPICS_PATH, DEF_GIT_REPO_PATH ]:
             if repo_url is not None:
                 break
@@ -498,10 +498,19 @@ def gitFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
                     break
 
     if not repo_url:
-        url_path = determinePathToGitRepo( packageName, verbose=verbose )
+        # Try our github repos
+        url_path = DEF_GITHUB_REPOS + '/' + packageName + ".git"
         (repo_sha, repo_tag) = gitGetRemoteTag( url_path, tag, verbose=verbose )
         if repo_sha:
             repo_url = url_path
+
+    if not repo_url:
+        # Try full set of alternatives
+        url_path = determinePathToGitRepo( packageName, verbose=verbose )
+        if url_path:
+            (repo_sha, repo_tag) = gitGetRemoteTag( url_path, tag, verbose=verbose )
+            if repo_sha:
+                repo_url = url_path
 
     if verbose:
         if repo_url:
