@@ -424,10 +424,18 @@ def determinePathToGitRepo( packagePath, verbose = False ):
     # Check under the root of the git repo area for a bare repo w/ the right name
     gitRoot = determineGitRoot()
     gitPackageDir  = packageName + ".git"
+    if verbose:
+        print( "determinePathToGitRepo: gitRoot is %s" % gitRoot if gitRoot else None )
 
-    # If we're using github.com for our root, just add the package name
+    # Check github DEF_GITHUB_REPOS, just add the package name
+    defRepoPath = DEF_GITHUB_REPOS + '/' + gitPackageDir
     if 'github.com' in gitRoot:
-        return gitRoot + '/' + gitPackageDir
+        # This results in an extra github API access, but is needed to test if the package is hosted on github
+        repoTags = gitGetRemoteTags( defRepoPath, verbose=verbose )
+        if len(repoTags) > 0:
+            if verbose:
+                print( "determinePathToGitRepo: github %s repo is %s" % (packagePath, defRepoPath) )
+            return defRepoPath
 
     gitPackagePath = packagePath + ".git"
     if not os.path.isdir( DEF_CVS_ROOT ) and gitRoot:
@@ -484,7 +492,7 @@ def gitFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
         print("gitFindPackageRelease: packageName=%s, packagePath=%s" % ( packageName, packagePath ))
 
     # See if the package was listed in $TOOLS/eco_modulelist/modulelist.txt
-    if not packageName in git_package2Location and not 'github.com' in DEF_GIT_REPO_PATH:
+    if not packageName in git_package2Location and not 'github.com' in DEF_GIT_REPO_PATH: 
         for url_root in [ DEF_GIT_MODULES_PATH, DEF_GIT_EXTENSIONS_PATH, DEF_GIT_EPICS_PATH, DEF_GIT_REPO_PATH ]:
             if repo_url is not None:
                 break
@@ -515,6 +523,8 @@ def gitFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
     if verbose:
         if repo_url:
             print("gitFindPackageRelease found %s/%s: url=%s, tag=%s" % ( packagePath, tag, repo_url, repo_tag ))
+        elif url_path is None:
+            print("gitFindPackageRelease Error: Cannot determine URL for repo %s/%s" % (packagePath, tag))
         else:
             print("gitFindPackageRelease Error: Cannot find %s/%s" % (packagePath, tag))
     return (repo_url, repo_tag)
