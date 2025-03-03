@@ -48,9 +48,14 @@ class gitRepo( Repo.Repo ):
         curDir = os.getcwd()
         if os.path.isdir( os.path.join( buildDir, '.git' ) ):
             try:
+                os.chdir( buildDir )
+                # Since it already exists, it may have been created by someone else.
+                # Add it as a safe directory to avoid checkout errors
+                cmdList = [ "git", "config", "--global", "--add", "safe.directory", buildDir ]
+                gitOutput = subprocess.check_output( cmdList, universal_newlines=True ).splitlines()
+
                 # See if the tag is already checked out
                 # Get the current HEAD SHA
-                os.chdir( buildDir )
                 curSha = None
                 cmdList = [ "git", "rev-parse", "HEAD" ]
                 gitOutput = subprocess.check_output( cmdList, universal_newlines=True ).splitlines()
