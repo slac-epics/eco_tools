@@ -65,7 +65,7 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
                 newVersion = newMacroVersions[macroName]
                 if newVersion != oldVersion:
                     print("Old: %s" %  line, end=' ')
-                    line = string.replace( line, oldVersion, newMacroVersions[macroName] )
+                    line = line.replace( oldVersion, newMacroVersions[macroName] )
                     print("New: %s" %  line, end=' ')
                     modified = True
 
@@ -115,7 +115,7 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
                 if not commentedOut:
                     # Comment out subsequent definitions
                     print("Old: %s" %  line, end=' ')
-                    line = string.replace( line, originalLine, '#' + originalLine )
+                    line = line.replace( originalLine, '#' + originalLine )
                     print("New: %s" %  line, end=' ')
                     modified = True
             else:
@@ -123,12 +123,12 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
                 if commentedOut:
                     # Uncomment the line
                     print("Old: %s" %  line, end=' ')
-                    line = string.strip( line, '# ' )
+                    line = line.strip( '# ' )
                     print("New: %s" %  line, end=' ')
                     modified = True
                 if oldVersionPath != newVersionPath:
                     print("Old: %s" %  line, end=' ')
-                    line = string.replace( line, oldVersionPath, newVersionPath )
+                    line = line.replace( oldVersionPath, newVersionPath )
                     print("New: %s" %  line, end=' ')
                     modified = True
 
@@ -156,7 +156,7 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
         if VersionToRelNumber(oldBaseVersion) >= 3.141205:
             # For these, just replace all old instances of base version w/ new version
             oldLine = line
-            line = string.replace( line, oldBaseVersion, newBaseVersion )
+            line = line.replace( oldBaseVersion, newBaseVersion )
             if newBaseVersion in line:
                 print("Old: %s" %  oldLine, end=' ')
                 print("New: %s" %  line, end=' ')
@@ -172,8 +172,8 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
         # Handle fixing unusual paths
         if macroName == "EPICS_BASE_VER":
             oldLine = line
-            #line = string.replace( line, oldBaseVersion, newBaseVersion )
-            #line = string.replace( line, oldVersionPath, baseDirName )
+            #line = line.replace( oldBaseVersion, newBaseVersion )
+            #line = line.replace( oldVersionPath, baseDirName )
             if True or newBaseVersion in line:
                 print("Old: %s" %  oldLine, end=' ')
                 print("New: %s" %  line, end=' ')
@@ -188,7 +188,7 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
                 newVersionPath = "$(EPICS_SITE_TOP)/base/%s" % baseDirName 
             if oldVersionPath != newVersionPath:
                 print("Old: %s" %  line, end=' ')
-                line = string.replace( line, oldVersionPath, newVersionPath )
+                line = line.replace( oldVersionPath, newVersionPath )
                 print("New: %s" %  line, end=' ')
                 modified = True
 
@@ -199,7 +199,7 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
                 newVersionPath = "$(EPICS_SITE_TOP)/%s/modules" % newBaseVersion
             if oldVersionPath != newVersionPath:
                 print("Old: %s" %  line, end=' ')
-                line = string.replace( line, oldVersionPath, newVersionPath )
+                line = line.replace( oldVersionPath, newVersionPath )
                 print("New: %s" %  line, end=' ')
                 modified = True
 
