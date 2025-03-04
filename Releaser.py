@@ -239,8 +239,9 @@ class Releaser(object):
         for dirPath, dirs, files in os.walk(dir):
             pathStatus = os.stat( dirPath )
             dirName = os.path.split( dirPath )[-1]
+            isRepoPath = '.git' in dirPath or '.svn' in dirPath or 'CVS' in dirPath
+            # Don't try to fix directories you don't own
             if userId == pathStatus.st_uid:
-                isRepoPath = '.git' in dirPath or '.svn' in dirPath or 'CVS' in dirPath
                 if dirName == 'edl' or dirName.endswith( 'Screens' ):
                     # Leave edl directories read-only to avoid edm replacing release screens
                     os.chmod( dirPath, pathStatus.st_mode & ~modeUserGroupWrite )
@@ -248,17 +249,21 @@ class Releaser(object):
                     os.chmod( dirPath, pathStatus.st_mode | dirModeAllow )
                 if groupId >= 0 and groupId != pathStatus.st_gid:
                     os.chown( dirPath, -1, groupId )
-                for fileName in files:
-                    filePath   = os.path.join( dirPath, fileName )
-                    pathStatus = os.lstat( filePath )
-                    if os.path.islink(filePath) and hasattr(os, 'lchmod' ):
-                        os.lchmod( filePath, pathStatus.st_mode & ~modeUserGroupWrite )
-                    elif isRepoPath:
-                        os.chmod( filePath, pathStatus.st_mode | modeUserGroupWrite )
-                    else:
-                        os.chmod( filePath, pathStatus.st_mode & ~modeUserGroupWrite )
-                    if groupId >= 0 and groupId != pathStatus.st_gid:
-                        os.lchown( filePath, -1, groupId )
+
+            for fileName in files:
+                filePath   = os.path.join( dirPath, fileName )
+                pathStatus = os.lstat( filePath )
+                # Don't try to fix files you don't own
+                if userId != pathStatus.st_uid:
+                    continue
+                if os.path.islink(filePath) and hasattr(os, 'lchmod' ):
+                    os.lchmod( filePath, pathStatus.st_mode & ~modeUserGroupWrite )
+                elif isRepoPath:
+                    os.chmod( filePath, pathStatus.st_mode | modeUserGroupWrite )
+                else:
+                    os.chmod( filePath, pathStatus.st_mode & ~modeUserGroupWrite )
+                if groupId >= 0 and groupId != pathStatus.st_gid:
+                    os.lchown( filePath, -1, groupId )
 
     def getCookieJarPath( self ):
         if self._CookieJarPath:
