@@ -120,6 +120,8 @@ def process_options(argv):
 def main(argv=None):
     options = process_options(argv)
 
+    if options.verbose:
+        print( "Running epics-build.py in eco_tools_dir %s" % os.getcwd() )
     if (options.input_file_path):
         try:
             in_file = open(options.input_file_path, 'r')
