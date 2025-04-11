@@ -26,7 +26,7 @@ class gitRepo( Repo.Repo ):
         return strRep
 
     def GetWorkingBranch( self ):
-        return gitGetWorkingBranch()
+        return gitGetWorkingBranch(repo_url=self._url)
 
     def GetDefaultPackage( self, package, verbose=False ):
         return package
