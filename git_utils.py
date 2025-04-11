@@ -345,12 +345,11 @@ def createBranchFromTag( tag, branchName ):
     subprocess.check_call(['git', 'checkout', '-q', tag])
     subprocess.check_call(['git', 'checkout', '-b', branchName])
 
-def gitGetWorkingBranch( debug = False, verbose = False ):
+def gitGetWorkingBranch( repo_url = None, debug = False, verbose = False ):
     '''See if the current directory is the top of an git working directory.
     Returns a 3-tuple of ( url, branch, tag ), ( None, None, None ) on error.
     For a valid git working dir, url must be a valid string, branch is the branch name or None if detached,
     tag is either None or a tag name if HEAD refers to a tag name.'''
-    repo_url    = None
     repo_branch = None
     repo_tag    = None
     try:
@@ -360,26 +359,27 @@ def gitGetWorkingBranch( debug = False, verbose = False ):
         if len(statusLines) > 0 and statusLines[0].startswith( 'refs/heads/' ):
             repo_branch = statusLines[0].split('/')[2]
 
-        repoCmd = [ 'git', 'remote', '-v' ]
-        statusInfo = subprocess.check_output( repoCmd, stderr=subprocess.STDOUT, universal_newlines=True )
-        statusLines = statusInfo.splitlines()
-        for line in statusLines:
-            if line is None:
-                break
-            tokens = line.split()
-            if tokens[0] == 'origin':			# Use remote 'origin' if found
-                repo_url = tokens[1]
-                break
-            if tokens[0].find('origin') >= 0:	# Backup is last remote containing 'origin'
-                repo_url = tokens[1]
-            if repo_url is None:				# If all else fails just use first remote
-                repo_url = tokens[1]
+        if not repo_url:
+            repoCmd = [ 'git', 'remote', '-v' ]
+            statusInfo = subprocess.check_output( repoCmd, stderr=subprocess.STDOUT, universal_newlines=True )
+            statusLines = statusInfo.splitlines()
+            for line in statusLines:
+                if line is None:
+                    break
+                tokens = line.split()
+                if tokens[0] == 'origin':			# Use remote 'origin' if found
+                    repo_url = tokens[1]
+                    break
+                if tokens[0].find('origin') >= 0:	# Backup is last remote containing 'origin'
+                    repo_url = tokens[1]
+                if repo_url is None:				# If all else fails just use first remote
+                    repo_url = tokens[1]
 
-        if repo_url:
-            # Remove any trailing path separator
-            ( repoPath, repoPkg ) = os.path.split( repo_url )
-            if not repoPkg:
-                repo_url = repoPath
+            if repo_url:
+                # Remove any trailing path separator
+                ( repoPath, repoPkg ) = os.path.split( repo_url )
+                if not repoPkg:
+                    repo_url = repoPath
 
         # See if HEAD corresponds to any tags
         statusInfo = subprocess.check_output( [ 'git', 'name-rev', '--name-only', '--tags', 'HEAD' ], stderr=subprocess.STDOUT, universal_newlines=True )
