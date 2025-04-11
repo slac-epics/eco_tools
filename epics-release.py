@@ -187,6 +187,8 @@ try:
                             keeptmp		= False	)
     parser.add_option(	"-r", "-R", "--release", dest="release",
                         help="release version string, ex. -r R1.2.3-0.1.0" )
+    parser.add_option(	"-u", "--url", dest="repo_url",
+                        help="repo URL, ex. -u git@github.com:/slac-epics/ADCore.git" )
     parser.add_option(	"-m", "--message", dest="message",
                         help="release message in quotes"	)
     parser.add_option(	"-v", "--verbose", dest="verbose", action="store_true",
@@ -242,7 +244,7 @@ try:
     packagePath  = None
 
     # See if this is a git working dir
-    ( git_url, git_branch, git_tag ) = gitGetWorkingBranch()
+    ( git_url, git_branch, git_tag ) = gitGetWorkingBranch( repo_url=opt.repo_url, verbose=opt.verbose )
     repo_tag = git_tag
 
     if git_url:
