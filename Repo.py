@@ -25,6 +25,10 @@ class Repo(object):
     # Override in child class
     def GetWorkingBranch( self ):
         return None
+    def isDirty( self ):
+        return True
+    def ShowStatus( self ):
+        print("Repo.ShowStatus: Unsupported repo %s" % self._url)
 
     def DoCleanup( self, errCode = 0 ):
         self._retcode = errCode
