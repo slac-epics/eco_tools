@@ -212,3 +212,21 @@ class gitRepo( Repo.Repo ):
         subprocess.check_call( [ 'git', 'push', '-u', 'origin' ] )
         subprocess.check_call( [ 'git', 'push', 'origin', release ] )
 
+    def isDirty( self ):
+        try:
+            repoCmd = [ 'git', 'status', '--porcelain' ]
+            statusInfo = git_check_output( repoCmd, stderr=subprocess.STDOUT )
+            statusLines = statusInfo.splitlines()
+            if len(statusLines) > 0:
+                return True
+        except:
+            raise
+        return False
+
+    def ShowStatus( self ):
+        try:
+            repoCmd = [ 'git', 'status' ]
+            statusInfo = git_check_output( repoCmd, stderr=subprocess.STDOUT )
+        except:
+            raise
+        print( statusInfo )
