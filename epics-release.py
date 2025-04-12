@@ -147,6 +147,11 @@ def ValidateArgs( repo, packageSpec, opt ):
         # TODO: prompt to edit, pre-populate release entry
         print("Did you remember to update the RELEASE_NOTES file?")
 
+    if repo.isDirty():
+        print("Repo is dirty!")
+        print("Did you want to commit these files?")
+        repo.ShowStatus()
+
     # validate repo_grpowner	= DEF_LCLS_GROUP_OWNER
     if opt.verbose:
         print("ValidateArgs: Success")
