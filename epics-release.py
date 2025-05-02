@@ -179,7 +179,7 @@ try:
     parser.add_option(	"-r", "-R", "--release", dest="release",
                         help="release version string, ex. -r R1.2.3-0.1.0" )
     parser.add_option(	"-u", "--url", dest="repo_url",
-                        help="repo URL, ex. -u git@github.com:/slac-epics/ADCore.git" )
+                        help="repo URL, ex. -u git@github.com:slac-epics/ADCore.git" )
     parser.add_option(	"-m", "--message", dest="message",
                         help="release message in quotes"	)
     parser.add_option(	"-v", "--verbose", dest="verbose", action="store_true",
