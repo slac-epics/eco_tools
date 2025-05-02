@@ -29,7 +29,7 @@ from eco_version import eco_tools_version
 
 from repo_defaults import *
 
-def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=False ):
+def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, options, verbose=False ):
     """
     update_pkg_dep_file(
         filePath,		 	#  path to file
@@ -88,6 +88,15 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
         commentedOut   = match.group(1).startswith('#')
         macroName      = match.group(2)
         oldVersionPath = match.group(3)
+
+        if options.noMY_MODULES and macroName == 'MY_MODULES' and not commentedOut:
+            # Comment out MY_MODULES definitions
+            print("Old: %s" %  line, end=' ')
+            line = line.replace( originalLine, '#' + originalLine )
+            print("New: %s" %  line, end=' ')
+            modified = True
+            lineCache += line
+            continue
 
         # Is this macro related to the base version
         #isMacroBaseRelated = False
@@ -227,12 +236,12 @@ def update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose=F
     print(("%s, UPDATED" %  filePath))
     return 1
 
-def update_pkg_dependency( topDir, pkgSpecs, debug=False, verbose=False ):
+def update_pkg_dependency( options ):
     """
-    update_pkg_dependency(
-        topDir,			#  path to top directory of epics package
-        pkgSpecs,       #  array of pkg specification strings: pkgPath/pkgVersion, ex asyn/R4.31
-        verbose=False   #  show progress )
+    update_pkg_dependency( options )
+        options.topDir,         #  path to top directory of epics package
+        options.packages,       #  array of pkg specification strings: pkgPath/pkgVersion, ex asyn/R4.31
+        options.verbose         #  show progress )
     Update the specified package dependencies, (module or base versions).
     Checks and updates as needed:
         TOP/RELEASE_SITE
@@ -240,6 +249,10 @@ def update_pkg_dependency( topDir, pkgSpecs, debug=False, verbose=False ):
         TOP/configure/RELEASE.local
     Returns count of how many files were updated.
     """
+    debug       = False
+    topDir      = options.top
+    pkgSpecs    = options.packages
+    verbose     = options.verbose
     # Check for a valid top directory
     if not os.path.isdir( topDir ):
         print(("update_pkg_dependency: Invalid topDir: %s" % topDir))
@@ -291,7 +304,7 @@ def update_pkg_dependency( topDir, pkgSpecs, debug=False, verbose=False ):
             continue
         filePath = os.path.join( topDir, fileName )
         if os.access( filePath, os.R_OK ):
-            count += update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, verbose )
+            count += update_pkg_dep_file( filePath, oldMacroVersions, newMacroVersions, options, verbose )
     return count
 
 def update_stable( topDir='.', debug=False ):
@@ -332,7 +345,7 @@ def update_stable( topDir='.', debug=False ):
         filePath = os.path.join( topDir, fileName )
         if os.access( filePath, os.R_OK ):
             oldMacroVersions = getMacrosFromFile( filePath, {}, debug=debug )
-            count += update_pkg_dep_file( filePath, oldMacroVersions, stableVersions, verbose=debug )
+            count += update_pkg_dep_file( filePath, oldMacroVersions, stableVersions, options, verbose=debug )
 
     return count
 
@@ -351,6 +364,7 @@ def process_options(argv):
     parser.add_argument( '-r', '--RELEASE_SITE', action='store_true',  help='Update RELEASE_SITE' )
     parser.add_argument( '-s', '--stable',   action='store_true', help='Update module dependencies to latest stable versions.' )
     parser.add_argument( '-t', '--top',      action='store',  default='.', help='Top of release area.' )
+    parser.add_argument( '-M', '--noMY_MODULES', action="store_true", help='Comment out all MY_MODULES definitions.' )
     parser.add_argument( '-v', '--verbose',  action="store_true", help='show more verbose output.' )
     parser.add_argument( '--version',  		 action="version", version=eco_tools_version )
 
@@ -400,7 +414,7 @@ def main(argv=None):
         count += update_stable( debug=options.verbose )
 
     if len( options.packages ) > 0:
-        count += update_pkg_dependency( options.top, options.packages, verbose=options.verbose )
+        count += update_pkg_dependency( options )
 
     print("Done: Updated %d RELEASE file%s." % ( count, "" if count == 1 else "s" ))
     return 0
