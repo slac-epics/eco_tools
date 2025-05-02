@@ -111,6 +111,10 @@ def ValidateArgs( repo, packageSpec, opt ):
     if not re.match( r"(\S*R\d+([\-\.]\d+)-\d+\.\d+\.\d+?)|(\S*R\d+[\.\-]\d+([\-\.]\d+)?)", opt.release ):
         raise ValidateError("%s is an invalid release tag: Must be R[<orig_release>-]<major>.<minor>.<bugfix>" % opt.release)
 
+    # Check if MY_MODULES is still defined
+    if doesPkgDefineMacro( 'MY_MODULES' ):
+        raise ValidateError("MY_MODULES is still defined!  Release tags must not define MY_MODULES.")
+
     if not opt.noTag and repo_tag != opt.release:
         # validate release message
         if not opt.message:
