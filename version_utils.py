@@ -330,6 +330,27 @@ def doesPkgNeedMacro( macroName ):
         needsMacro = False
     return needsMacro
 
+def doesPkgDefineMacro( macroName ):
+    '''
+    Check if configure/RELEASE* files define a particular macro
+    '''
+    if not macroName or len(macroName) == 0:
+        return False
+    # TODO: Check all configure/RELEASE* files
+    definesMacro = False
+    definesMacroRegExp = re.compile( r'^%s\s*=\s*\S' % macroName )
+    for filename in [ 'RELEASE', 'RELEASE.local' ]:
+        configFilePath = os.path.join( 'configure', filename )
+        if not os.path.isfile( configFilePath ):
+            continue
+        configFile = open( configFilePath, 'r')
+        for line in configFile:
+            # Check if this macro is defined
+            if  definesMacroRegExp.search( line ):
+                definesMacro = True
+
+    return definesMacro
+
 def ExpandPackagePath( topDir, pkgSpec, base=None, debug=False ):
     '''Takes a topDir directory path and looks for packages which match the pkgSpec.
     The pkgSpec can be "modules", "ioc", "ioc/common", "ioc/$AREA", "$MODULE_NAME",
