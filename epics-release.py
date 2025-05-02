@@ -324,7 +324,7 @@ try:
     if repo is None:
         raise ValidateError( "Can't establish a repo branch" )
 
-    pkgReleaser = Releaser( repo, packagePath, verbose=opt.verbose )
+    pkgReleaser = Releaser( repo, packagePath, installDir=opt.installDir, verbose=opt.verbose )
 
     # If removing old release, don't build or tag
     if	opt.nukeRelease:
@@ -365,17 +365,27 @@ try:
                 raise ValidateError("Unable to determine EPICS base version from RELEASE files")
         if not packageName:
             raise ValidateError("No release package specified")
-        if os.path.split( packagePath )[0] == 'modules':
-            if not epics_base_ver:
-                epics_base_ver = determine_epics_base_ver()
-            if not epics_base_ver:
-                raise ValidateError("Unable to determine EPICS base version")
+        if not epics_base_ver:
+            epics_base_ver = determine_epics_base_ver()
+        if not epics_base_ver:
+            raise ValidateError("Unable to determine EPICS base version")
+        if packagePath.find('github.com:') >= 0:
+            if packageName.find('ioc-') >= 0:
+                packageName.replace('-','/')
+            elif packageName.startswith('ext-'):
+                packageName.replace('ext-','extensions/')
+            elif packageName.startswith('extensions-'):
+                packageName.replace('-','/')
+            else: # Assume it's a module
+                packageName = os.path.join(	epics_base_ver, 'modules', packageName )
+            opt.installDir = os.path.join(	defaultEpicsSiteTop, packageName, opt.release	)
+        elif os.path.split( packagePath )[0] == 'modules':
             opt.installDir = os.path.join(	defaultEpicsSiteTop, epics_base_ver,
                                             packagePath, opt.release	)
         else:
             opt.installDir = os.path.join(	defaultEpicsSiteTop, packagePath, opt.release )
     pkgReleaser._installDir = opt.installDir
-    print("installDir:  %s" % repo.GetUrl())
+    print("installDir:  %s" % opt.installDir)
     print("repo_url:    %s" % repo.GetUrl())
     if opt.rmTag:
         print("rm tag:      %s" % opt.release)

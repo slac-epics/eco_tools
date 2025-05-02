@@ -52,6 +52,8 @@ git_package2Location = parseGitModulesTxt()
 def determineGitRoot( ):
     '''Get the root folder for GIT repos at SLAC'''
     gitRoot = DEF_AFS_GIT_REPOS
+    if not os.path.exists( gitRoot ):
+        gitRoot = DEF_GITHUB_REPOS
     # The GIT_REPO_ROOT variable is mainly used when testing eco and is not something that we really expect from the environment.
     if "GIT_REPO_ROOT" in os.environ:
         gitRoot = os.environ["GIT_REPO_ROOT"]
@@ -368,16 +370,13 @@ def gitGetWorkingBranch( repo_url = None, debug = False, verbose = False ):
                 if tokens[0] == 'origin':			# Use remote 'origin' if found
                     repo_url = tokens[1]
                     break
+                if tokens[1].find('github.com') and tokens[1].find('slac-epics/') >= 0:
+                    repo_url = tokens[1]
+                    break
                 if tokens[0].find('origin') >= 0:	# Backup is last remote containing 'origin'
                     repo_url = tokens[1]
                 if repo_url is None:				# If all else fails just use first remote
                     repo_url = tokens[1]
-
-            if repo_url:
-                # Remove any trailing path separator
-                ( repoPath, repoPkg ) = os.path.split( repo_url )
-                if not repoPkg:
-                    repo_url = repoPath
 
         # See if HEAD corresponds to any tags
         statusInfo = subprocess.check_output( [ 'git', 'name-rev', '--name-only', '--tags', 'HEAD' ], stderr=subprocess.STDOUT, universal_newlines=True )
@@ -394,6 +393,8 @@ def gitGetWorkingBranch( repo_url = None, debug = False, verbose = False ):
         if debug:
             print(e)
         pass
+    if verbose:
+        print( "gitGetWorkingBranch: url=%s, branch=%s, tag=%s" % ( repo_url, repo_branch if repo_branch else 'None', repo_tag if repo_tag else 'None' ) )
     return ( repo_url, repo_branch, repo_tag )
 
 def determinePathToGitRepo( packagePath, verbose = False ):
@@ -420,6 +421,19 @@ def determinePathToGitRepo( packagePath, verbose = False ):
     # Check under the root of the git repo area for a bare repo w/ the right name
     gitRoot = determineGitRoot()
     gitPackageDir  = packageName + ".git"
+    if verbose:
+        print( "determinePathToGitRepo: gitRoot is %s" % gitRoot if gitRoot else None )
+
+    # Check github DEF_GITHUB_REPOS, just add the package name
+    defRepoPath = DEF_GITHUB_REPOS + '/' + gitPackageDir
+    if 'github.com' in gitRoot:
+        # This results in an extra github API access, but is needed to test if the package is hosted on github
+        repoTags = gitGetRemoteTags( defRepoPath, verbose=verbose )
+        if len(repoTags) > 0:
+            if verbose:
+                print( "determinePathToGitRepo: github %s repo is %s" % (packagePath, defRepoPath) )
+            return defRepoPath
+
     gitPackagePath = packagePath + ".git"
     if not os.path.isdir( DEF_CVS_ROOT ) and gitRoot:
         # Must be offsite, assume gitRoot and an EPICS module path
@@ -488,9 +502,26 @@ def gitFindPackageRelease( packageSpec, tag, debug = False, verbose = False ):
                 if packageName == packagePath:
                     break
 
+    if not repo_url:
+        # Try our github repos
+        url_path = DEF_GITHUB_REPOS + '/' + packageName + ".git"
+        (repo_sha, repo_tag) = gitGetRemoteTag( url_path, tag, verbose=verbose )
+        if repo_sha:
+            repo_url = url_path
+
+    if not repo_url:
+        # Try full set of alternatives
+        url_path = determinePathToGitRepo( packageName, verbose=verbose )
+        if url_path:
+            (repo_sha, repo_tag) = gitGetRemoteTag( url_path, tag, verbose=verbose )
+            if repo_sha:
+                repo_url = url_path
+
     if verbose:
         if repo_url:
             print("gitFindPackageRelease found %s/%s: url=%s, tag=%s" % ( packagePath, tag, repo_url, repo_tag ))
+        elif url_path is None:
+            print("gitFindPackageRelease Error: Cannot determine URL for repo %s/%s" % (packagePath, tag))
         else:
             print("gitFindPackageRelease Error: Cannot find %s/%s" % (packagePath, tag))
     return (repo_url, repo_tag)
