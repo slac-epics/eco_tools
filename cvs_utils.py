@@ -26,8 +26,8 @@ def cvsPathExists( cvsPath, revision=None, debug=False ):
         return False
 
 def cvsGetRemoteTags( packageName, verbose=False ):
-    p1 = subprocess.Popen(['cvs', '-Q', 'rlog', '-h', packageName], stdout=subprocess.PIPE)
-    p2 = subprocess.Popen(['awk', '-F"[.:]"', '/^\t/&&$(NF-1)!=0{print $1}'], stdin=p1.stdout, stdout=subprocess.PIPE)
+    p1 = subprocess.Popen(['cvs', '-Q', 'rlog', '-h', packageName], stdout=subprocess.PIPE, universal_newlines=True)
+    p2 = subprocess.Popen(['awk', '-F"[.:]"', '/^\t/&&$(NF-1)!=0{print $1}'], stdin=p1.stdout, stdout=subprocess.PIPE, universal_newlines=True)
     p1.stdout.close()  # Allow p1 to receive a SIGPIPE if p2 exits.
     output = p2.communicate()[0]
 

@@ -1,3 +1,6 @@
+R3.2    2025-XX-XX Jeremy Lorelli
+    Fix issues with Popen when checking out CVS modules
+
 R3.1    2025-01-28 Jeremy Lorelli
     Fix numerous python3 incompatibilities
 	Removed cvs2git functionality (not supported by Python 3)
