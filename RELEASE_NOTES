@@ -1,4 +1,4 @@
-R3.2    2025-XX-XX Jeremy Lorelli
+R3.2    2025-06-18 Jeremy Lorelli
     Fix issues with Popen when checking out CVS modules
 
 R3.1    2025-01-28 Jeremy Lorelli
